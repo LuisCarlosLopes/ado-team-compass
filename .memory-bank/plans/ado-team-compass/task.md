@@ -100,7 +100,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T06 — Adicionar cache, evidência e recuperação de falhas
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F1
 - Objetivo: permitir auditoria e repetição sem misturar identidades ou coletas.
 - Base no IPD: 4.1.3, 5 e 7.1.
@@ -108,10 +108,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T05.
 - Entregável esperado: cache isolado, identificação de fonte e estado de coleta parcial.
 - Check de conclusão:
-  - [ ] Cache separa organização, identidade, escopo, período e versão relevante.
-  - [ ] Falha intermediária não produz execução marcada como completa.
-  - [ ] Evidência minimizada permite explicar um total sem credencial ou descrição integral.
-  - [ ] Alteração de identidade não reutiliza silenciosamente cache de outro usuário.
+  - [x] Cache separa organização, identidade, escopo, período e versão relevante (`CacheKey` com teste por dimensão).
+  - [x] Falha intermediária não produz execução marcada como completa (manifesto escrito por último; `abandon` deixa a execução não carregável e preserva a anterior).
+  - [x] Evidência minimizada permite explicar um total sem credencial ou descrição integral (excerto de título de 80 caracteres, sem descrição).
+  - [x] Alteração de identidade não reutiliza silenciosamente cache de outro usuário (identidade só como hash opaco na chave).
 - Riscos ou atenções: sanitização de evidência deve manter os fatos necessários à reprodução.
 
 ### T07 — Implementar qualidade por métrica
