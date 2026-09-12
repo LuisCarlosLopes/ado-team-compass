@@ -7,6 +7,7 @@ from typing import Any
 
 __all__ = [
     "AccessError",
+    "CapabilityUnavailable",
     "CollectError",
     "CompassError",
     "ConfigError",
@@ -122,6 +123,10 @@ class PartialResult(CompassError):
     """Relatório produzido com capacidade solicitada parcial ou indisponível."""
 
     exit_code = ExitCode.PARTIAL_CAPABILITY
+
+
+class CapabilityUnavailable(PartialResult):
+    """Operação não suportada pelo catálogo MCP conectado: capacidade fica indisponível."""
 
 
 class SchemaVersionError(CompassError):

@@ -10,6 +10,7 @@ from datetime import date
 from decimal import Decimal
 from enum import StrEnum
 from typing import Self
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import Field, model_validator
@@ -17,6 +18,8 @@ from pydantic import Field, model_validator
 from ado_team_compass.contracts.common import Capability, SchemaVersion, StrictModel
 
 __all__ = [
+    "DIRECT_ADO_HOSTS",
+    "OFFICIAL_REMOTE_URL_TEMPLATE",
     "AllocationConfig",
     "BugBehavior",
     "CalendarConfig",
@@ -69,11 +72,28 @@ class CurrentDayPolicy(StrEnum):
     INCLUDE_FULL = "include_full"
 
 
+#: Servidor remoto oficial recomendado pela Microsoft; a organização compõe o caminho.
+OFFICIAL_REMOTE_URL_TEMPLATE = "https://mcp.azuredevops.com/{organization}/mcp"
+
+#: Hosts que são API direta do Azure DevOps e, por isso, nunca são endpoint de MCP.
+DIRECT_ADO_HOSTS = (
+    "dev.azure.com",
+    "analytics.dev.azure.com",
+    "vsaex.dev.azure.com",
+    "vssps.dev.azure.com",
+    "visualstudio.com",
+)
+
+
 class McpServerConfig(StrictModel):
-    """Servidor MCP oficial. `session_ref` nomeia uma sessão do cliente, não um segredo."""
+    """Servidor MCP oficial. `session_ref` nomeia uma sessão do cliente, não um segredo.
+
+    O transporte padrão é o servidor remoto oficial; `stdio` atende cenários que exigem o
+    pacote oficial local. `url` ausente em transporte http usa o endpoint remoto oficial.
+    """
 
     name: str = "azure-devops"
-    transport: McpTransport = McpTransport.STDIO
+    transport: McpTransport = McpTransport.HTTP
     command: tuple[str, ...] = ()
     url: str | None = None
     expected_version: str | None = None
@@ -85,10 +105,33 @@ class McpServerConfig(StrictModel):
         if self.transport is McpTransport.STDIO and not self.command:
             msg = "Transporte stdio exige o comando do servidor MCP oficial."
             raise ValueError(msg)
-        if self.transport is McpTransport.HTTP and not self.url:
-            msg = "Transporte http exige a URL do servidor MCP oficial."
-            raise ValueError(msg)
+        if self.url is not None:
+            _validate_mcp_url(self.url)
         return self
+
+    def resolved_url(self, organization: str) -> str:
+        """URL efetiva do servidor remoto oficial para a organização configurada."""
+        if self.url is not None:
+            return self.url
+        return OFFICIAL_REMOTE_URL_TEMPLATE.format(organization=organization)
+
+
+def _validate_mcp_url(url: str) -> None:
+    """Recusa endpoint que não seja HTTPS e qualquer API direta do Azure DevOps."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        msg = f"O servidor MCP exige HTTPS: {url!r}."
+        raise ValueError(msg)
+    host = (parsed.hostname or "").lower()
+    if any(host == direct or host.endswith(f".{direct}") for direct in DIRECT_ADO_HOSTS):
+        msg = (
+            f"O host {host!r} é API direta do Azure DevOps e não é um servidor MCP. "
+            "Use o servidor MCP oficial."
+        )
+        raise ValueError(msg)
+    if "_apis" in parsed.path or "odata" in parsed.path.lower():
+        msg = f"O caminho {parsed.path!r} é de API direta do Azure DevOps, não de MCP."
+        raise ValueError(msg)
 
 
 class ConnectionConfig(StrictModel):

@@ -7,10 +7,14 @@ connections:
     organization: contoso
     server:
       name: azure-devops
-      transport: stdio
-      command: ["npx", "-y", "@azure-devops/mcp", "contoso"]
+      # Canal padrão recomendado pela Microsoft: servidor MCP remoto oficial.
+      # A URL é derivada da organização: https://mcp.azuredevops.com/contoso/mcp
+      transport: http
       expected_version: null
       session_ref: contoso-default
+      # Alternativa para cenários que exigem stdio, com o pacote oficial local:
+      # transport: stdio
+      # command: ["npx", "-y", "@azure-devops/mcp", "contoso"]
 
 teams:
   # Perfil com capacidade em horas.

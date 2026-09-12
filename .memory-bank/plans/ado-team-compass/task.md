@@ -52,7 +52,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T03 — Implementar cliente do MCP oficial e sessão
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — transporte remoto oficial como padrão; handshake real ainda não executado contra organização
 - Release/Fase: v0.1 / F1
 - Objetivo: conectar ao MCP oficial e coletar somente por ferramentas/ações de leitura autorizadas.
 - Base no IPD: 4.1.1, 4.4 e 5.
@@ -60,10 +60,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T02.
 - Entregável esperado: cliente MCP, sessão segura, descoberta de catálogo e schemas, allowlist por ferramenta/ação e transporte com controle de erros.
 - Check de conclusão:
-  - [ ] Servidor oficial, organização e sessão são verificáveis sem expor credenciais.
-  - [ ] Operações permitidas de leitura são explícitas por ferramenta e ação, inclusive em ferramentas mistas.
-  - [ ] V11 cobre sessão expirada, acesso negado, retentativa limitada e timeout; V33 prova ausência de fallback direto e bloqueio de escrita.
-  - [ ] Logs de exceção e diagnóstico passam por verificação de segredo.
+  - [x] Servidor oficial, organização e sessão são verificáveis sem expor credenciais (`doctor` reporta canal, versão, hash de catálogo e erros sanitizados).
+  - [x] Operações permitidas de leitura são explícitas por ferramenta e ação, inclusive em ferramentas mistas (allowlist por operação + recusa de verbo de escrita por segmento de nome).
+  - [x] V11 cobre sessão expirada, acesso negado, retentativa limitada e timeout; V33 prova ausência de fallback direto e bloqueio de escrita (varredura estática do código de produto + testes de catálogo/offline).
+  - [x] Logs de exceção e diagnóstico passam por verificação de segredo (`sanitize_detail` no registro de chamadas e no diagnóstico).
 - Riscos ou atenções: não implementar autenticação ADO paralela; usar somente modos suportados pelo MCP oficial conectado.
 
 ### T04 — Entregar setup por perfil de equipe

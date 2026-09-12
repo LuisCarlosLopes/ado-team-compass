@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any
 
 from ado_team_compass import __version__
+from ado_team_compass.config.loader import ResolvedConfig, load_config
+from ado_team_compass.diagnostics import TransportFactory, diagnose
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 
 __all__ = ["COMMANDS", "build_parser", "main"]
@@ -47,6 +49,38 @@ def _not_implemented(command: _Command) -> Handler:
     return handler
 
 
+DEFAULT_CONFIG_PATH = Path(".ado-team-compass/config.yaml")
+
+
+def _config_path(args: argparse.Namespace) -> Path:
+    explicit: Path | None = getattr(args, "config", None)
+    if explicit is not None:
+        return explicit
+    from os import environ
+
+    from_env = environ.get("ADO_TEAM_COMPASS_CONFIG")
+    return Path(from_env) if from_env else DEFAULT_CONFIG_PATH
+
+
+def _load_optional_config(args: argparse.Namespace) -> ResolvedConfig | None:
+    """Carrega a configuração quando existir; ausência é diagnóstico, não exceção."""
+    path = _config_path(args)
+    if not path.is_file():
+        if getattr(args, "config", None) is not None:
+            # Caminho explícito inexistente é erro de entrada.
+            load_config(path)
+        return None
+    return load_config(path)
+
+
+def _handle_doctor(args: argparse.Namespace) -> ExitCode:
+    factory: TransportFactory | None = getattr(args, "_transport_factory", None)
+    resolved = _load_optional_config(args)
+    report, exit_code = diagnose(resolved, offline=args.offline, transport_factory=factory)
+    _emit(report, args)
+    return exit_code
+
+
 def _handle_version(args: argparse.Namespace) -> ExitCode:
     payload = {"name": "ado-team-compass", "version": __version__}
     _emit(payload, args)
@@ -67,7 +101,12 @@ def _emit(payload: dict[str, Any], args: argparse.Namespace) -> None:
 COMMANDS: tuple[_Command, ...] = (
     _Command("version", "Informa a versão do motor", "v0.1", _handle_version),
     _Command("setup", "Resolve organização, projetos, equipes e perfis", "v0.1", None),
-    _Command("doctor", "Diagnostica ambiente, acesso, configuração e capacidades", "v0.1", None),
+    _Command(
+        "doctor",
+        "Diagnostica ambiente, acesso, configuração e capacidades",
+        "v0.1",
+        _handle_doctor,
+    ),
     _Command("collect", "Coleta apenas as fontes necessárias ao escopo e período", "v0.1", None),
     _Command("report", "Calcula e renderiza relatório de uma execução existente", "v0.1", None),
     _Command("status", "Atalho para coleta atual e relatório de equipe", "v0.1", None),
