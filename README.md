@@ -14,7 +14,11 @@ O plugin não acessará diretamente APIs REST, Analytics/OData, SDKs ou CLI do A
 
 ## Estado do projeto
 
-Em planejamento. Este repositório contém a arquitetura e o plano de implementação; o plugin ainda não foi implementado.
+Em implementação. Concluídos: pacote e infraestrutura de qualidade (T01), contratos e configuração por perfil (T02) e o núcleo numérico auditável — qualidade por métrica, calendário/capacidade, carga e consolidação entre equipes (T07–T10). Pendentes: acesso e coleta pelo MCP oficial (T03–T06), relatórios e bundles (T11–T13, T22, T26–T27) e distribuição/piloto (T14–T16).
+
+```bash
+uv sync --group dev && uv run pytest && uv run ado-team-compass version
+```
 
 ## Planejamento
 
@@ -61,4 +65,4 @@ A primeira versão prevê entrega atual, planejamento de capacidade, carga resta
 
 ## Próximo passo
 
-Iniciar a tarefa T01 do checklist: criar o pacote e a infraestrutura de qualidade.
+Tarefa T03 do checklist: cliente do MCP oficial, sessão e allowlist por ferramenta e ação.
