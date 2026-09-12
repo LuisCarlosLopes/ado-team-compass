@@ -172,7 +172,7 @@ class AdoMcpClient:
         *,
         cursor_argument: str = "continuationToken",
         cursor_field: str = "continuationToken",
-        items_field: str = "value",
+        items_fields: tuple[str, ...] = ("value",),
         max_pages: int = 50,
     ) -> Iterator[Any]:
         """Percorre páginas enquanto o servidor devolver cursor; página faltante é erro."""
@@ -194,7 +194,9 @@ class AdoMcpClient:
                 )
             seen_cursors.add(cursor)
             payload_arguments[cursor_argument] = cursor
-            if items_field and _extract(payload, items_field) is None:
+            if items_fields and all(
+                _extract(payload, field_name) is None for field_name in items_fields
+            ):
                 raise CollectError(
                     "E_MCP_PAGINA_INCOMPLETA",
                     "Uma página intermediária não trouxe itens, então a coleta é incompleta.",

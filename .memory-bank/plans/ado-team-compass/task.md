@@ -84,7 +84,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T05 — Coletar e normalizar a situação atual
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — validada com fixture sintética; formatos reais de resposta a confirmar no primeiro handshake
 - Release/Fase: v0.1 / F1
 - Objetivo: produzir fatos completos dentro do escopo selecionado.
 - Base no IPD: 4.1.3, 4.1.4 e 4.2.
@@ -92,10 +92,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T04.
 - Entregável esperado: itens, pessoas, capacidade, calendários e relações normalizados com origem.
 - Check de conclusão:
-  - [ ] Paginação e leitura em lote preservam contagens esperadas.
-  - [ ] IDs duplicados não geram fatos duplicados; V06 e V09 cobertos.
-  - [ ] Bugs, estados customizados e renomeações são tratados conforme perfil.
-  - [ ] Fonte incompleta carrega motivo e cobertura até a saída; V11 e V13 cobertos.
+  - [x] Paginação e leitura em lote preservam contagens esperadas (lotes de 200; lote incompleto vira cobertura parcial declarada).
+  - [x] IDs duplicados não geram fatos duplicados; V06 e V09 cobertos (dedupe por organização + ID; hierarquia por `System.Parent`).
+  - [x] Bugs, estados customizados e renomeações são tratados conforme perfil (categoria só por mapeamento local; identidade por ID).
+  - [x] Fonte incompleta carrega motivo e cobertura até a saída; V11 e V13 cobertos (`partial_sources` + `reasons` no FactSet).
 - Riscos ou atenções: coleta de fontes diferentes não equivale a snapshot transacional único.
 
 ### T06 — Adicionar cache, evidência e recuperação de falhas
