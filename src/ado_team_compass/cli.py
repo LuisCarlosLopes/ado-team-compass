@@ -16,6 +16,7 @@ from typing import Any
 
 from ado_team_compass import __version__
 from ado_team_compass.config.loader import ResolvedConfig, load_config
+from ado_team_compass.contracts.config import ConnectionConfig, McpServerConfig, McpTransport
 from ado_team_compass.diagnostics import TransportFactory, diagnose
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 
@@ -73,6 +74,72 @@ def _load_optional_config(args: argparse.Namespace) -> ResolvedConfig | None:
     return load_config(path)
 
 
+def _handle_setup(args: argparse.Namespace) -> ExitCode:
+    """Descobre projetos e equipes pelo MCP oficial e grava a configuração compartilhável."""
+    from ado_team_compass.adapters.ado_mcp import AdoMcpClient
+    from ado_team_compass.config.setup import (
+        build_config_document,
+        discover,
+        write_config_document,
+    )
+    from ado_team_compass.mcp.session.official import official_transport
+
+    if args.offline:
+        raise ConfigError(
+            "E_SETUP_OFFLINE",
+            "O setup precisa do servidor MCP oficial para descobrir projetos e equipes.",
+            remediation="Execute sem --offline após autenticar a sessão do MCP oficial.",
+        )
+    organization: str | None = getattr(args, "organization", None)
+    if not organization:
+        raise ConfigError(
+            "E_SETUP_ORGANIZACAO_AUSENTE",
+            "Informe a organização do Azure DevOps a ser descoberta.",
+            remediation="Use --organization <nome-da-organizacao>.",
+        )
+
+    connection = _bootstrap_connection(organization)
+    factory: TransportFactory = getattr(args, "_transport_factory", None) or (
+        lambda conn: official_transport(conn)
+    )
+    with factory(connection) as transport:
+        client = AdoMcpClient(transport=transport)
+        discovery = discover(client, organization=organization)
+
+    document = build_config_document(discovery)
+    destination = args.output or DEFAULT_CONFIG_PATH
+    write_config_document(document, destination, force=bool(getattr(args, "force", False)))
+    LOGGER.info("Configuração gravada em %s", destination)
+    summary = {
+        "organization": organization,
+        "catalog_hash": discovery.catalog_hash,
+        "config_path": str(destination),
+        "teams": [
+            {
+                "alias": alias,
+                "project_id": team.project_id,
+                "team_id": team.team_id,
+                "team_name": team.team_name,
+                "limitations": list(team.limitations),
+            }
+            for alias, team in discovery.aliases().items()
+        ],
+        "limitations": discovery.limitations,
+        "next_step": "revise o perfil de cada equipe e execute 'doctor'",
+    }
+    sys.stdout.write(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+    return ExitCode.PARTIAL_CAPABILITY if discovery.limitations else ExitCode.OK
+
+
+def _bootstrap_connection(organization: str) -> ConnectionConfig:
+    """Conexão mínima para o handshake inicial: servidor remoto oficial da organização."""
+    return ConnectionConfig(
+        alias=organization,
+        organization=organization,
+        server=McpServerConfig(transport=McpTransport.HTTP),
+    )
+
+
 def _handle_doctor(args: argparse.Namespace) -> ExitCode:
     factory: TransportFactory | None = getattr(args, "_transport_factory", None)
     resolved = _load_optional_config(args)
@@ -100,7 +167,7 @@ def _emit(payload: dict[str, Any], args: argparse.Namespace) -> None:
 
 COMMANDS: tuple[_Command, ...] = (
     _Command("version", "Informa a versão do motor", "v0.1", _handle_version),
-    _Command("setup", "Resolve organização, projetos, equipes e perfis", "v0.1", None),
+    _Command("setup", "Resolve organização, projetos, equipes e perfis", "v0.1", _handle_setup),
     _Command(
         "doctor",
         "Diagnostica ambiente, acesso, configuração e capacidades",
@@ -125,6 +192,10 @@ COMMANDS: tuple[_Command, ...] = (
 
 def _add_common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", type=Path, help="Caminho explícito da configuração")
+    parser.add_argument("--organization", help="Organização do Azure DevOps (entrada setup)")
+    parser.add_argument(
+        "--force", action="store_true", help="Autoriza sobrescrever a configuração existente"
+    )
     parser.add_argument("--team", help="Equipe por ID ou alias inequívoco")
     parser.add_argument("--period", help="Período da análise (ex.: iteração atual ou ISO)")
     parser.add_argument("--as-of", help="Instante de referência ISO-8601 do cálculo")

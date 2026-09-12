@@ -30,7 +30,7 @@ def test_no_command_returns_invalid_input_and_writes_help_to_stderr(capsys):
 
 
 def test_unimplemented_command_error_payload(capsys):
-    main(["setup"])
+    main(["history"])
     stderr = capsys.readouterr().err
     payload = json.loads(stderr[stderr.index("{") :])
     assert payload["error"]["code"] == "E_CMD_NAO_DISPONIVEL"

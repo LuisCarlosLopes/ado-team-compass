@@ -68,7 +68,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T04 — Entregar setup por perfil de equipe
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — descoberta validada por fixture; cobertura real por confirmar no primeiro handshake
 - Release/Fase: v0.1 / F1
 - Objetivo: configurar várias equipes sem modificar código.
 - Base no IPD: 4.1.2 e 7.2.
@@ -76,10 +76,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T03.
 - Entregável esperado: descoberta via MCP por ID de organização/projeto/equipe, áreas, iterações, campos e estados quando expostos; perfis e limites aplicados.
 - Check de conclusão:
-  - [ ] Perfis sprint com horas, sprint sem horas e fluxo contínuo são configuráveis.
-  - [ ] Equipes com nomes iguais são desambiguadas por projeto/ID.
-  - [ ] Inclusão de áreas descendentes é respeitada.
-  - [ ] Mapeamento desconhecido desabilita a métrica dependente com motivo; V10 e V13 cobertos.
+  - [x] Perfis sprint com horas, sprint sem horas e fluxo contínuo são configuráveis (`build_config_document(profiles=...)`; padrão conservador sem horas).
+  - [x] Equipes com nomes iguais são desambiguadas por projeto/ID (V13: `plataforma-core` e `dados-core`).
+  - [x] Inclusão de áreas descendentes é respeitada (vem de `teamFieldValues` do MCP; desconhecida não é assumida).
+  - [x] Mapeamento desconhecido desabilita a métrica dependente com motivo; V10 e V13 cobertos (limitações por equipe + `assess_metric`).
 - Riscos ou atenções: descoberta técnica não prova política de negócio nem compromisso da sprint.
 
 ### T05 — Coletar e normalizar a situação atual
