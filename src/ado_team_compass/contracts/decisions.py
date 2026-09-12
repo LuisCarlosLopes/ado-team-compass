@@ -6,7 +6,24 @@ from datetime import date, datetime
 
 from ado_team_compass.contracts.common import StrictModel
 
-__all__ = ["Decision", "DecisionLog"]
+__all__ = ["ActionCandidate", "Decision", "DecisionLog"]
+
+
+class ActionCandidate(StrictModel):
+    """Candidato determinístico de ação: nunca executa mudança, sempre traz evidência."""
+
+    id: str
+    rule_id: str
+    priority: int
+    problem: str
+    observed_impact: str
+    action: str
+    decision_role: str
+    to_confirm: str
+    verification: str
+    item_ids: tuple[int, ...] = ()
+    evidence: tuple[str, ...] = ()
+    hypothesis: str | None = None
 
 
 class Decision(StrictModel):

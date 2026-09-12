@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Situação atual — {{ report.team_alias }} — {{ report.iteration_path or "janela de análise" }}</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --fundo: #ffffff; --texto: #16191d; --borda: #c9ced6; --suave: #f4f6f9;
+    --atencao: #8a5300; --acima: #8c1d18; --ok: #1c5c2e; --indisponivel: #4a5158;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fundo: #14171a; --texto: #eceff3; --borda: #3a4149; --suave: #1d2126;
+            --atencao: #e0a458; --acima: #f28b82; --ok: #7fd18f; --indisponivel: #a8b0b8; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 1.5rem; background: var(--fundo); color: var(--texto);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--borda);
+       padding-bottom: .25rem; }
+  h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
+  table { border-collapse: collapse; width: 100%; margin: .5rem 0 1rem; font-size: .92rem; }
+  caption { text-align: left; font-weight: 600; padding: .25rem 0; }
+  th, td { border: 1px solid var(--borda); padding: .35rem .5rem; text-align: left;
+           vertical-align: top; }
+  th { background: var(--suave); }
+  .envelope { overflow-x: auto; }
+  .cartoes { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0 1rem; padding: 0;
+             list-style: none; }
+  .cartao { border: 1px solid var(--borda); border-radius: .4rem; padding: .6rem .75rem;
+            min-width: 15rem; flex: 1 1 15rem; background: var(--suave); }
+  .cartao .valor { font-size: 1.4rem; font-weight: 650; display: block; }
+  .cartao .rotulo { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+  .cartao .nota { font-size: .82rem; color: var(--indisponivel); }
+  .selo { display: inline-block; border: 1px solid currentColor; border-radius: .25rem;
+          padding: 0 .3rem; font-size: .78rem; }
+  .ACIMA_DA_FAIXA, .CARGA_SEM_CAPACIDADE { color: var(--acima); }
+  .ATENCAO { color: var(--atencao); }
+  .DENTRO_DA_FAIXA { color: var(--ok); }
+  .DADOS_INSUFICIENTES, .SEM_CARGA_REGISTRADA, .SEM_RESPONSAVEL { color: var(--indisponivel); }
+  .indisponivel { border-left: 3px solid var(--indisponivel); padding-left: .75rem;
+                  color: var(--indisponivel); }
+  .filtros { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: .5rem 0; }
+  .filtros label { display: flex; flex-direction: column; font-size: .82rem; gap: .2rem; }
+  .selecao { font-size: .85rem; }
+  .rodape { margin-top: 2rem; font-size: .82rem; color: var(--indisponivel); }
+  @media print {
+    body { padding: 0; }
+    .filtros, .acoes-pagina { display: none; }
+    table { page-break-inside: auto; }
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>Situação atual — {{ report.team_alias }}</h1>
+<p class="selecao">
+  Execução <code>{{ report.run_id }}</code> ·
+  {% if report.partial_sources %}<strong>relatório parcial</strong>{% else %}coleta completa{% endif %} ·
+  gerado a partir de dados do MCP oficial do Azure DevOps.
+</p>
+
+<h2>Contexto</h2>
+<div class="envelope">
+<table>
+  <caption>Faixa de contexto da execução</caption>
+  <tbody>
+    <tr><th scope="row">Equipe</th><td>{{ report.team_alias }} (<code>{{ report.team_id }}</code>)</td></tr>
+    <tr><th scope="row">Projeto</th><td><code>{{ report.project_id }}</code></td></tr>
+    <tr><th scope="row">Perfil</th><td>{{ report.profile }}</td></tr>
+    <tr><th scope="row">Sprint ou janela</th><td>{{ report.iteration_path or "janela de análise sem iteração" }}</td></tr>
+    <tr><th scope="row">Período</th>
+        <td>{% if report.window %}{{ report.window.start.isoformat() }} até {{ report.window.end.isoformat() }} (fim exclusivo, {{ report.window.timezone }}){% else %}indisponível{% endif %}</td></tr>
+    <tr><th scope="row">Data de referência</th><td>{{ report.as_of }}</td></tr>
+    <tr><th scope="row">Dias elegíveis restantes</th><td>{{ context.remaining_days }} ({{ context.current_day_policy }})</td></tr>
+    <tr><th scope="row">Escopo observado</th><td>{{ context.scope }}</td></tr>
+    <tr><th scope="row">Unidade</th><td>{{ report.unit }}</td></tr>
+    <tr><th scope="row">Fontes parciais</th><td>{{ report.partial_sources | join(", ") or "nenhuma" }}</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>O que precisa de atenção hoje</h2>
+<ul class="cartoes">
+{% for card in cards %}
+  <li class="cartao">
+    <span class="rotulo">{{ card.label }}</span>
+    <span class="valor {{ card.css_class }}">{{ card.value }}</span>
+    <span class="nota">{{ card.note }}</span>
+  </li>
+{% endfor %}
+</ul>
+
+{% if candidates %}
+<h3>Decisões prioritárias sugeridas</h3>
+<div class="envelope">
+<table>
+  <caption>Até três ações candidatas, com evidência e o que confirmar antes de decidir</caption>
+  <thead>
+    <tr><th>Prioridade</th><th>Problema</th><th>Impacto observado</th><th>Ação candidata</th>
+        <th>Quem decide</th><th>A confirmar</th><th>Como verificar</th><th>Evidência</th></tr>
+  </thead>
+  <tbody>
+  {% for candidate in candidates[:3] %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ candidate.problem }}</td>
+      <td>{{ candidate.observed_impact }}</td>
+      <td>{{ candidate.action }}</td>
+      <td>{{ candidate.decision_role }}</td>
+      <td>{{ candidate.to_confirm }}</td>
+      <td>{{ candidate.verification }}</td>
+      <td>{{ candidate.evidence | join(", ") }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="selecao">Ação recomendada não é ação executada: este relatório não altera nada no Azure DevOps.</p>
+{% endif %}
+
+<h2>Métricas da execução</h2>
+<div class="envelope">
+<table id="tabela-metricas">
+  <caption>Cada número tem status, cobertura de itens e motivo quando não está disponível</caption>
+  <thead>
+    <tr><th>Métrica</th><th>Status</th><th>Valor</th><th>Cobertura de itens</th><th>Motivo</th></tr>
+  </thead>
+  <tbody>
+  {% for metric in report.metrics %}
+    <tr>
+      <td><code>{{ metric.id }}</code></td>
+      <td>{{ metric.status.value }}</td>
+      <td>{{ fmt_metric(metric) }}</td>
+      <td>{{ fmt_coverage(metric.coverage) }}</td>
+      <td>{{ metric.unavailable_reason or "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Planejamento de capacidade e carga conhecida</h2>
+{{ capacity_svg }}
+<div class="envelope">
+<table>
+  <caption>Carga conhecida contra capacidade restante reservada, na mesma janela e unidade</caption>
+  <thead><tr><th>Medida</th><th>Valor</th><th>Observação</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Carga restante conhecida</th><td>{{ gap.load }}</td><td>{{ gap.load_note }}</td></tr>
+    <tr><th scope="row">Capacidade restante reservada</th><td>{{ gap.capacity }}</td><td>{{ gap.capacity_note }}</td></tr>
+    <tr><th scope="row">Gap de capacidade atual</th><td>{{ gap.gap }}</td><td>{{ gap.gap_note }}</td></tr>
+    <tr><th scope="row">Utilização observada</th><td>{{ gap.utilization }}</td><td>{{ gap.utilization_note }}</td></tr>
+    <tr><th scope="row">Variação da estimativa total</th><td>indisponível</td>
+        <td>exige baseline congelada da mesma coorte; entra na v0.2</td></tr>
+    <tr><th scope="row">Desvio final registrado</th><td>indisponível</td>
+        <td>exige prática confiável de registro e período compatível; entra na v0.2</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Carga por pessoa</h3>
+<form class="filtros" id="filtros" onsubmit="return false;">
+  <label>Pessoa
+    <input type="search" id="filtro-pessoa" placeholder="parte do identificador">
+  </label>
+  <label>Classe
+    <select id="filtro-classe">
+      <option value="">todas</option>
+      {% for classe in classes %}<option value="{{ classe }}">{{ classe }}</option>{% endfor %}
+    </select>
+  </label>
+  <p class="selecao" id="selecao-ativa">Sem filtro: {{ report.people | length }} pessoas exibidas.</p>
+</form>
+<div class="envelope">
+<table id="tabela-pessoas">
+  <caption>Carga conhecida por pessoa. O total da sprint permanece na tabela acima, mesmo com filtro.</caption>
+  <thead>
+    <tr><th>Pessoa</th><th>Carga conhecida</th><th>Capacidade restante</th><th>Utilização</th>
+        <th>Classe</th><th>Itens elegíveis</th><th>Com valor</th><th>Sem valor</th><th>Observação</th></tr>
+  </thead>
+  <tbody>
+  {% for row in report.people %}
+    <tr data-pessoa="{{ row.person_id }}" data-classe="{{ row.load_class }}">
+      <td><code>{{ row.person_id }}</code></td>
+      <td>{{ fmt_quantity(row.known_load) }}</td>
+      <td>{{ fmt_quantity(row.reserved_capacity) }}</td>
+      <td>{{ fmt_ratio(row.utilization) }}{% if row.is_lower_bound %} (limite inferior){% endif %}</td>
+      <td><span class="selo {{ row.load_class }}">{{ row.load_class }}</span></td>
+      <td>{{ row.items_eligible }}</td><td>{{ row.items_known }}</td><td>{{ row.items_missing }}</td>
+      <td>{{ row.reason or "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2>Impedimentos explícitos</h2>
+{% if impediments %}
+<div class="envelope">
+<table>
+  <caption>Itens marcados pela origem de impedimento configurada</caption>
+  <thead><tr><th>Item</th><th>Título (excerto)</th><th>Estado</th><th>Responsável</th>
+             <th>Desde quando</th><th>Evidência</th></tr></thead>
+  <tbody>
+  {% for item in impediments %}
+    <tr>
+      <td>{{ item.id }}</td>
+      <td>{{ item.title or "—" }}</td>
+      <td>{{ item.state }}</td>
+      <td><code>{{ item.assigned_to or "—" }}</code></td>
+      <td>desconhecido: sem evento de início do bloqueio</td>
+      <td><code>evidence/items/{{ item.id }}.json</code></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="selecao">Ausência de registro não prova ausência de impedimento, e o responsável pela resolução não é inferido do responsável pelo item.</p>
+{% else %}
+<p class="indisponivel">Nenhum item marcado como impedido pela origem configurada. Isso não prova ausência de impedimentos.</p>
+{% endif %}
+
+<h2>Blocos que dependem de histórico</h2>
+<p class="indisponivel">
+  Burnup, burndown, baseline de horas, duração de bloqueios, aging e tempo em fila ficam
+  indisponíveis nesta versão: exigem coortes e cortes históricos (v0.2). Nenhum dia passado é
+  desenhado por interpolação e nenhum gráfico fictício é exibido.
+</p>
+
+<h2>Achados</h2>
+{% if report.findings %}
+<div class="envelope">
+<table>
+  <caption>Achados determinísticos com item, evidência e o que confirmar</caption>
+  <thead><tr><th>Severidade</th><th>Regra</th><th>Mensagem</th><th>Itens</th><th>Evidência</th><th>A confirmar</th></tr></thead>
+  <tbody>
+  {% for finding in report.findings %}
+    <tr>
+      <td>{{ finding.severity }}</td><td><code>{{ finding.rule_id }}</code></td>
+      <td>{{ finding.message }}</td>
+      <td>{{ finding.item_ids | join(", ") or "—" }}</td>
+      <td>{{ finding.evidence | join(", ") or "—" }}</td>
+      <td>{{ finding.condition_to_confirm or "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="indisponivel">Nenhum achado determinístico nesta execução.</p>
+{% endif %}
+
+<h2>Limitações</h2>
+<ul>
+{% for note in report.limitations %}<li>{{ note }}</li>{% endfor %}
+{% if not report.limitations %}<li>Nenhuma limitação registrada.</li>{% endif %}
+</ul>
+
+<h2>Decisões humanas</h2>
+<div class="acoes-pagina">
+  <p class="selecao">
+    Rascunho de decisões fica apenas na memória desta página. Fechar sem exportar não preserva
+    alterações, e nada é sincronizado nem escrito no Azure DevOps.
+  </p>
+  <button type="button" id="exportar-decisoes">Exportar rascunho de decisões (JSON)</button>
+  <pre id="saida-decisoes" hidden></pre>
+</div>
+
+<p class="rodape">
+  Nenhum número desta página foi calculado por modelo de linguagem. Classes de carga não medem
+  produtividade individual e ausência de registro não é ociosidade. Os mesmos números estão em
+  <code>metrics.json</code> e em <code>report.md</code> desta execução.
+</p>
+</main>
+<script>
+(function () {
+  "use strict";
+  var candidatos = {{ candidates_json }};
+  var runId = {{ run_id_json }};
+  var linhas = Array.prototype.slice.call(
+    document.querySelectorAll("#tabela-pessoas tbody tr")
+  );
+  var pessoa = document.getElementById("filtro-pessoa");
+  var classe = document.getElementById("filtro-classe");
+  var selecao = document.getElementById("selecao-ativa");
+
+  function aplicar() {
+    var termo = (pessoa.value || "").toLowerCase();
+    var alvo = classe.value || "";
+    var visiveis = 0;
+    linhas.forEach(function (linha) {
+      var casaPessoa = linha.dataset.pessoa.toLowerCase().indexOf(termo) !== -1;
+      var casaClasse = !alvo || linha.dataset.classe === alvo;
+      var mostrar = casaPessoa && casaClasse;
+      linha.hidden = !mostrar;
+      if (mostrar) { visiveis += 1; }
+    });
+    var filtroAtivo = termo || alvo;
+    selecao.textContent = filtroAtivo
+      ? "Filtro ativo (" + (alvo || "qualquer classe") + "): " + visiveis +
+        " de " + linhas.length + " pessoas. O total da sprint continua sendo o da tabela de capacidade."
+      : "Sem filtro: " + linhas.length + " pessoas exibidas.";
+  }
+
+  pessoa.addEventListener("input", aplicar);
+  classe.addEventListener("change", aplicar);
+
+  document.getElementById("exportar-decisoes").addEventListener("click", function () {
+    var registro = {
+      decisions: candidatos.map(function (candidato) {
+        return {
+          id: candidato.id,
+          origin_run_id: runId,
+          finding_id: candidato.rule_id,
+          statement: candidato.action,
+          status: "proposta",
+          evidence: candidato.evidence,
+          recorded_at: new Date().toISOString(),
+          recorded_by: "rascunho-local"
+        };
+      })
+    };
+    var saida = document.getElementById("saida-decisoes");
+    saida.textContent = JSON.stringify(registro, null, 2);
+    saida.hidden = false;
+  });
+})();
+</script>
+</body>
+</html>

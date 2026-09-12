@@ -260,7 +260,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T22 — Entregar HTML de sprint e apoio à decisão
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — disponível pela CLI; distribuição pelos três bundles depende de T13/T26/T27
 - Release/Fase: v0.1 / F3; enriquecimento histórico por T21 na v0.2.
 - Objetivo: apoiar acompanhamento de entrega, planejamento de horas, desvios, gargalos, impedimentos e decisões em um relatório navegável.
 - Base no IPD: 4.1.6, 13 e contrato docs/sprint-report.md.
@@ -268,11 +268,11 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T12, T26, T27.
 - Entregável esperado: HTML offline, candidatos de ação com evidência e registro humano exportável/importável, disponível pelos três bundles locais.
 - Check de conclusão:
-  - [ ] DOD13 atendido: objetivo informado, entrega atual, capacidade/carga, gap, impedimentos explícitos e até três decisões prioritárias.
-  - [ ] V15 impede execução de conteúdo do ADO; tabelas equivalentes, teclado, impressão e filtros são verificados.
-  - [ ] V29–V31 distinguem fatos, estimativas incompletas, histórico ausente e hipóteses; não desenhar passado fictício.
-  - [ ] V32 preserva IDs/autoria na exportação/importação, sem sincronização implícita nem escrita no ADO.
-  - [ ] Métricas coincidem com JSON/Markdown; links de detalhes rastreiam execução e limites.
+  - [x] DOD13 atendido: objetivo informado, entrega atual, capacidade/carga, gap, impedimentos explícitos e até três decisões prioritárias (objetivo aparece como 'não informado' quando não há fonte configurada).
+  - [x] V15 impede execução de conteúdo do ADO; tabelas equivalentes, teclado, impressão e filtros são verificados (escape do Jinja2 com autoescape; único script é o local).
+  - [x] V29 a V31 distinguem fatos, estimativas incompletas, histórico ausente e hipóteses (gap +24 h com 120% parcial; variação de esforço e blocos históricos declarados indisponíveis).
+  - [x] V32 preserva IDs/autoria na exportação/importação, sem sincronização implícita nem escrita no ADO (dedupe por ID estável; rascunho do HTML só em memória).
+  - [x] Métricas coincidem com JSON/Markdown; links de detalhes rastreiam execução e limites (mesmos valores de metrics.json; evidência por item).
 - Riscos ou atenções: baseline, burnup/burndown histórico, duration de bloqueios e variação de esforço exigem T17–T21; v0.1 informa indisponibilidade. A recomendação não executa a mudança.
 
 ### T14 — Executar validação transversal da v0.1

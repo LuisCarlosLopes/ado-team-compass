@@ -24,9 +24,10 @@ from ado_team_compass.contracts.metrics import MetricSet
 from ado_team_compass.contracts.narrative import Narrative
 from ado_team_compass.contracts.report import TeamReport
 from ado_team_compass.contracts.run import RunState
+from ado_team_compass.decisions import build_candidates
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 from ado_team_compass.metrics.engine import build_team_report
-from ado_team_compass.reporting import build_summary, render_markdown
+from ado_team_compass.reporting import build_summary, render_html, render_markdown
 from ado_team_compass.reporting.markdown import render_narrative_section
 from ado_team_compass.reporting.narrative import validate_narrative
 from ado_team_compass.runs import RunStore, write_evidence
@@ -146,6 +147,19 @@ def _persist(
         ),
     }
     store.write_text(directory, "report.md", markdown)
+    candidates = build_candidates(
+        report, blocked_item_ids=tuple(item.id for item in facts.items if item.blocked)
+    )
+    hashes["candidates.json"] = store.write_json(
+        directory,
+        "candidates.json",
+        [candidate.model_dump(mode="json") for candidate in candidates],
+    )
+    store.write_text(
+        directory,
+        "report.html",
+        render_html(report, items=facts.items, candidates=candidates),
+    )
 
     partial = tuple(
         dict.fromkeys(

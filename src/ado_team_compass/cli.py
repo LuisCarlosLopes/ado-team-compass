@@ -23,12 +23,16 @@ from ado_team_compass.contracts.config import (
     McpTransport,
     TeamConfig,
 )
+from ado_team_compass.contracts.decisions import DecisionLog
+from ado_team_compass.contracts.facts import FactSet
 from ado_team_compass.contracts.report import TeamReport
+from ado_team_compass.decisions import export_decisions, import_decisions, merge_decisions
 from ado_team_compass.diagnostics import TransportFactory, diagnose
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 from ado_team_compass.pipeline import RunOutcome, execute_status, replay_run
-from ado_team_compass.reporting import render_markdown
+from ado_team_compass.reporting import render_html, render_markdown
 from ado_team_compass.runs import RunStore
+from ado_team_compass.runs.store import StoredRun
 
 __all__ = ["COMMANDS", "build_parser", "main"]
 
@@ -344,6 +348,77 @@ def _handle_evidence(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def _handle_render(args: argparse.Namespace) -> ExitCode:
+    """Gera o HTML operacional de uma execução persistida, sem nova leitura do MCP."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run = _run_for(args, resolved, store)
+    report = TeamReport.model_validate(run.artifact("report.json"))
+    facts = FactSet.model_validate(run.artifact("facts.json"))
+    html = render_html(report, items=facts.items)
+    destination = args.output or (run.directory / "report.html")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(html, encoding="utf-8")
+    sys.stdout.write(
+        json.dumps(
+            {"run_id": report.run_id, "html": str(destination)}, ensure_ascii=False, indent=2
+        )
+        + "\n"
+    )
+    return ExitCode.OK
+
+
+def _handle_decisions(args: argparse.Namespace) -> ExitCode:
+    """Exporta ou importa o registro humano de decisões, sempre de forma explícita."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run = _run_for(args, resolved, store)
+    source: Path | None = getattr(args, "import_file", None)
+    existing_path = run.directory / "decisions.json"
+    existing = import_decisions(existing_path) if existing_path.is_file() else DecisionLog()
+    if source is not None:
+        imported = import_decisions(source)
+        merged = merge_decisions(existing, imported)
+        export_decisions(merged, existing_path)
+        _emit(
+            {
+                "run_id": run.manifest.run_id,
+                "imported": len(imported.decisions),
+                "total": len(merged.decisions),
+                "path": str(existing_path),
+            },
+            args,
+        )
+        return ExitCode.OK
+    destination = args.output or existing_path
+    export_decisions(existing, destination)
+    _emit(
+        {
+            "run_id": run.manifest.run_id,
+            "decisions": len(existing.decisions),
+            "candidates": run.artifact("candidates.json"),
+            "path": str(destination),
+        },
+        args,
+    )
+    return ExitCode.OK
+
+
+def _run_for(args: argparse.Namespace, resolved: ResolvedConfig, store: RunStore) -> StoredRun:
+    run_id = getattr(args, "run", None)
+    if run_id is not None:
+        return store.load(run_id)
+    team = _select_team(resolved, args)
+    run = store.latest(team.alias)
+    if run is None:
+        raise ConfigError(
+            "E_RUN_INEXISTENTE",
+            f"Não há execução persistida para a equipe {team.alias!r}.",
+            remediation="Execute 'status' antes desta entrada.",
+        )
+    return run
+
+
 def _handle_replay(args: argparse.Namespace) -> ExitCode:
     """Recalcula métricas com entradas congeladas e reporta divergências."""
     resolved = _require_config(args)
@@ -491,8 +566,8 @@ COMMANDS: tuple[_Command, ...] = (
     ),
     _Command("replay", "Recalcula métricas com entradas congeladas", "v0.1", _handle_replay),
     _Command("demo", "Gera relatório com dados sintéticos, sem rede", "v0.1", _handle_demo),
-    _Command("render", "Gera o HTML operacional offline", "v0.1", None),
-    _Command("decisions", "Exporta e importa decisões humanas", "v0.1", None),
+    _Command("render", "Gera o HTML operacional offline", "v0.1", _handle_render),
+    _Command("decisions", "Exporta e importa decisões humanas", "v0.1", _handle_decisions),
     _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", None),
     _Command("planning", "Achados de regras de planejamento", "v0.2", None),
     _Command("run-scheduled", "Execução agendada não interativa", "v0.3", None),
@@ -508,6 +583,12 @@ def _add_common_options(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--run", help="ID de uma execução persistida")
     parser.add_argument("--reference", help="Referência de evidência dentro da execução")
+    parser.add_argument(
+        "--import-file",
+        dest="import_file",
+        type=Path,
+        help="Arquivo de decisões humanas a importar explicitamente",
+    )
     parser.add_argument("--team", help="Equipe por ID ou alias inequívoco")
     parser.add_argument("--period", help="Período da análise (ex.: iteração atual ou ISO)")
     parser.add_argument("--as-of", help="Instante de referência ISO-8601 do cálculo")

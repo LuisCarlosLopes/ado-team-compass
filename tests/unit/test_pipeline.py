@@ -52,6 +52,7 @@ def test_execution_persists_every_artifact_with_hashes(tmp_path):
     outcome, store, _ = _execute(tmp_path)
     run = store.load(outcome.run.manifest.run_id)
     assert sorted(run.manifest.artifact_hashes) == [
+        "candidates.json",
         "facts.json",
         "metrics.json",
         "report.json",
@@ -59,6 +60,7 @@ def test_execution_persists_every_artifact_with_hashes(tmp_path):
     ]
     assert run.verify() == ()
     assert (run.directory / "report.md").is_file()
+    assert (run.directory / "report.html").is_file()
     assert (run.directory / "evidence" / "items" / "101.json").is_file()
 
 
