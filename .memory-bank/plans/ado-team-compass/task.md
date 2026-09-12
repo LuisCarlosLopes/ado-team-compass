@@ -164,7 +164,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T10 — Implementar consolidação entre equipes
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — cálculo puro; integração com coleta real depende de T05/T06
 - Release/Fase: v0.1 / F2
 - Objetivo: expor reservas sobrepostas e carga observada sem fabricar disponibilidade.
 - Base no IPD: 4.1.4; arquitetura D04.
@@ -172,10 +172,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T09, T06.
 - Entregável esperado: visão por pessoa na organização selecionada, com cobertura de equipes e janela comum.
 - Check de conclusão:
-  - [ ] V04 aponta reserva acima da disponibilidade pessoal.
-  - [ ] V05 deixa utilização global nula sem disponibilidade validada.
-  - [ ] V06 deduplica itens e preserva múltiplos pertencimentos.
-  - [ ] Projetos/sprints diferentes e acesso parcial têm cobertura explícita; V08 coberto.
+  - [x] V04 aponta reserva acima da disponibilidade pessoal (60 reservados contra 30 informados).
+  - [x] V05 deixa utilização global nula sem disponibilidade validada (sem inferir jornada padrão).
+  - [x] V06 deduplica itens e preserva múltiplos pertencimentos (`deduplicate_items` une `team_memberships`).
+  - [x] Projetos/sprints diferentes e acesso parcial têm cobertura explícita; V08 coberto (união de dias elegíveis; unidades incompatíveis não agregam).
 - Riscos ou atenções: não consolidar pessoas de organizações diferentes por nome ou e-mail.
 
 ### T11 — Persistir execução e gerar relatório determinístico
