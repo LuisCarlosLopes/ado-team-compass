@@ -21,7 +21,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T01 — Criar pacote e infraestrutura de qualidade
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F0
 - Objetivo: estabelecer projeto instalável e verificação automatizada antes das métricas.
 - Base no IPD: 2.2, 3.1, 4.3 e 4.4.
@@ -29,9 +29,9 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: nenhuma.
 - Entregável esperado: pacote Python, lock de dependências, CLI mínima, CI e fixture sintética mínima.
 - Check de conclusão:
-  - [ ] Pacote construído instala em ambiente isolado e informa sua versão.
-  - [ ] Testes, estilo e checagem de tipos executam no CI sem credenciais.
-  - [ ] Git ignora somente dados de execução e overrides locais; exemplo compartilhável continua versionável.
+  - [x] Pacote construído instala em ambiente isolado e informa sua versão (`uv build` + wheel instalada em venv isolada: `ado-team-compass version`).
+  - [x] Testes, estilo e checagem de tipos executam no CI sem credenciais (`.github/workflows/ci.yml`: ruff, mypy, pytest `-m "not integration"`).
+  - [x] Git ignora somente dados de execução e overrides locais; exemplo compartilhável continua versionável (`.gitignore`, `examples/config/`).
 - Riscos ou atenções: não confundir ausência de infraestrutura prévia com dispensa de testes.
 
 ### T02 — Implementar schemas e resolução de configuração
