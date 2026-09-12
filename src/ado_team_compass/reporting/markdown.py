@@ -12,9 +12,10 @@ from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescap
 
 from ado_team_compass.contracts.common import Coverage, Quantity
 from ado_team_compass.contracts.metrics import Metric
+from ado_team_compass.contracts.narrative import Narrative
 from ado_team_compass.contracts.report import TeamReport
 
-__all__ = ["render_markdown"]
+__all__ = ["render_markdown", "render_narrative_section"]
 
 
 def _fmt_quantity(quantity: Quantity | None) -> str:
@@ -48,6 +49,42 @@ def _fmt_metric(metric: Metric) -> str:
     if metric.quantity is None:
         return "—"
     return _fmt_quantity(metric.quantity)
+
+
+def render_narrative_section(narrative: Narrative) -> str:
+    """Seção de interpretação, sempre separada dos números e marcada como hipótese."""
+    lines = [
+        "",
+        "## Interpretação (validada contra a execução)",
+        "",
+        "Hipóteses e ações abaixo não são fatos: cada uma cita a métrica ou a evidência que a",
+        "sustenta e indica o que ainda precisa ser confirmado.",
+        "",
+    ]
+    if narrative.hypotheses:
+        lines.append("### Hipóteses")
+        lines.append("")
+        for hypothesis in narrative.hypotheses:
+            references = ", ".join(hypothesis.references)
+            lines.append(f"- {hypothesis.statement} (referências: {references})")
+        lines.append("")
+    if narrative.actions:
+        lines.append("### Ações candidatas")
+        lines.append("")
+        for action in narrative.actions:
+            references = ", ".join(action.references)
+            lines.append(
+                f"- {action.statement} — a confirmar: {action.condition_to_confirm} "
+                f"(referências: {references})"
+            )
+        lines.append("")
+    if narrative.rejected_fragments:
+        lines.append(
+            f"{len(narrative.rejected_fragments)} trechos foram descartados por não serem "
+            "rastreáveis; veja `narrative.json`."
+        )
+        lines.append("")
+    return "\n".join(lines)
 
 
 def render_markdown(report: TeamReport) -> str:

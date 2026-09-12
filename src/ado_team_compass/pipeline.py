@@ -21,15 +21,18 @@ from ado_team_compass.contracts.common import Window
 from ado_team_compass.contracts.config import TeamConfig
 from ado_team_compass.contracts.facts import FactSet
 from ado_team_compass.contracts.metrics import MetricSet
+from ado_team_compass.contracts.narrative import Narrative
 from ado_team_compass.contracts.report import TeamReport
 from ado_team_compass.contracts.run import RunState
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 from ado_team_compass.metrics.engine import build_team_report
 from ado_team_compass.reporting import build_summary, render_markdown
+from ado_team_compass.reporting.markdown import render_narrative_section
+from ado_team_compass.reporting.narrative import validate_narrative
 from ado_team_compass.runs import RunStore, write_evidence
 from ado_team_compass.runs.store import StoredRun, run_id_for
 
-__all__ = ["RunOutcome", "execute_status", "replay_run", "source_identity"]
+__all__ = ["RunOutcome", "attach_narrative", "execute_status", "replay_run", "source_identity"]
 
 
 @dataclass(frozen=True)
@@ -173,6 +176,30 @@ def _persist(
     )
     exit_code = ExitCode.PARTIAL_CAPABILITY if partial else ExitCode.OK
     return RunOutcome(run=run, report=report, exit_code=exit_code, markdown=markdown)
+
+
+def attach_narrative(
+    store: RunStore,
+    run_id: str,
+    candidate: Mapping[str, Any],
+) -> Narrative:
+    """Valida uma interpretação contra a execução e a grava ao lado dos artefatos.
+
+    Falha de narrativa nunca invalida o relatório determinístico: os trechos reprovados
+    ficam registrados e o Markdown continua utilizável.
+    """
+    run = store.load(run_id)
+    report = TeamReport.model_validate(run.artifact("report.json"))
+    narrative = validate_narrative(candidate, report)
+    store.write_json(run.directory, "narrative.json", narrative.model_dump(mode="json"))
+    if narrative.hypotheses or narrative.actions:
+        store.write_text(
+            run.directory,
+            "report.md",
+            (run.directory / "report.md").read_text(encoding="utf-8")
+            + render_narrative_section(narrative),
+        )
+    return narrative
 
 
 def replay_run(

@@ -196,7 +196,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T12 — Delimitar e validar interpretação do LLM
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026) — validação estrutural e por cenários; inspeção semântica no piloto continua pendente
 - Release/Fase: v0.1 / F3
 - Objetivo: acrescentar interpretação sem inventar números ou causalidade.
 - Base no IPD: 4.1.3, 4.1.4 e 5.
@@ -204,10 +204,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T11.
 - Entregável esperado: contrato de narrativa, validação de referências e conjunto de avaliações.
 - Check de conclusão:
-  - [ ] Fatos, hipóteses e ações são campos separados.
-  - [ ] V15 e V16 rejeitam instruções em dados e referências inexistentes.
-  - [ ] Pedidos de ranking individual não geram classificação de produtividade.
-  - [ ] Falha de narrativa preserva relatório determinístico.
+  - [x] Fatos, hipóteses e ações são campos separados (`narrative.json`; seção Markdown separada dos números).
+  - [x] V15 e V16 rejeitam instruções em dados e referências inexistentes (número sem correspondência, métrica/item inexistente e trecho sem referência).
+  - [x] Pedidos de ranking individual não geram classificação de produtividade (lista de afirmações proibidas com testes por frase).
+  - [x] Falha de narrativa preserva relatório determinístico (métricas inalteradas; trechos reprovados registrados).
 - Riscos ou atenções: validação estrutural não prova verdade de toda prosa; incluir avaliação semântica por cenários e inspeção no piloto.
 
 ### T13 — Criar integração Claude Code
