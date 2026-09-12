@@ -1,10 +1,10 @@
-# Checklist de implementação do ado-team-compass — v1.0
+# Checklist de implementação do ado-team-compass — v1.2
 
 IPD de origem: [plan.md](plan.md) · Decisões: [architecture.md](architecture.md) · Data: 12/09/2026.
 
 ## Resumo executivo
 
-Objetivo: construir e distribuir visibilidade de entrega ADO com evidência auditável e adaptação por equipe. Complexidade L. São 25 tarefas, mais numerosas que a heurística usual porque cobrem quatro releases; 16 entregam a v0.1. Todas estão pendentes: este documento não registra implementação executada.
+Objetivo: construir e distribuir visibilidade de entrega ADO com evidência auditável e adaptação por equipe. Complexidade L no núcleo / XL no escopo remoto. São 28 tarefas em cinco releases; 19 entregam a v0.1. T26/T27 aparecem antes de T14 para preservar os IDs anteriores e respeitar dependências. Todas estão pendentes: este documento não registra implementação executada.
 
 Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de alterações do plano, V aos cenários de teste e DOD aos critérios de pronto. Testes e documentação acompanham a responsabilidade implementada, além das validações transversais explicitamente separadas.
 
@@ -216,15 +216,64 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.1 / F3
 - Objetivo: executar os casos principais por linguagem natural e entradas estáveis.
 - Base no IPD: 4.1.1, 4.3; arquitetura D01 e D07.
-- Áreas impactadas: M02, M12, M14, M16.
+- Áreas impactadas: M02, M12, M21, M14, M16.
 - Dependências: T12.
-- Entregável esperado: manifesto e skills de setup, diagnóstico, situação atual, daily resumido e alocação.
+- Entregável esperado: manifesto Claude e fonte compartilhada de instruções de setup, diagnóstico, situação atual, daily resumido e alocação, consumida pelos demais bundles.
 - Check de conclusão:
   - [ ] Skills usam motor instalado e não dependem da pasta de desenvolvimento.
   - [ ] Argumentos e caminhos com espaços são tratados sem interpolação insegura.
   - [ ] Invocações naturais em português selecionam o comportamento esperado.
   - [ ] Integração funciona sem MCP e apresenta motivo quando uma métrica não se aplica.
 - Riscos ou atenções: não duplicar comandos e skills desnecessariamente; não hardcodar caminhos do autor.
+
+### T26 — Criar bundle Antigravity
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3
+- Objetivo: executar o mesmo produto no Antigravity IDE sem instruções exclusivas de Claude.
+- Base no IPD: 4.1.7; arquitetura D09.
+- Áreas impactadas: M21, M14, M16.
+- Dependências: T13.
+- Entregável esperado: pacote com manifesto próprio, skills geradas da fonte comum e guia de instalação por versão de IDE.
+- Check de conclusão:
+  - [ ] Instalação em perfil limpo descobre skills e encontra o motor fora da árvore de desenvolvimento.
+  - [ ] V25 reproduz métricas e limites da fixture usada no Claude; V26 isola atualização e remoção.
+  - [ ] Nenhuma variável CLAUDE_PLUGIN_ROOT ou sintaxe de ferramenta Claude vaza para o bundle.
+  - [ ] Caminhos com espaços, erros de autenticação e dados parciais são avaliados no host real.
+- Riscos ou atenções: testar o IDE explicitamente; compatibilidade com CLI/SDK não é inferida.
+
+### T27 — Criar bundle Codex/OpenAI
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3
+- Objetivo: permitir uso com modelos GPT no ambiente Codex sem duplicar lógica.
+- Base no IPD: 4.1.7; arquitetura D09.
+- Áreas impactadas: M22, M14, M16.
+- Dependências: T13.
+- Entregável esperado: manifesto Codex, skills da fonte comum, instalação em host local suportado e guia próprio.
+- Check de conclusão:
+  - [ ] Bundle inclui manifesto e assets em formato válido para a versão testada.
+  - [ ] V25 e V26 passam no Codex CLI e na superfície desktop suportada, com versão registrada.
+  - [ ] Não exige MCP nem chave de API OpenAI adicional para executar o núcleo local.
+  - [ ] Diagnóstico não promete compatibilidade com GPT personalizado ou extensão IDE a partir do teste local.
+- Riscos ou atenções: modelo é configuração do host; não fixar identificador GPT no motor.
+
+### T22 — Entregar HTML de sprint e apoio à decisão
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3; enriquecimento histórico por T21 na v0.2.
+- Objetivo: apoiar acompanhamento de entrega, planejamento de horas, desvios, gargalos, impedimentos e decisões em um relatório navegável.
+- Base no IPD: 4.1.6, 13 e contrato docs/sprint-report.md.
+- Áreas impactadas: M02, M03, M11, M12, M21, M22, M24, M14, M16.
+- Dependências: T12, T26, T27.
+- Entregável esperado: HTML offline, candidatos de ação com evidência e registro humano exportável/importável, disponível pelos três bundles locais.
+- Check de conclusão:
+  - [ ] DOD13 atendido: objetivo informado, entrega atual, capacidade/carga, gap, impedimentos explícitos e até três decisões prioritárias.
+  - [ ] V15 impede execução de conteúdo do ADO; tabelas equivalentes, teclado, impressão e filtros são verificados.
+  - [ ] V29–V31 distinguem fatos, estimativas incompletas, histórico ausente e hipóteses; não desenhar passado fictício.
+  - [ ] V32 preserva IDs/autoria na exportação/importação, sem sincronização implícita nem escrita no ADO.
+  - [ ] Métricas coincidem com JSON/Markdown; links de detalhes rastreiam execução e limites.
+- Riscos ou atenções: baseline, burnup/burndown histórico, duration de bloqueios e variação de esforço exigem T17–T21; v0.1 informa indisponibilidade. A recomendação não executa a mudança.
 
 ### T14 — Executar validação transversal da v0.1
 
@@ -233,10 +282,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Objetivo: provar integridade, reprodutibilidade e portabilidade do candidato.
 - Base no IPD: 3.1, 5 e 6.
 - Áreas impactadas: M10, M14, M15, M16.
-- Dependências: T13.
+- Dependências: T13, T26, T27, T22.
 - Entregável esperado: relatório de testes, retenção/purga validada e medição offline.
 - Check de conclusão:
-  - [ ] V01–V16 passam; evidências numéricas têm expectativa revisada independentemente.
+  - [ ] V01–V16, V25–V26 e V29–V32 aplicáveis à v0.1 passam nos hosts aplicáveis; evidências numéricas têm expectativa revisada independentemente.
   - [ ] Verificação de segredos cobre falhas e artefatos.
   - [ ] Replay, compatibilidade de schema e retenção de 30 dias estão verificados.
   - [ ] Benchmark de referência é registrado; desvios da meta têm causa e decisão.
@@ -248,11 +297,11 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.1 / F4
 - Objetivo: tornar a instalação reproduzível fora do ambiente de desenvolvimento.
 - Base no IPD: 4.3, 4.4 e 9.
-- Áreas impactadas: M01, M12, M13, M14, M15, M16.
+- Áreas impactadas: M01, M12, M13, M21, M22, M14, M15, M16.
 - Dependências: T14.
 - Entregável esperado: wheel, bundle da integração com dependências fixadas, catálogo, checksums e guia de instalação/rollback.
 - Check de conclusão:
-  - [ ] Release candidata instala em Windows, macOS e Linux sem editar código.
+  - [ ] Motor instala em Windows, macOS e Linux; cada bundle instala nas combinações host/SO declaradas na matriz, sem editar código.
   - [ ] V21 valida atualização, compatibilidade e rollback preservando dados.
   - [ ] Instalação assistida/offline e proxy têm procedimentos explícitos.
   - [ ] Demo não requer token nem acesso ao ADO.
@@ -271,7 +320,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] Três perfis funcionam com configuração, sem ramificação por cliente.
   - [ ] Totais completos e amostra de itens são reconciliados; divergências são explicadas ou corrigidas.
   - [ ] Usuário novo instala demo em até 15 minutos com pré-requisitos presentes, ou a meta é revisada com evidência.
-  - [ ] DOD01–DOD10 atendidos; destino e licença definidos antes de qualquer publicação pública.
+  - [ ] DOD01–DOD10, DOD13 e DOD16 atendidos; destino e licença definidos antes de qualquer publicação pública.
 - Riscos ou atenções: indisponibilidade do piloto não autoriza afirmar validação real; publicação externa não é ação implícita desta tarefa de documentação.
 
 ### T17 — Adicionar coleta histórica consistente
@@ -298,9 +347,9 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Base no IPD: 4.1.5.
 - Áreas impactadas: M17, M14, M16.
 - Dependências: T17.
-- Entregável esperado: baseline, say/do, entradas/saídas, carry-over e pontos congelados.
+- Entregável esperado: baseline, say/do, entradas/saídas, carry-over, pontos/estimativas congelados e variação de esforço separada de mudança de escopo e capacidade.
 - Check de conclusão:
-  - [ ] V17 e V19 validam reestimativa, entrada/saída e denominador zero.
+  - [ ] V17, V19 e V30 validam reestimativa, entrada/saída, coorte de horas e denominador zero.
   - [ ] Baseline técnica é distinguida de compromisso confirmado.
   - [ ] Itens adicionados não aumentam cumprimento da baseline original.
   - [ ] Percentuais têm coorte, numerador, denominador e corte disponíveis.
@@ -330,9 +379,9 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Base no IPD: 4.1.5.
 - Áreas impactadas: M17, M14, M16.
 - Dependências: T17.
-- Entregável esperado: throughput, lead/cycle time, aging, reaberturas e percentis.
+- Entregável esperado: throughput, lead/cycle time, aging, reaberturas, duração de impedimentos quando há eventos, filas por etapa e percentis.
 - Check de conclusão:
-  - [ ] V18 prova a política de primeira conclusão e reabertura.
+  - [ ] V18 prova a política de primeira conclusão e reabertura; V31 impede inferir duração de bloqueio pela última alteração genérica.
   - [ ] Percentil informa método, unidade, amostra e janela; amostra vazia é nula.
   - [ ] Períodos sem entrega permanecem na série.
   - [ ] Mudança de política/processo é identificada e não produz comparação silenciosa.
@@ -344,31 +393,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.2 / F5
 - Objetivo: entregar histórico e planejamento com evidência equivalente à v0.1.
 - Base no IPD: 3.2, 4.1.5 e 9.
-- Áreas impactadas: M11, M12, M14, M16.
+- Áreas impactadas: M11, M12, M21, M22, M24, M14, M16.
 - Dependências: T18, T19, T20.
-- Entregável esperado: relatórios/skills de histórico e planejamento e registro de validação.
+- Entregável esperado: relatórios e skills de histórico/planejamento nos três bundles, gerados da fonte comum, e registro de validação.
 - Check de conclusão:
-  - [ ] V17–V20 passam e DOD11–DOD12 são atendidos.
+  - [ ] V17–V20 e V30–V31 passam; HTML recebe burnup/burndown, baseline de esforço e tendências quando disponíveis; DOD11–DOD12 são atendidos.
   - [ ] Série de seis sprints ou janela de fluxo equivalente é reconciliada em equipe com histórico disponível.
   - [ ] Regressões da v0.1 passam sem exigir histórico.
   - [ ] Dados insuficientes limitam a saída de modo acionável.
 - Riscos ou atenções: evolução de release exige reuso do processo de pacote e atualização de versão.
-
-### T22 — Gerar dashboard HTML offline
-
-- Status: PENDENTE
-- Release/Fase: v0.3 / F6
-- Objetivo: facilitar leitura e compartilhamento controlado da mesma execução.
-- Base no IPD: 4.1.6.
-- Áreas impactadas: M02, M11, M14, M16.
-- Dependências: T21.
-- Entregável esperado: HTML autocontido, acessível e navegável localmente.
-- Check de conclusão:
-  - [ ] DOD13 atendido sem CDN ou conexão de rede.
-  - [ ] Números coincidem com JSON/Markdown; limitações não somem nos gráficos.
-  - [ ] V15 garante escaping e ausência de execução de conteúdo do ADO.
-  - [ ] Layout funciona em tamanhos de tela previstos e possui tabela equivalente aos gráficos.
-- Riscos ou atenções: arquivo local não implica hospedagem nem URL persistente.
 
 ### T23 — Implementar executor agendável e identidade de aplicação
 
@@ -418,6 +451,23 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] DOD15 atendido; cobertura empírica é publicada e resultado permanece experimental se não calibrado.
 - Riscos ou atenções: percentil é cenário probabilístico condicionado ao modelo, não garantia de prazo.
 
+### T28 — Integrar GPT personalizado via API autenticada
+
+- Status: PENDENTE
+- Release/Fase: v0.3.1 / F6b
+- Objetivo: consultar no ChatGPT os relatórios do motor por GPT Actions, sem executar scripts locais.
+- Base no IPD: 4.1.7; arquitetura D09; matriz de compatibilidade.
+- Áreas impactadas: M23, M14, M16; extra de dependências em M01.
+- Dependências: T24; domínio HTTPS, provedor OAuth e ambiente de teste com Actions habilitado.
+- Entregável esperado: gateway dedicado por organização, contrato OpenAPI, instruções do GPT, template de implantação e testes de autorização.
+- Check de conclusão:
+  - [ ] GPT lista apenas equipes autorizadas e consulta relatório/evidência por referências válidas.
+  - [ ] V27 bloqueia token inválido, equipe/run não autorizado e usuário revogado, inclusive em links de artefato.
+  - [ ] V28 preserva timestamp, status parcial, ausência e limites de resposta; nenhum dado é calculado pelo GPT.
+  - [ ] Token ADO fica no coletor e não entra em instruções, OpenAPI ou respostas.
+  - [ ] DOD17 é demonstrado com usuário permitido e negado no ambiente real; falhas de deploy e rollback são documentadas.
+- Riscos ou atenções: não ativar exposição remota ou publicar GPT automaticamente; compatibilidade depende de implantação e permissões do workspace. SDK/OpenAI API para chamar modelos é escopo separado.
+
 ## Cobertura do DoD
 
 | Critério | Tarefas responsáveis |
@@ -437,10 +487,12 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 | DOD13 — HTML | T22 |
 | DOD14 — operação | T23, T24 |
 | DOD15 — forecast | T25 |
+| DOD16 — paridade de hosts | T13, T26, T27, T14, T15, T16 |
+| DOD17 — GPT remoto | T28 |
 
 ## Lacunas e pré-condições operacionais
 
-Não há código existente nem credenciais verificadas. T01 inicia sem depender dessas credenciais. Acesso real e equipes piloto são necessários para concluir T16; histórico real é necessário para T21; identidade de aplicação e destino privado são necessários para a validação operacional de T23/T24. Nome de repositório e licença devem ser definidos antes da publicação pública. Nenhuma dessas validações foi executada durante a criação deste plano.
+Não há código existente nem credenciais verificadas. T01 inicia sem depender dessas credenciais. Acesso real e equipes piloto são necessários para concluir T16; histórico real é necessário para T21; identidade de aplicação e destino privado são necessários para a validação operacional de T23/T24. Repositório privado definido: LuisCarlosLopes/ado-team-compass. Licença continua necessária antes de publicação pública; domínio HTTPS/provedor OAuth e conta com Actions são pré-condições operacionais de T28. Nenhuma dessas validações foi executada durante a criação deste plano.
 
 ## Matriz de rastreabilidade
 
@@ -458,16 +510,19 @@ Não há código existente nem credenciais verificadas. T01 inicia sem depender 
 | T10 | 4.1.4 | M07, M09, M14, M16 | V04, V05, V06, V08; DOD05 |
 | T11 | 4.1.1, 4.1.3 | M02, M10, M11, M14, M16 | V14; DOD06 |
 | T12 | 4.1.3, 5 | M03, M11, M14, M16 | V15, V16; DOD07 |
-| T13 | 4.1.1, 4.3 | M02, M12, M14, M16 | V16; DOD07 |
-| T14 | 3.1, 5, 6 | M10, M14, M15, M16 | V01–V16; DOD08, DOD09 |
-| T15 | 4.3, 4.4, 9 | M01, M12, M13, M14, M15, M16 | V21; DOD01, DOD10 |
+| T13 | 4.1.1, 4.3, 4.1.7 | M02, M12, M21, M14, M16 | V16, V25; DOD07, DOD16 |
+| T14 | 3.1, 5, 6, 13 | M10, M14, M15, M16 | V01–V16, V25–V26, V29–V32; DOD08, DOD09, DOD13, DOD16 |
+| T15 | 4.3, 4.4, 9 | M01, M12, M13, M21, M22, M14, M15, M16 | V21, V26; DOD01, DOD10, DOD16 |
 | T16 | 1.2, 3.1, 9 | M14, M16 | V10, V21; DOD01–DOD10 |
 | T17 | 4.1.5, 4.4 | M02, M03, M06, M07, M14, M16 | V17; DOD11 |
-| T18 | 4.1.5 | M17, M14, M16 | V17, V19; DOD11 |
+| T18 | 4.1.5, 13 | M17, M14, M16 | V17, V19, V30; DOD11 |
 | T19 | 4.1.5 | M02, M04, M11, M18, M14, M16 | V20; DOD12 |
-| T20 | 4.1.5 | M17, M14, M16 | V18; DOD11 |
-| T21 | 3.2, 4.1.5, 9 | M11, M12, M14, M16 | V17–V20; DOD11, DOD12 |
-| T22 | 4.1.6 | M02, M11, M14, M16 | V15; DOD13 |
+| T20 | 4.1.5, 13 | M17, M14, M16 | V18, V31; DOD11 |
+| T21 | 3.2, 4.1.5, 9, 13 | M11, M12, M21, M22, M24, M14, M16 | V17–V20, V30–V31; DOD11, DOD12 |
+| T22 | 4.1.6, 13 | M02, M03, M11, M12, M21, M22, M24, M14, M16 | V15, V29–V32; DOD13 |
 | T23 | 4.1.6, 4.4 | M02, M04, M05, M10, M19, M14, M16 | V22; DOD14 |
 | T24 | 3.2, 4.1.6, 9 | M19, M14, M16 | V22; DOD14 |
 | T25 | 4.1.6, 6 | M02, M03, M11, M20, M14, M16 | V23, V24; DOD15 |
+| T26 | 4.1.7 | M21, M14, M16 | V25, V26; DOD16 |
+| T27 | 4.1.7 | M22, M14, M16 | V25, V26; DOD16 |
+| T28 | 4.1.7 | M23, M01, M14, M16 | V27, V28; DOD17 |

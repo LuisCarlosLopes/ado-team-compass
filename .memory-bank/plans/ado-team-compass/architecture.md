@@ -1,10 +1,10 @@
-# Arquitetura do ado-team-compass — v1.0
+# Arquitetura do ado-team-compass — v1.2
 
 Data: 12/09/2026 · Complexidade: L · Planejamento standalone · Estado: proposta de implementação, sem código criado.
 
 ## 1. Contexto
 
-Construir uma ferramenta distribuível de visibilidade de entrega baseada no Azure DevOps, adaptável às práticas de cada equipe, com cálculo reproduzível e interpretação apoiada em evidências. Claude Code é a primeira integração, conforme a proposta original; a arquitetura não depende dele para coletar, calcular ou emitir relatórios básicos.
+Construir uma ferramenta distribuível de visibilidade de entrega baseada no Azure DevOps, adaptável às práticas de cada equipe, com cálculo reproduzível e interpretação apoiada em evidências. Claude Code, Antigravity e Codex terão integrações locais na v0.1; GPT personalizado usará API autenticada na v0.3.1. O motor não depende do modelo de linguagem para coletar, calcular ou emitir relatórios básicos.
 
 A pasta de trabalho foi inspecionada: contém apenas `work/` e `outputs/`, sem aplicação, testes, Git, AGENTS.md local ou memory-bank anterior. Todos os caminhos de produto deste planejamento são **novos e propostos**, não componentes encontrados em um repositório existente.
 
@@ -22,7 +22,7 @@ Restrições: nenhuma inferência de ociosidade real, nenhum ranking de produtiv
 
 **Decisão:** pacote Python com CLI. Funções de domínio recebem entradas normalizadas, configuração resolvida e relógio explícito. Nenhuma função de cálculo acessa rede, relógio do sistema ou LLM. O pacote entrega JSON e Markdown sem LLM; o assistente acrescenta interpretação estruturada.
 
-Premissa: execução local atende ao primeiro lançamento. Risco: instalação pesada; mitigação: ambiente isolado, instalador multiplataforma, artefato com versão fixa e diagnóstico de dependências. Serviço hospedado fica adiado.
+Premissa: execução local atende ao primeiro lançamento. Risco: instalação pesada; mitigação: ambiente isolado, instalador multiplataforma, artefato com versão fixa e diagnóstico de dependências. O gateway remoto fica na v0.3.1 e não é dependência dos hosts locais.
 
 ### D02 — REST para coleta principal; Analytics como capacidade adicional
 
@@ -91,11 +91,11 @@ Tratar títulos e descrições dos itens como conteúdo não confiável, nunca c
 
 **Opções:** copiar pasta manualmente; instalar pacote em ambiente isolado e plugin por marketplace; binários nativos para todos os sistemas.
 
-**Decisão:** release com wheel Python, dependências bloqueadas, checksum, documentação e pacote Claude Code com skills. Instalador usa `uv` como opção principal e ambiente virtual Python como alternativa documentada. A versão do motor compatível fica fixada no pacote do plugin. Não depender de diretórios externos ao pacote em cache nem instalar dependências a cada relatório.
+**Decisão:** release com wheel Python, dependências bloqueadas, checksum, documentação e bundles próprios para Claude Code, Antigravity e Codex, gerados a partir de instruções compartilhadas. Instalador usa `uv` como opção principal e ambiente virtual Python como alternativa documentada. A versão do motor compatível fica fixada no pacote do plugin. Não depender de diretórios externos ao pacote em cache nem instalar dependências a cada relatório.
 
-Um marketplace Git contém a entrada de instalação. A release candidata é testada em perfil limpo antes de ser promovida. URL e proprietário do repositório serão os do repositório real escolhido na publicação; não inventar endereço neste plano.
+O repositório privado `LuisCarlosLopes/ado-team-compass` distribui bundles e catálogos próprios de cada host; não há manifesto universal presumido. A release candidata é testada em perfil limpo antes de ser promovida. A compatibilidade real será registrada por versão do host e sistema operacional.
 
-Risco: ambientes corporativos sem acesso ao registry; mitigação: bundle de dependências para instalação assistida/offline na etapa de distribuição. Binários nativos e segundo ambiente de assistente são evoluções separadas.
+Risco: ambientes corporativos sem acesso ao registry; mitigação: bundle de dependências para instalação assistida/offline na etapa de distribuição. Binários nativos continuam como evolução separada. Os dois hosts adicionais são parte da v0.1.
 
 ### D08 — Autenticação explícita e persistência mínima
 
@@ -105,12 +105,28 @@ Automação posterior usa provedor de identidade de aplicação apropriado ao ex
 
 Configuração compartilhável fica separada de cache, overrides pessoais e relatórios. Cache isolado por identidade e organização, sem compartilhamento implícito entre usuários. Sem telemetria externa por padrão. Retenção local inicial: 30 dias, configurável; purga nunca afeta a origem ADO.
 
+### D09 — Portabilidade de instruções e gateway para GPT
+
+**Decisão:** manter uma fonte compartilhada de instruções e referências, com adaptadores que resolvem manifestos, caminhos e comandos por host. Os bundles são autocontidos e o motor preserva os mesmos contratos. A existência de SKILL.md não prova compatibilidade do pacote; instalação e execução têm testes separados em cada host.
+
+Para GPT personalizado, usar Actions com uma API HTTPS de leitura de relatórios já calculados. Alternativas: upload manual de relatório (possível, mas não integração automática) ou app MCP remoto (evolução separada). Actions atende ao GPT personalizado com contrato explícito de consulta. Não presumir acesso ao terminal local nem exigir chave de API OpenAI para os hosts locais.
+
+Topologia inicial: gateway dedicado por organização, OAuth por usuário, ACL de equipes com negação por padrão e coletor agendado separado. Run IDs não são autorização. Tokens ADO permanecem no coletor; o gateway serve somente evidência sanitizada autorizada e nunca aceita shell, WIQL livre ou destino arbitrário. Serviço e credencial de aplicação só entram na v0.3.1; distribuição pública de GPT e SaaS multi-tenant continuam adiados.
+
+**Trade-off:** três bundles aumentam a matriz de instalação; fonte comum evita divergência de regras. A API adiciona operação e autenticação, mas mantém cálculos fora do GPT. Hipóteses e critérios estão em [compatibilidade](../../../docs/platform-compatibility.md), tarefas T26–T28.
+
+### D10 — HTML operacional e decisões rastreáveis desde a v0.1
+
+**Decisão:** antecipar T22 para a primeira versão. O HTML apresenta objetivo informado, entrega, carga/capacidade, gap, impedimentos e ações candidatas. Mesmo núcleo alimenta tabelas, gráficos e narrativa; sem histórico suficiente, o bloco explica a limitação. A v0.2 acrescenta baseline, variações de esforço por coorte e séries observadas.
+
+**Trade-off:** aumenta o esforço inicial de apresentação e teste, mas entrega a principal superfície de gestão solicitada. O relatório terá filtros e rascunho exportável de decisões; não será um aplicativo colaborativo disfarçado de arquivo offline. Importação explícita registra autoria humana e preserva execuções antigas. Ações ADO continuam somente recomendadas. Contrato: [relatório de sprint](../../../docs/sprint-report.md).
+
 ## 3. Fluxo de arquitetura
 
 ```mermaid
 flowchart LR
   U[Usuário ou executor] --> C[CLI Python]
-  S[Skills Claude Code] --> C
+  S[Skills Claude Code / Antigravity / Codex] --> C
   C --> V[Configuração e capacidades]
   V --> A[Adaptadores de leitura ADO]
   A --> F[Fatos normalizados e evidências]
@@ -121,6 +137,8 @@ flowchart LR
   S --> I[Hipóteses e ações com referências]
   I --> Q[Validação de narrativa]
   Q --> R
+  R --> G[Gateway autenticado de leitura]
+  GPT[GPT personalizado / Actions] --> G
 ```
 
 ## 4. Impacto nos artefatos
@@ -135,18 +153,20 @@ flowchart LR
 | D06 | Relatórios e critérios de narrativa | T12, T13 |
 | D07 | Empacotamento e liberação | T01, T15, T16 |
 | D08 | Autenticação, limites de acesso e automação | T03, T06, T23, T24 |
+| D09 | Bundles locais e API para GPT personalizado | T13, T15, T26–T28 |
+| D10 | Relatório operacional e ações rastreáveis | T22, T14, T21 |
 
 ## 5. Decisões adiadas
 
 | Tema | Motivo | Condição para retomar |
 |---|---|---|
-| Serviço hospedado e multi-tenant | Infraestrutura desnecessária para validar utilidade | Demanda concreta de acesso centralizado |
+| SaaS multi-tenant | Gateway inicial é dedicado por organização | Demanda concreta e arquitetura de isolamento |
 | Jira e outros conectores | Não solicitado para primeira versão | Contrato ADO consolidado e usuário real |
-| Plugin para outro assistente | Primeira proposta é Claude Code | Release estável e teste do novo host |
+| App MCP remoto para ChatGPT | GPT personalizado inicialmente usa Actions | Demanda por catálogo de apps, separada da integração GPT |
 | Escrita de atribuições/comentários no ADO | Mais permissões e risco operacional | Fluxo de revisão, idempotência e autorização definidos |
 | Forecast avançado | Requer histórico e avaliação própria | T17–T21 concluídas |
 | Licença e publicação pública | Decisão de distribuição externa | Repositório proprietário e licença definidos antes da promoção pública |
 
 ## 6. Metadados
 
-Oito decisões; sem infraestrutura hospedada na v0.1; versão 1.0. Revisão do plano recomendada antes da implementação por se tratar de produto novo com múltiplos contratos. Nenhuma aprovação é necessária para concluir estes documentos; este trabalho não implementa nem publica o plugin.
+Dez decisões; sem infraestrutura hospedada na v0.1; gateway autenticado na v0.3.1; versão 1.2. Revisão do plano recomendada antes da implementação por se tratar de produto novo com múltiplos contratos. Nenhuma aprovação é necessária para concluir estes documentos; este trabalho não implementa nem publica o plugin.

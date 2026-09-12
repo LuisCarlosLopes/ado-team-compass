@@ -1,6 +1,6 @@
-# Plano de implementação do ado-team-compass — v1.0
+# Plano de implementação do ado-team-compass — v1.2
 
-Data: 12/09/2026 · Complexidade L · Track sugerido: FEATURE · Slug: ado-team-compass.
+Data: 12/09/2026 · Complexidade L no núcleo / XL com integração remota · Track sugerido: FEATURE · Slug: ado-team-compass.
 
 Planejamento standalone, sem execução de pipeline. Documentos complementares: [arquitetura](architecture.md) e [tarefas executáveis](task.md).
 
@@ -8,16 +8,21 @@ Planejamento standalone, sem execução de pipeline. Documentos complementares: 
 
 Entregar um plugin genérico para visibilidade de entrega no Azure DevOps, distribuível entre equipes, com cálculos auditáveis, interpretação curta e limitações explícitas. O produto deve funcionar com diferentes processos, sem exigir horas, tasks ou sprints de quem não usa essas práticas.
 
-A primeira versão será integrada ao Claude Code, conforme a proposta recebida. Seu núcleo também funcionará por CLI, sem LLM. A promessa é responder o que está em andamento, onde existem riscos e que evidências sustentam ações; ausência de registro não será interpretada como ociosidade.
+A primeira versão terá integrações locais para Claude Code, Google Antigravity e Codex (OpenAI/GPT), além de CLI sem LLM. GPTs personalizados no ChatGPT terão integração via Actions e API autenticada na v0.3.1. “GPT” é tratado como dois ambientes distintos; nenhum modelo específico é fixado. A promessa é responder o que está em andamento, onde existem riscos e que evidências sustentam ações; ausência de registro não será interpretada como ociosidade.
 
 ### 1.1 Releases e limites
 
 | Release | Resultado | Fora desta release |
 |---|---|---|
-| v0.1 — situação atual distribuível | Instalação, setup, diagnóstico, carga condicional, visão entre equipes, JSON e Markdown | Histórico completo, previsão, publicação e escrita no ADO |
+| v0.1 — situação atual distribuível | Instalação em Claude Code, Antigravity e Codex; setup, diagnóstico, carga condicional, visão entre equipes, JSON, Markdown e HTML operacional com recomendações | Histórico completo, previsão, publicação e escrita no ADO |
 | v0.2 — histórico e planejamento | Compromisso, mudança de escopo, fluxo, regras de planejamento configuráveis | Forecast e operação agendada |
-| v0.3 — visual e operação | HTML local, pipeline de leitura, identidade de aplicação e retenção operacional | Hospedagem pública automática e alterações de work items |
+| v0.3 — operação | Pipeline de leitura, identidade de aplicação e retenção operacional | Hospedagem pública automática e alterações de work items |
+| v0.3.1 — GPT personalizado | API de relatórios autenticada, OpenAPI e instruções para GPT Actions | Acesso anônimo, execução arbitrária e publicação em catálogo público |
 | v0.4 — forecast experimental | Projeção com premissas, amostra e validação retrospectiva | Promessa de prazo garantido ou comparação de produtividade individual |
+
+O HTML passa a ser entrega central da v0.1: [relatório de sprint e apoio à decisão](../../../docs/sprint-report.md).
+
+A matriz detalhada está em [compatibilidade de plataformas](../../../docs/platform-compatibility.md). Compatibilidade aqui é requisito planejado, ainda não validado em execução.
 
 Cada release tem critérios próprios; v0.1 pode ser usada sem esperar as demais. Features posteriores não devem virar pré-requisito da instalação inicial.
 
@@ -67,15 +72,19 @@ Sem módulo interno similar. As decisões estão no documento de arquitetura. AP
 - [ ] DOD07: narrativa não acrescenta números nem fatos sem referência e não afirma ociosidade, culpa ou causalidade não demonstrada.
 - [ ] DOD08: testes automatizados, análise estática, build e checagem de pacote passam; testes de contrato/piloto têm evidências próprias. A infraestrutura de testes será criada em T01.
 - [ ] DOD09: credenciais não aparecem em logs, fixtures ou artefatos; cache é isolado e retenção funciona.
-- [ ] DOD10: release candidata passa no piloto com três perfis distintos e instalação por marketplace em perfil limpo.
+- [ ] DOD10: release candidata passa no piloto com três perfis distintos e instalação em perfil limpo nos três hosts locais, pelos formatos suportados por cada um.
+
+- [ ] DOD13: HTML operacional abre offline e mostra entrega, carga, gap, impedimentos e recomendações com evidência; filtros e exportação/importação de decisões preservam integridade.
 
 ### 3.2 Releases seguintes
 
 - [ ] DOD11: métricas históricas preservam corte e definições; reaberturas, exclusões e falta de histórico aparecem explicitamente.
 - [ ] DOD12: regras de planejamento são ativáveis por perfil e exibem política, evidência e exceções.
-- [ ] DOD13: HTML abre offline, mantém os mesmos números do JSON e não depende de CDN.
 - [ ] DOD14: execução agendada é idempotente, observável e usa identidade própria, sem precisar manter chat aberto.
 - [ ] DOD15: forecast é reproduzível e avaliado retrospectivamente antes de receber status estável.
+
+- [ ] DOD16: Claude Code, Antigravity e Codex reproduzem as mesmas métricas para a mesma fixture, com instalação, atualização e remoção isoladas.
+- [ ] DOD17: GPT Actions consulta API HTTPS autenticada com autorização por equipe/usuário, sem exposição de credenciais ADO ou dados de outras equipes.
 
 ## 4. Especificação de implementação
 
@@ -95,7 +104,8 @@ Sem módulo interno similar. As decisões estão no documento de arquitetura. AP
 | `replay` | Recalcula métricas com entradas congeladas e versão compatível |
 | `demo` | Gera relatório usando dados sintéticos incluídos |
 | `history`, `planning` | Entradas adicionais da v0.2 |
-| `render`, `run-scheduled` | Entradas adicionais da v0.3 |
+| `render`, `decisions` | HTML e exportação/importação explícita de decisões humanas na v0.1 |
+| `run-scheduled` | Entrada adicional da v0.3 |
 | `forecast` | Entrada experimental da v0.4 |
 
 Opções comuns: configuração explícita, equipe por ID ou alias inequívoco, período, data de referência, formato, saída e modo offline. Sem equipe inequívoca, execução interativa pede seleção; execução não interativa encerra com erro de configuração. Não selecionar silenciosamente a primeira equipe encontrada.
@@ -114,7 +124,7 @@ Grupos obrigatórios no schema:
 | Conexões | alias, URL de organização HTTPS permitida, provedor de autenticação; segredo é referência de ambiente |
 | Equipes | projeto e equipe por ID, nomes de exibição, perfil; várias equipes e projetos na mesma organização |
 | Escopo | áreas e inclusão de descendentes, iterações, tipos de item e tratamento de bugs |
-| Processo | campos de estimativa/trabalho, categoria dos estados, política de iniciado/concluído/bloqueado |
+| Processo | campos de estimativa/trabalho, categoria dos estados, política de iniciado/concluído/bloqueado; objetivo da sprint e vínculos explícitos; origem de impedimentos e limites WIP |
 | Calendário | timezone IANA, dias trabalhados, feriados, folgas e tratamento do dia atual |
 | Carga | unidade, limiares, disponibilidade pessoal opcional e reservas por equipe |
 | Histórico | corte de compromisso, coorte de itens, janela e política de reabertura |
@@ -136,6 +146,8 @@ Três perfis iniciais: sprint com capacidade; sprint sem horas; fluxo contínuo 
 | `evidence/` | Dados necessários para auditoria, minimizados e referenciados pelo manifesto |
 | `report.md` | Tabelas determinísticas, limitações, evidências e narrativa validada quando disponível |
 | `narrative.json` | Fatos referenciados, hipóteses e ações; ausente quando não houver LLM |
+| `report.html` | Visão offline filtrável; números e referências derivados das mesmas métricas |
+| `decisions.json` | Registro exportável/importável de ações humanas com IDs estáveis, run de origem, responsável/prazo informados e evidência; não altera snapshots |
 
 Status de métrica: `available`, `partial`, `unavailable`, `not_applicable`. Uma amostra vazia conhecida recebe contagem zero quando isso fizer sentido; percentil sem amostra recebe valor nulo e motivo. Cobertura de campos é `valid / eligible`; denominador desconhecido gera cobertura desconhecida, nunca 100%.
 
@@ -189,11 +201,28 @@ Regras de planejamento iniciais: datas invertidas; prazo vencido em item aberto;
 
 #### 4.1.6 Visual, automação e forecast
 
-v0.3: HTML autocontido com SVG, cores acessíveis, tabelas equivalentes e nenhuma CDN. Publicação inicial em artefato privado de pipeline escolhido na implantação; não prometer URL pública estável. Hook de sessão é opcional, somente consulta metadados locais e não coleta nem autentica automaticamente.
+v0.1: HTML operacional autocontido com SVG, filtros locais, cores acessíveis, tabelas equivalentes e nenhuma CDN. Seu contrato é [relatório de sprint](../../../docs/sprint-report.md); inclui gap atual de capacidade, impedimentos explícitos e ações candidatas. Variação de estimativa total, duração de bloqueios e gráficos históricos exigem coortes/cortes e entram na v0.2. Sem esses dados, os blocos são indisponíveis. Não inferir esforço realizado de CompletedWork sem política e período compatíveis.
+
+Decisões humanas podem ser exportadas e importadas explicitamente pelo núcleo; sem sincronização remota do HTML e sem escrita no ADO. v0.3: operação agendada e entrega de artefatos. Publicação inicial em artefato privado de pipeline escolhido na implantação; não prometer URL pública estável. Hook de sessão é opcional, somente consulta metadados locais e não coleta nem autentica automaticamente.
 
 Execução agendada usa chave por configuração + equipe + janela + data, lock contra duplicação e marcador de sucesso. Falha não substitui relatório válido por relatório vazio. Notificações só na mudança relevante ou falha acionável, com canal configurado e autorização do operador. Templates são entregáveis; ativação e postagem são ações futuras separadas.
 
 v0.4: forecast sobre itens comparáveis de uma equipe, escopo restante explícito, throughput incluindo períodos sem entrega e semente registrada. Sem histórico suficiente, negar projeção e mostrar o requisito faltante. Regra experimental inicial: ao menos 12 semanas completas e 30 conclusões comparáveis; é um limite de produto, não garantia estatística. Backtesting com cortes sem vazamento de futuro; publicar cobertura empírica de p50/p85 e cenários de escopo. Não juntar throughput de equipes diferentes nem converter pontos em itens arbitrariamente.
+
+#### 4.1.7 Integrações de plataformas
+
+A fonte das instruções e referências será `integrations/shared/`; o empacotamento gera bundles autocontidos, sem links externos ao diretório instalado. Fórmulas, contratos e templates ficam no núcleo. Variáveis, manifestos, comandos e hooks específicos de um host não entram nas instruções compartilhadas.
+
+- Claude Code: manter o pacote existente no plano e seu manifesto próprio.
+- Antigravity: pacote com `plugin.json` na raiz e skills; alternativa de skills no workspace documentada. Validar a versão real do IDE e não prometer paridade de CLI, SDK ou hooks sem testes.
+- Codex: pacote dedicado com `.codex-plugin/plugin.json` e skills; instalação testada nas superfícies locais suportadas. Não assumir que um manifesto Claude funciona sem adaptação, nem que a extensão de IDE suporta o pacote.
+- GPT personalizado: um adaptador HTTP de leitura disponibiliza relatórios já produzidos pelo motor. O GPT recebe instruções e schema OpenAPI, não scripts locais. Não adicionar chamada de modelo OpenAI ao núcleo apenas para suportar o host.
+
+Contrato remoto inicial: listar equipes permitidas, obter último relatório por equipe e consultar evidência por execução. Somente GET; sem disparar jobs longos nem oferecer terminal ou acesso arbitrário a URLs. Relatório ausente retorna 404; antigo mantém timestamp e aviso; nunca fabricar atualização. A coleta é executada separadamente por T23.
+
+Segurança remota: implantação dedicada por organização, OAuth por usuário e ACL de equipes no servidor, negativa por padrão, validação de emissor/audiência e autorização em toda consulta inclusive por run ID. Credencial de leitura ADO permanece no coletor; token do GPT autoriza somente a API. Revogação de usuário e alteração de ACL precisam valer na requisição seguinte. Links de artefato também exigem autorização. Não aceitar equipe/org arbitrária enviada pelo modelo como autorização.
+
+Dependências de T28: API com FastAPI/Uvicorn como extra opcional, provedor OAuth corporativo, domínio HTTPS alcançável pelo ChatGPT e armazenamento dos relatórios sanitizados. Fixar versões no lock na implementação; não criar infraestrutura ou publicar dados nesta revisão. A primeira topologia remota usa um serviço por organização, uma instância de leitura e volume de relatórios com escrita atômica pelo coletor; SaaS multi-tenant continua fora de escopo. Disponibilidade de Actions depende do plano e das políticas do workspace do usuário, a validar no teste de integração.
 
 ### 4.2 Fluxo de execução e fases
 
@@ -204,13 +233,14 @@ Fluxo da v0.1: validar entrada → resolver identidade/configuração → verifi
 | F0 — Contratos e pacote | T01–T02 | Instalação de desenvolvimento, schemas e demo mínima | Nenhuma | 3–5 dias-pessoa |
 | F1 — Acesso e coleta | T03–T06 | Diagnóstico e fatos normalizados com cobertura | F0 | 6–10 dias-pessoa |
 | F2 — Métricas atuais | T07–T10 | Qualidade por métrica, calendário, carga e visão entre equipes | F1; cálculos podem iniciar com fixtures de F0 | 6–10 dias-pessoa |
-| F3 — Relatório e integração | T11–T13 | Execução auditável, Markdown e skills | F2 | 4–7 dias-pessoa |
+| F3 — Relatório e integrações | T11–T13, T22, T26–T27 | Execução auditável, HTML de decisão, Markdown e três bundles locais | F2 | 15–25 dias-pessoa |
 | F4 — Distribuição e piloto | T14–T16 | Release candidata validada em três perfis | F3 | 6–10 dias-pessoa |
 | F5 — Histórico e planejamento | T17–T21 | v0.2 com semântica e evidências históricas | v0.1 | 16–25 dias-pessoa |
-| F6 — Visual e operação | T22–T24 | v0.3 com HTML e execução agendada testada | v0.2 para relatório completo | 7–12 dias-pessoa |
+| F6 — Operação | T23–T24 | v0.3 com execução agendada testada | v0.2 para relatório completo | 4–7 dias-pessoa |
+| F6b — GPT personalizado | T28 | API autenticada e GPT Actions validados | T24 e ambiente remoto | 8–14 dias-pessoa |
 | F7 — Forecast experimental | T25 | v0.4 com backtesting | T17, T20, T21 | 5–9 dias-pessoa |
 
-v0.1: **25–42 dias-pessoa**. Demais releases: **28–46 dias-pessoa**. Total de escopo planejado: **53–88 dias-pessoa**. São faixas de planejamento, incluindo testes e documentação, não orçamento contratado. Espera por credenciais, revisão corporativa ou disponibilidade do piloto é tempo de calendário adicional. Para uma pessoa em dedicação integral, v0.1 representa aproximadamente 5–9 semanas úteis. Reestimar após F1 e depois do primeiro time piloto; não comprimir por simples divisão pelo número de agentes.
+v0.1: **36–60 dias-pessoa**. Demais releases, incluindo GPT Actions: **33–55 dias-pessoa**. Total de escopo planejado: **69–115 dias-pessoa**. São faixas de planejamento, incluindo testes e documentação, não orçamento contratado. Espera por credenciais, revisão corporativa ou disponibilidade do piloto é tempo de calendário adicional. Para uma pessoa em dedicação integral, v0.1 representa aproximadamente 8–12 semanas úteis. Reestimar após F1 e depois do primeiro time piloto; não comprimir por simples divisão pelo número de agentes.
 
 Caminho crítico: contratos → autenticação/escopo/coleta → qualidade e capacidade → relatório → integração instalada → piloto. Paralelismo possível após T02: calendário e fórmulas sobre fixtures enquanto leitura externa é implementada; testes de narrativa e empacotamento após estabilizar saída. Nenhum trabalho paralelo altera o schema sem sincronizar consumidores.
 
@@ -220,9 +250,9 @@ Todos os itens abaixo são **CRIAR** em repositório novo. Áreas agrupadas perm
 
 | ID | Caminho ou área proposta | Conteúdo e motivo | Tarefas |
 |---|---|---|---|
-| M01 | `pyproject.toml`, `uv.lock`, `.gitignore`, `src/ado_team_compass/__init__.py` | Pacote, dependências e exclusões seletivas | T01, T15 |
+| M01 | `pyproject.toml`, `uv.lock`, `.gitignore`, `src/ado_team_compass/__init__.py` | Pacote, dependências e exclusões seletivas; extra opcional da API | T01, T15, T28 |
 | M02 | `src/ado_team_compass/cli.py`, `errors.py` | Entradas, códigos de saída e mensagens | T01, T03, T11, T13, T17, T19, T22, T23, T25 |
-| M03 | `src/ado_team_compass/contracts/`, `schemas/` | Modelos de configuração, fatos, métricas, narrativa e manifesto | T02, T12, T17, T25 |
+| M03 | `src/ado_team_compass/contracts/`, `schemas/` | Modelos de configuração, fatos, métricas, narrativa, decisões e manifesto | T02, T12, T17, T22, T25 |
 | M04 | `src/ado_team_compass/config/`, `profiles/`, `examples/config/` | Resolução de configuração, perfis e exemplos | T02, T04, T07, T08, T19, T23 |
 | M05 | `src/ado_team_compass/auth/` | Provedores explícitos Entra, PAT e aplicação | T03, T23 |
 | M06 | `src/ado_team_compass/adapters/ado/` | Cliente de leitura, paginação, descoberta e histórico | T03–T06, T17 |
@@ -231,15 +261,19 @@ Todos os itens abaixo são **CRIAR** em repositório novo. Áreas agrupadas perm
 | M09 | `src/ado_team_compass/metrics/calendar.py`, `allocation.py`, `cross_team.py` | Calendários, carga e visão entre equipes | T08–T10 |
 | M10 | `src/ado_team_compass/runs/` | Persistência, hashes, replay, retenção, lock e migração | T06, T11, T14, T23 |
 | M11 | `src/ado_team_compass/reporting/`, `templates/`, `locales/` | Markdown, interpretação, HTML e linguagem | T11, T12, T19, T21, T22, T25 |
-| M12 | `plugin/claude/.claude-plugin/plugin.json`, `plugin/claude/skills/`, `plugin/claude/bin/` | Pacote completo da integração; inclui wheel/lock necessários no processo de release | T13, T15, T21 |
+| M12 | `plugin/claude/.claude-plugin/plugin.json`, `plugin/claude/skills/`, `plugin/claude/bin/` | Pacote completo da integração; inclui wheel/lock necessários no processo de release | T13, T15, T21, T22 |
 | M13 | `.claude-plugin/marketplace.json`, `packaging/` | Catálogo e criação de bundle instalável | T15 |
-| M14 | `tests/unit/`, `tests/fixtures/`, `tests/contract/`, `tests/integration/`, `tests/evals/`, `tests/install/` | Suítes e dados sintéticos; cada tarefa testa sua responsabilidade | T01–T25 conforme rastreabilidade |
+| M14 | `tests/unit/`, `tests/fixtures/`, `tests/contract/`, `tests/integration/`, `tests/evals/`, `tests/install/` | Suítes e dados sintéticos; cada tarefa testa sua responsabilidade | T01–T28 conforme rastreabilidade |
 | M15 | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Qualidade e release candidata | T01, T14, T15 |
-| M16 | `README.md`, `CHANGELOG.md`, `docs/` | Instalação, definições, limitações, piloto, compatibilidade e suporte | T01–T25 conforme entrega |
-| M17 | `src/ado_team_compass/metrics/commitment.py`, `flow.py` | Coortes, baseline, séries e percentis | T18, T20 |
+| M16 | `README.md`, `CHANGELOG.md`, `docs/` | Instalação, definições, limitações, piloto, compatibilidade e suporte | T01–T28 conforme entrega |
+| M17 | `src/ado_team_compass/metrics/commitment.py`, `flow.py` | Coortes, baseline de escopo/esforço, variações, filas, impedimentos, séries e percentis | T18, T20 |
 | M18 | `src/ado_team_compass/metrics/planning.py`, `rules/` | Políticas e achados de planejamento | T19 |
 | M19 | `automation/`, `plugin/claude/hooks/` | Templates de pipeline e aviso local opcional | T23, T24 |
 | M20 | `src/ado_team_compass/metrics/forecast.py`, `tests/backtesting/` | Simulação e avaliação retrospectiva | T25 |
+| M21 | `integrations/shared/`, `plugin/antigravity/`, `packaging/antigravity/` | Fonte comum de instruções e bundle Antigravity | T13, T26, T15, T21, T22 |
+| M22 | `plugin/codex/`, `packaging/codex/` | Bundle Codex e manifesto próprio | T27, T15, T21, T22 |
+| M23 | `integrations/chatgpt/`, `src/ado_team_compass/gateway/`, `automation/gateway/` | OpenAPI, instruções GPT, API de leitura autenticada e implantação dedicada | T28 |
+| M24 | `src/ado_team_compass/decisions/` | Candidatos de ação determinísticos, registro humano, exportação/importação e rastreabilidade | T22, T21 |
 
 ### 4.4 Dependências técnicas e operacionais
 
@@ -296,6 +330,10 @@ Infraestrutura inexistente será criada em T01. As expectativas numéricas preci
 | V22 — Duas execuções agendadas simultâneas e falha posterior | Sem duplicação de resultado final; sucesso anterior preservado | T23, T24 |
 | V23 — Semanas de throughput zero e amostra insuficiente | Zeros preservados; forecast negado se requisito mínimo falhar | T25 |
 | V24 — Histórico com cortes de backtesting | Treino só usa passado de cada corte; semente reproduz distribuição | T25 |
+| V25 — Mesma fixture nos três hosts locais | Métricas iguais; diferenças de prosa permitidas; mesma política para dados parciais | T13, T26, T27, T14 |
+| V26 — Instalar/atualizar/remover um bundle com outros presentes | Sem sobrescrever configuração alheia; nenhuma variável exclusiva de outro host nas skills | T15, T26, T27 |
+| V27 — GPT com token ausente, expirado ou sem acesso à equipe/run | 401/403 e nenhuma evidência vazada; alterar ID não contorna ACL | T28 |
+| V28 — GPT consulta relatório antigo, inexistente ou grande | Data/limitação explícita, 404 para ausente, paginação/limites e mesmos totais da CLI | T28 |
 
 Testes de contrato usam respostas sanitizadas e falhas simuladas; integração real é opt-in, com credenciais fora do CI público. CI padrão executa tudo que é determinístico sem rede. Evals da skill incluem perguntas naturais em português, pedidos de ranking, contexto contraditório e evidência parcial.
 
@@ -315,20 +353,20 @@ Meta inicial de desempenho: fixture de 2.000 itens atuais e 100 pessoas gera mé
 | Atualização do plugin | Motor/schema incompatíveis | Contrato de versões, migração explícita e rollback |
 | Distribuição em Windows/proxy corporativo | Instalação falha | Matriz de instalação e diagnóstico; sem desabilitar TLS |
 | Relatório com nomes/dados internos compartilhado indevidamente | Exposição de informações | Minimização, armazenamento local e publicação privada separada |
-| Escopo de 25 tarefas crescer antes do piloto | Atraso sem aprendizado | Promover v0.1 antes de iniciar expansão opcional |
+| Escopo de 28 tarefas crescer antes do piloto | Atraso sem aprendizado | Promover v0.1 antes de iniciar expansão opcional |
 
 ### 7.2 Defaults de planejamento
 
 | ID | Default | Justificativa | Impacto se mudar |
 |---|---|---|---|
-| A01 | Claude Code primeiro | Proposta fornecida nomeia o host | Novo adaptador, sem mudar cálculos |
+| A01 | Claude Code + Antigravity IDE + Codex locais; GPT Actions remoto | Pedido explícito de compatibilidade adicional | Host remoto exige infraestrutura própria; modelos continuam livres |
 | A02 | Azure DevOps Services primeiro | URLs e autenticação da proposta são cloud | Server exige matriz própria de compatibilidade |
 | A03 | Uma organização por consolidação | Evita identidade implícita entre tenants | Nova fase de identidade e escopo |
 | A04 | pt-BR na saída e inglês nos contratos | Idioma do pedido e estabilidade técnica | Adicionar catálogo, preservando schemas |
 | A05 | Execução local; 30 dias de retenção | Limita operação e volume inicial | Ajuste configurável; retenção maior ocupa disco |
 | A06 | Dia corrente excluído da capacidade restante | Evita prometer o dia inteiro no fim da tarde | Opção explícita altera comparação e fica registrada |
 
-Esses defaults estão expostos para revisão, não são preferências previamente confirmadas além do contexto indicado. Nome do repositório remoto, licença de publicação e equipes piloto não foram fornecidos: são requisitos operacionais de T16 para liberação externa, não impedem construir o candidato local.
+Esses defaults estão expostos para revisão, não são preferências previamente confirmadas além do contexto indicado. O repositório privado é `LuisCarlosLopes/ado-team-compass`. Licença para eventual publicação pública, equipes piloto e domínio/provedor OAuth para T28 não foram definidos: são requisitos operacionais de T16 para liberação externa, não impedem construir o candidato local.
 
 ### 7.3 Registro de decisões
 
@@ -345,7 +383,7 @@ Esses defaults estão expostos para revisão, não são preferências previament
 
 Antes de concluir cada tarefa, conferir comportamento, contratos, escopo, testes e evidências. Corrigir divergências numéricas pela regra documentada; não ajustar fixture para aceitar a implementação sem revisar o cálculo independente. Quando um campo real contradizer a premissa, registrar decisão e atualizar schema, plano e testes relacionados.
 
-Revisão deste planejamento: cruzar IDs do mapa com tarefas, verificar ausência de dependências cíclicas, cobrir todos os cenários V01–V24 e DOD01–DOD15, confirmar que releases não dependem de publicação futura para rodar localmente. O plano não declara testes de produto executados.
+Revisão deste planejamento: cruzar IDs do mapa com tarefas, verificar ausência de dependências cíclicas, cobrir todos os cenários V01–V32 e DOD01–DOD17, confirmar que releases não dependem de publicação futura para rodar localmente. O plano não declara testes de produto executados.
 
 ## 9. Entrega, rollout e handoff
 
@@ -361,17 +399,17 @@ A primeira tarefa executável é T01. O plano autoriza a sequência técnica com
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.0 |
+| Versão | 1.2 |
 | Artefato canônico | `.memory-bank/plans/ado-team-compass/plan.md` |
-| Complexidade | L — vários módulos e contratos, sem serviço hospedado |
+| Complexidade | L no núcleo local; XL no escopo completo com gateway remoto |
 | Score de complexidade | 6: múltiplos módulos 1 + arquitetura 2 + dependências 1 + validação 1 + aceite complexo 1; sem efeito irreversível no escopo de construção |
 | Track sugerido | FEATURE, usado apenas para calibragem |
 | Confiança da classificação | Alta; escopo textual e estrutura nova conhecidos |
 | Rubrica de completude do planejamento | 90/100: escopo 20, arquitetura 15, alvos novos mapeados e ausência verificada 20, contratos 15, padrão de testes preexistente 0, decisões de construção 20 |
 | Limite da rubrica | Não mede probabilidade de sucesso nem validação do ADO real; aplicação adaptada a projeto novo |
 | Infraestrutura de testes | Ausente; criação explícita em T01 |
-| Áreas de criação propostas | 20; quantidade final de arquivos será definida dentro dessas áreas |
-| Tarefas | 25, todas pendentes; 16 compõem v0.1 |
+| Áreas de criação propostas | 24; quantidade final de arquivos será definida dentro dessas áreas |
+| Tarefas | 28, todas pendentes; 19 compõem v0.1 (T01–T16, T22, T26–T27) |
 | Migração de banco | Não; migrações futuras são de configuração/schema |
 | Estado de execução | Planejado, não implementado |
 
@@ -388,3 +426,20 @@ Consultadas em 12/09/2026. As fórmulas e limites deste documento são decisões
 - [Capacidade no Azure Boards](https://learn.microsoft.com/en-my/Azure/devops/boards/sprints/set-capacity?view=azure-devops): unidade e capacidade por equipe.
 - [Histórico do Analytics](https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-historical-filtering?view=azure-devops): snapshots, revisões e exclusões.
 - [WIQL](https://learn.microsoft.com/th-th/azure/devops/boards/queries/wiql-syntax?view=azure-devops): consulta histórica ASOF.
+
+## 12. Revisão 1.1 — compatibilidade ampliada
+
+Solicitação incorporada: Antigravity e GPT, preservando Claude Code. T26 e T27 entram antes de T14, embora seus IDs sejam maiores, para manter a rastreabilidade da versão anterior. T28 adiciona GPT personalizado depois da operação agendada. Alterações de integração não modificam fórmulas. Documento adicional: [matriz e contratos por plataforma](../../../docs/platform-compatibility.md).
+
+## 13. Revisão 1.2 — relatório de sprint como entrega central
+
+T22 passa da v0.3 para F3/v0.1, com contrato detalhado de capacidade, desvios, gargalos, impedimentos e recomendações. T14 depende de T22; T21 enriquece o mesmo HTML com histórico. O estudo prioriza objetivo/entrega, gap atual e desbloqueio, sem ranking individual. Escrita no ADO permanece fora de escopo; registro humano de decisões é local e explícito.
+
+Cenários adicionais obrigatórios:
+
+| ID | Cenário e resultado esperado | Tarefas |
+|---|---|---|
+| V29 | Carga 144 h, capacidade restante 120 h, três itens sem restante: gap conhecido +24 h, 120% parcial; não inventar carga total nem data de atraso | T22, T14 |
+| V30 | Sem baseline ou CompletedWork não comparável: variação de esforço indisponível; não atribuir acumulado de sprints anteriores à atual | T18, T21, T22 |
+| V31 | Fila grande sem histórico ou item sem alteração: indício/idade desconhecida, nunca impedimento ou causa comprovados por inferência | T20, T21, T22 |
+| V32 | Exportar decisão, importar em nova execução e reaparecer achado: ID estável, origem humana e deduplicação; filtro não modifica total global sem rótulo | T22, T14 |
