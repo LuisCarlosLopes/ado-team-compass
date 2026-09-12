@@ -2,6 +2,7 @@
 
 import json
 from contextlib import contextmanager
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -31,7 +32,7 @@ TOOLS = (
 )
 
 
-def _transport(responses: dict[str, object], names: tuple[str, ...] = TOOLS) -> FixtureTransport:
+def _transport(responses: Mapping[str, object], names: tuple[str, ...] = TOOLS) -> FixtureTransport:
     return FixtureTransport(
         tools=tuple(
             ToolDescriptor(name=name, input_schema_hash=schema_hash({"properties": {}}))
@@ -58,7 +59,7 @@ def _default_responses() -> dict[str, object]:
     }
 
 
-def _client(responses: dict[str, object], names: tuple[str, ...] = TOOLS) -> AdoMcpClient:
+def _client(responses: Mapping[str, object], names: tuple[str, ...] = TOOLS) -> AdoMcpClient:
     return AdoMcpClient(transport=_transport(responses, names))
 
 
