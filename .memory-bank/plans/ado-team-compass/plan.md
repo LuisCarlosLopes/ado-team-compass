@@ -1,8 +1,10 @@
-# Plano de implementação do ado-team-compass — v1.2
+# Plano de implementação do ado-team-compass — v1.3
 
 Data: 12/09/2026 · Complexidade L no núcleo / XL com integração remota · Track sugerido: FEATURE · Slug: ado-team-compass.
 
 Planejamento standalone, sem execução de pipeline. Documentos complementares: [arquitetura](architecture.md) e [tarefas executáveis](task.md).
+
+**Restrição obrigatória:** todo acesso ao Azure DevOps será exclusivamente pelo [MCP oficial Microsoft](https://github.com/microsoft/azure-devops-mcp). Proibidos REST/OData direto, SDK ADO e consultas por CLI como fallback. [Contrato e cobertura](../../../docs/ado-mcp-contract.md).
 
 ## 1. Missão
 
@@ -16,7 +18,7 @@ A primeira versão terá integrações locais para Claude Code, Google Antigravi
 |---|---|---|
 | v0.1 — situação atual distribuível | Instalação em Claude Code, Antigravity e Codex; setup, diagnóstico, carga condicional, visão entre equipes, JSON, Markdown e HTML operacional com recomendações | Histórico completo, previsão, publicação e escrita no ADO |
 | v0.2 — histórico e planejamento | Compromisso, mudança de escopo, fluxo, regras de planejamento configuráveis | Forecast e operação agendada |
-| v0.3 — operação | Pipeline de leitura, identidade de aplicação e retenção operacional | Hospedagem pública automática e alterações de work items |
+| v0.3 — operação | Pipeline de leitura via MCP oficial não interativo e retenção operacional | Hospedagem pública automática e alterações de work items |
 | v0.3.1 — GPT personalizado | API de relatórios autenticada, OpenAPI e instruções para GPT Actions | Acesso anônimo, execução arbitrária e publicação em catálogo público |
 | v0.4 — forecast experimental | Projeção com premissas, amostra e validação retrospectiva | Promessa de prazo garantido ou comparação de produtividade individual |
 
@@ -57,7 +59,7 @@ N/A para compatibilidade preexistente: não há implementação. A partir de v0.
 
 ### 2.4 Referências
 
-Sem módulo interno similar. As decisões estão no documento de arquitetura. APIs e integração foram confrontadas com documentação oficial; versões e disponibilidade efetivas ainda serão verificadas pelos testes de contrato da implementação.
+Sem módulo interno similar. As decisões estão no documento de arquitetura. Integração MCP foi confrontada com o repositório e catálogo oficiais; versões e disponibilidade efetivas ainda serão verificadas pelos testes de contrato da implementação.
 
 ## 3. Definição de pronto
 
@@ -65,7 +67,7 @@ Sem módulo interno similar. As decisões estão no documento de arquitetura. AP
 
 - [ ] DOD01: pacote instala e roda em Windows, macOS e Linux em ambiente isolado; modo de demonstração funciona sem credencial e sem rede.
 - [ ] DOD02: setup descobre equipes e metadados, valida configuração e registra capacidades disponíveis por equipe.
-- [ ] DOD03: leitura autentica explicitamente, respeita escopo, paginação, timeouts e limites; simulações de 401, 403, 429 e 5xx têm saídas previstas.
+- [ ] DOD03: leitura usa somente o MCP oficial, verifica catálogo/schema e ações permitidas; falhas de autenticação, permissão, paginação e transporte têm saídas previstas sem fallback direto.
 - [ ] DOD04: métricas distinguem ausência, zero, não aplicável, amostra vazia e coleta parcial; unidades incompatíveis não são somadas.
 - [ ] DOD05: calendários e alocação passam nos cenários numéricos da seção 6, incluindo reservas duplicadas e ausência de disponibilidade global.
 - [ ] DOD06: relatório determinístico rastreia números e mantém evidência completa fora do resumo do LLM.
@@ -84,6 +86,7 @@ Sem módulo interno similar. As decisões estão no documento de arquitetura. AP
 - [ ] DOD15: forecast é reproduzível e avaliado retrospectivamente antes de receber status estável.
 
 - [ ] DOD16: Claude Code, Antigravity e Codex reproduzem as mesmas métricas para a mesma fixture, com instalação, atualização e remoção isoladas.
+- [ ] DOD18: testes demonstram ausência de acesso ADO direto e bloqueio de ação não autorizada mesmo em ferramenta MCP mista.
 - [ ] DOD17: GPT Actions consulta API HTTPS autenticada com autorização por equipe/usuário, sem exposição de credenciais ADO ou dados de outras equipes.
 
 ## 4. Especificação de implementação
@@ -121,7 +124,7 @@ Grupos obrigatórios no schema:
 | Grupo | Campos e validações |
 |---|---|
 | Versão | `schema_version`; rejeitar major desconhecida |
-| Conexões | alias, URL de organização HTTPS permitida, provedor de autenticação; segredo é referência de ambiente |
+| Conexões | alias, organização, servidor MCP oficial, transporte, versão/catálogo esperado e referência segura da sessão; nenhuma credencial de acesso ADO direto |
 | Equipes | projeto e equipe por ID, nomes de exibição, perfil; várias equipes e projetos na mesma organização |
 | Escopo | áreas e inclusão de descendentes, iterações, tipos de item e tratamento de bugs |
 | Processo | campos de estimativa/trabalho, categoria dos estados, política de iniciado/concluído/bloqueado; objetivo da sprint e vínculos explícitos; origem de impedimentos e limites WIP |
@@ -131,7 +134,7 @@ Grupos obrigatórios no schema:
 | Planejamento | regras habilitadas, severidade, tolerâncias e exceções justificadas |
 | Saída e retenção | diretório, idioma, limite do resumo, dias de retenção e seleção de campos |
 
-Usar `teamfieldvalues` para escopo de equipe e inclusão de filhos, em vez de deduzir equipe por nome de área. [API de campos de equipe](https://learn.microsoft.com/en-us/rest/api/azure/devops/work/Teamfieldvalues/Get?view=azure-devops-rest-7.1).
+Descobrir escopo e descendentes usando as ferramentas oficiais MCP disponíveis. Se a resposta não fornecer um atributo necessário, aceitar configuração explícita com proveniência ou marcar a análise indisponível; não consultar `teamfieldvalues` por API direta.
 
 Três perfis iniciais: sprint com capacidade; sprint sem horas; fluxo contínuo sem sprint. Processo técnico descoberto não define sozinho o perfil de gestão. Mapeamentos ambíguos ficam desabilitados com motivo até configuração explícita.
 
@@ -179,7 +182,7 @@ O resumo terá alvo inicial de até 24 KiB de JSON UTF-8. Se exceder, manter tot
 
 #### 4.1.5 Histórico e planejamento da v0.2
 
-O Analytics distingue snapshots diários de revisões de work items; revisões não incluem itens excluídos. Essa limitação deve acompanhar resultados históricos. [Representação histórica](https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-historical-filtering?view=azure-devops).
+Histórico será obtido exclusivamente pelas ferramentas de revisões/consultas do MCP oficial ou por snapshots locais anteriores coletados via esse MCP. Cobertura de itens excluídos, movidos e eventos intradiários precisa ser demonstrada. Não presumir suporte a Analytics/OData ou a snapshot histórico completo apenas por haver listagem de revisões.
 
 | Métrica | Definição inicial e limites |
 |---|---|
@@ -195,7 +198,7 @@ O Analytics distingue snapshots diários de revisões de work items; revisões n
 | Percentis | Método nearest-rank documentado, unidade de dias corridos, tamanho de amostra e janela publicados; sem amostra, nulo; com menos de 20 itens, indicar amostra pequena |
 | Tendência | Séries descritivas por janela comparável; não concluir melhora/piora com regressão em seis pontos sem contexto e cobertura |
 
-`ASOF` seleciona estado histórico; a hidratação dos itens também precisa usar o mesmo corte. Não consultar IDs do passado e campos atuais para montar a baseline. [Sintaxe WIQL](https://learn.microsoft.com/th-th/azure/devops/boards/queries/wiql-syntax?view=azure-devops).
+Consultas históricas e hidratação precisam referir-se ao mesmo corte. `ASOF` só pode ser usado quando a ferramenta MCP conectada o suportar e o teste demonstrar sua semântica; não chamar WIQL ou hidratação por REST diretamente. Sem cobertura, baseline/percentuais ficam indisponíveis. Snapshots locais permitem histórico a partir da primeira coleta, sem retroatividade inventada.
 
 Regras de planejamento iniciais: datas invertidas; prazo vencido em item aberto; fim do pai anterior ao fim dos filhos quando a política exige isso; carga aberta em sprint encerrada; campos obrigatórios da política ausentes. Story sem task, estimativa ausente, divergência de área/iteração e trabalho em sprint futura ficam desabilitados por padrão. Cada achado: regra/versionamento, severidade, item, evidência, política, exceção e ação sugerida. Histórico de `CompletedWork` não é timesheet nem prova de produtividade.
 
@@ -220,7 +223,7 @@ A fonte das instruções e referências será `integrations/shared/`; o empacota
 
 Contrato remoto inicial: listar equipes permitidas, obter último relatório por equipe e consultar evidência por execução. Somente GET; sem disparar jobs longos nem oferecer terminal ou acesso arbitrário a URLs. Relatório ausente retorna 404; antigo mantém timestamp e aviso; nunca fabricar atualização. A coleta é executada separadamente por T23.
 
-Segurança remota: implantação dedicada por organização, OAuth por usuário e ACL de equipes no servidor, negativa por padrão, validação de emissor/audiência e autorização em toda consulta inclusive por run ID. Credencial de leitura ADO permanece no coletor; token do GPT autoriza somente a API. Revogação de usuário e alteração de ACL precisam valer na requisição seguinte. Links de artefato também exigem autorização. Não aceitar equipe/org arbitrária enviada pelo modelo como autorização.
+Segurança remota: implantação dedicada por organização, OAuth por usuário e ACL de equipes no servidor, negativa por padrão, validação de emissor/audiência e autorização em toda consulta inclusive por run ID. O coletor acessa ADO exclusivamente pelo MCP oficial; sua conexão autentica conforme o servidor suportar; token do GPT autoriza somente a API. Revogação de usuário e alteração de ACL precisam valer na requisição seguinte. Links de artefato também exigem autorização. Não aceitar equipe/org arbitrária enviada pelo modelo como autorização.
 
 Dependências de T28: API com FastAPI/Uvicorn como extra opcional, provedor OAuth corporativo, domínio HTTPS alcançável pelo ChatGPT e armazenamento dos relatórios sanitizados. Fixar versões no lock na implementação; não criar infraestrutura ou publicar dados nesta revisão. A primeira topologia remota usa um serviço por organização, uma instância de leitura e volume de relatórios com escrita atômica pelo coletor; SaaS multi-tenant continua fora de escopo. Disponibilidade de Actions depende do plano e das políticas do workspace do usuário, a validar no teste de integração.
 
@@ -254,15 +257,15 @@ Todos os itens abaixo são **CRIAR** em repositório novo. Áreas agrupadas perm
 | M02 | `src/ado_team_compass/cli.py`, `errors.py` | Entradas, códigos de saída e mensagens | T01, T03, T11, T13, T17, T19, T22, T23, T25 |
 | M03 | `src/ado_team_compass/contracts/`, `schemas/` | Modelos de configuração, fatos, métricas, narrativa, decisões e manifesto | T02, T12, T17, T22, T25 |
 | M04 | `src/ado_team_compass/config/`, `profiles/`, `examples/config/` | Resolução de configuração, perfis e exemplos | T02, T04, T07, T08, T19, T23 |
-| M05 | `src/ado_team_compass/auth/` | Provedores explícitos Entra, PAT e aplicação | T03, T23 |
-| M06 | `src/ado_team_compass/adapters/ado/` | Cliente de leitura, paginação, descoberta e histórico | T03–T06, T17 |
+| M05 | `src/ado_team_compass/mcp/session/` | Sessão, autenticação do transporte MCP e diagnóstico; sem provedor ADO direto | T03, T23 |
+| M06 | `src/ado_team_compass/adapters/ado_mcp/` | Cliente MCP oficial, catálogo, ações de leitura, paginação e histórico suportado | T03–T06, T17 |
 | M07 | `src/ado_team_compass/collect/`, `normalization/` | Fatos, relações, cobertura e deduplicação | T05, T06, T10, T17 |
 | M08 | `src/ado_team_compass/metrics/quality.py` | Disponibilidade por métrica | T07 |
 | M09 | `src/ado_team_compass/metrics/calendar.py`, `allocation.py`, `cross_team.py` | Calendários, carga e visão entre equipes | T08–T10 |
 | M10 | `src/ado_team_compass/runs/` | Persistência, hashes, replay, retenção, lock e migração | T06, T11, T14, T23 |
 | M11 | `src/ado_team_compass/reporting/`, `templates/`, `locales/` | Markdown, interpretação, HTML e linguagem | T11, T12, T19, T21, T22, T25 |
 | M12 | `plugin/claude/.claude-plugin/plugin.json`, `plugin/claude/skills/`, `plugin/claude/bin/` | Pacote completo da integração; inclui wheel/lock necessários no processo de release | T13, T15, T21, T22 |
-| M13 | `.claude-plugin/marketplace.json`, `packaging/` | Catálogo e criação de bundle instalável | T15 |
+| M13 | `.claude-plugin/marketplace.json`, `packaging/` | Catálogo, configuração MCP por host e criação de bundle instalável | T13, T15, T26, T27 |
 | M14 | `tests/unit/`, `tests/fixtures/`, `tests/contract/`, `tests/integration/`, `tests/evals/`, `tests/install/` | Suítes e dados sintéticos; cada tarefa testa sua responsabilidade | T01–T28 conforme rastreabilidade |
 | M15 | `.github/workflows/ci.yml`, `.github/workflows/release.yml` | Qualidade e release candidata | T01, T14, T15 |
 | M16 | `README.md`, `CHANGELOG.md`, `docs/` | Instalação, definições, limitações, piloto, compatibilidade e suporte | T01–T28 conforme entrega |
@@ -277,13 +280,13 @@ Todos os itens abaixo são **CRIAR** em repositório novo. Áreas agrupadas perm
 
 ### 4.4 Dependências técnicas e operacionais
 
-Runtime proposto: `httpx` para HTTP, `pydantic` para modelos/schemas, `PyYAML` com carregamento seguro, `azure-identity` com provedor explícito, `Jinja2` para saída determinística e `tzdata` para portabilidade. CLI pode usar biblioteca padrão; evitar framework adicional sem necessidade. Desenvolvimento: pytest, Ruff, mypy e build. `uv` gerencia ambiente e lock; alternativa via venv documentada.
+Runtime proposto: SDK cliente MCP Python com versão fixada para transportar chamadas ao servidor oficial, `pydantic` para modelos/schemas, `PyYAML` com carregamento seguro, `Jinja2` para saída determinística e `tzdata` para portabilidade. CLI pode usar biblioteca padrão; evitar framework adicional sem necessidade. Desenvolvimento: pytest, Ruff, mypy e build. `uv` gerencia ambiente e lock; alternativa via venv documentada.
 
 Não há versões instaladas para reutilizar. Fixar versões exatas e hashes compatíveis em T01; não usar dependência flutuante na release. Monte Carlo pode usar biblioteca padrão com semente; uma nova dependência numérica exige justificativa em T25.
 
-Variáveis previstas: `ADO_TEAM_COMPASS_CONFIG` para caminho e `ADO_PAT` para fallback. Identidades de aplicação usam referências do executor; não armazenar client secret em YAML. REST 7.1 é alvo inicial; Analytics tem versão isolada no adaptador e verificação de metadados, sem depender cegamente de uma preview.
+Variável prevista: `ADO_TEAM_COMPASS_CONFIG` para caminho. Conexão e autenticação usam configuração segura do cliente MCP oficial; nenhuma variável `ADO_PAT` como fallback do produto. Versões do servidor local são fixadas; catálogo remoto é verificado por handshake/listagem de ferramentas e hash de schema. O coletor não depende de versões REST/OData próprias.
 
-Dependências externas para piloto: identidade com leitura das equipes selecionadas; três equipes representando os perfis; disponibilidade pessoal validada para testar percentual global; acesso a Analytics apenas para v0.2. Sua ausência não impede testes sintéticos, mas impede declarar validação real correspondente.
+Dependências externas para piloto: identidade com leitura das equipes selecionadas; três equipes representando os perfis; disponibilidade pessoal validada para testar percentual global; ferramentas MCP de histórico e cobertura suficiente para v0.2. Sua ausência não impede testes sintéticos, mas impede declarar validação real correspondente.
 
 ## 5. Guardrails de implementação
 
@@ -295,7 +298,7 @@ Dependências externas para piloto: identidade com leitura das equipes seleciona
 6. Sem coletas globais implícitas nem tentativas de contornar 403. Escopo e cobertura acompanham a execução.
 7. Sem registrar tokens ou campos sensíveis desnecessários; título/descrição de item não pode alterar instruções, executar comandos ou escolher destinos de saída.
 8. Sem persistir estado mutável no cache de instalação do plugin. Configuração e dados de execução ficam fora dele.
-9. Sem executar escrita no ADO na v0.1–v0.4 planejada. POST de leitura permitido apenas para operações conhecidas.
+9. Sem executar escrita no ADO na v0.1–v0.4 planejada. Allowlist por ferramenta e ação MCP; não confiar no nome da ferramenta como garantia de leitura. Toda futura escrita também passa pelo MCP oficial.
 10. Sem sobrescrever execuções anteriores nem promover release com teste real não realizado declarado como aprovado.
 11. Retentativas limitadas por orçamento de tempo; respeitar `Retry-After` quando presente, com backoff/jitter. Concorrência inicial máxima quatro, ajustável e limitada.
 12. Mudar plano e schemas antes de ampliar escopo; não implementar Jira, serviço central ou ranking individual como “melhoria” incidental.
@@ -316,7 +319,7 @@ Infraestrutura inexistente será criada em T01. As expectativas numéricas preci
 | V08 — Dias e horas sem conversão | Totais separados e agregado indisponível | T08–T10 |
 | V09 — Pai e tasks filhos estimados | Contabilizar só o nível definido; não somar ambos | T05, T09 |
 | V10 — Time Kanban sem tasks, horas ou sprints | Situação atual funciona; carga/sprint não aplicáveis | T04, T07, T16 |
-| V11 — 401/403, paginação incompleta, 429, 5xx e timeout | Erro acionável ou resultado parcial; nunca zero silencioso | T03, T05, T06 |
+| V11 — Erro MCP de autenticação/permissão, paginação incompleta, limite e timeout | Erro acionável ou resultado parcial; nunca zero silencioso nem bypass de MCP | T03, T05, T06 |
 | V12 — Fronteiras de datas, timezone e dia atual | Mesmo instante e política produzem mesma janela, inclusive no limite da sprint | T08 |
 | V13 — Nome/área renomeada e estados customizados | IDs preservam identidade; desconhecidos não são classificados por palpite | T04, T05 |
 | V14 — Execução repetida com fatos/versões congelados | Métricas idênticas, independentemente do horário real de replay | T11, T14 |
@@ -337,7 +340,7 @@ Infraestrutura inexistente será criada em T01. As expectativas numéricas preci
 
 Testes de contrato usam respostas sanitizadas e falhas simuladas; integração real é opt-in, com credenciais fora do CI público. CI padrão executa tudo que é determinístico sem rede. Evals da skill incluem perguntas naturais em português, pedidos de ranking, contexto contraditório e evidência parcial.
 
-Meta inicial de desempenho: fixture de 2.000 itens atuais e 100 pessoas gera métricas e Markdown offline em até 5 segundos em executor de referência documentado. Testar também resumo acima do limite. Tempo de API é medido separadamente; não prometer latência fixa dependente do ADO.
+Meta inicial de desempenho: fixture de 2.000 itens atuais e 100 pessoas gera métricas e Markdown offline em até 5 segundos em executor de referência documentado. Testar também resumo acima do limite. Tempo do MCP oficial é medido separadamente; não prometer latência fixa dependente do ADO.
 
 ## 7. Riscos, assunções e decisões
 
@@ -383,7 +386,7 @@ Esses defaults estão expostos para revisão, não são preferências previament
 
 Antes de concluir cada tarefa, conferir comportamento, contratos, escopo, testes e evidências. Corrigir divergências numéricas pela regra documentada; não ajustar fixture para aceitar a implementação sem revisar o cálculo independente. Quando um campo real contradizer a premissa, registrar decisão e atualizar schema, plano e testes relacionados.
 
-Revisão deste planejamento: cruzar IDs do mapa com tarefas, verificar ausência de dependências cíclicas, cobrir todos os cenários V01–V32 e DOD01–DOD17, confirmar que releases não dependem de publicação futura para rodar localmente. O plano não declara testes de produto executados.
+Revisão deste planejamento: cruzar IDs do mapa com tarefas, verificar ausência de dependências cíclicas, cobrir todos os cenários V01–V33 e DOD01–DOD18, confirmar que releases não dependem de publicação futura para rodar localmente. O plano não declara testes de produto executados.
 
 ## 9. Entrega, rollout e handoff
 
@@ -399,7 +402,7 @@ A primeira tarefa executável é T01. O plano autoriza a sequência técnica com
 
 | Campo | Valor |
 |---|---|
-| Versão | 1.2 |
+| Versão | 1.3 |
 | Artefato canônico | `.memory-bank/plans/ado-team-compass/plan.md` |
 | Complexidade | L no núcleo local; XL no escopo completo com gateway remoto |
 | Score de complexidade | 6: múltiplos módulos 1 + arquitetura 2 + dependências 1 + validação 1 + aceite complexo 1; sem efeito irreversível no escopo de construção |
@@ -420,11 +423,8 @@ Consultadas em 12/09/2026. As fórmulas e limites deste documento são decisões
 - [Plugins Claude Code](https://code.claude.com/docs/en/plugins-reference): estrutura e resolução de componentes.
 - [Marketplaces Claude Code](https://code.claude.com/docs/en/plugin-marketplaces): distribuição do pacote por catálogo Git.
 - [Skills Claude Code](https://code.claude.com/docs/en/skills): entradas e argumentos da integração.
-- [Autenticação Entra no ADO](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/entra?view=azure-devops): separação de usuário e aplicação.
-- [Identidades de aplicação no ADO](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops): automação posterior.
-- [Configuração de escopo de equipe](https://learn.microsoft.com/en-us/rest/api/azure/devops/work/Teamfieldvalues/Get?view=azure-devops-rest-7.1): áreas e descendentes.
+- [MCP oficial Azure DevOps](https://github.com/microsoft/azure-devops-mcp): canal exclusivo de acesso e modos de conexão oficiais.
 - [Capacidade no Azure Boards](https://learn.microsoft.com/en-my/Azure/devops/boards/sprints/set-capacity?view=azure-devops): unidade e capacidade por equipe.
-- [Histórico do Analytics](https://learn.microsoft.com/en-us/azure/devops/report/powerbi/analytics-historical-filtering?view=azure-devops): snapshots, revisões e exclusões.
 - [WIQL](https://learn.microsoft.com/th-th/azure/devops/boards/queries/wiql-syntax?view=azure-devops): consulta histórica ASOF.
 
 ## 12. Revisão 1.1 — compatibilidade ampliada
@@ -443,3 +443,13 @@ Cenários adicionais obrigatórios:
 | V30 | Sem baseline ou CompletedWork não comparável: variação de esforço indisponível; não atribuir acumulado de sprints anteriores à atual | T18, T21, T22 |
 | V31 | Fila grande sem histórico ou item sem alteração: indício/idade desconhecida, nunca impedimento ou causa comprovados por inferência | T20, T21, T22 |
 | V32 | Exportar decisão, importar em nova execução e reaparecer achado: ID estável, origem humana e deduplicação; filtro não modifica total global sem rótulo | T22, T14 |
+
+## 14. Revisão 1.3 — ADO exclusivamente via MCP oficial
+
+Substitui as decisões anteriores de REST/OData, autenticação ADO própria e MCP opcional. A topologia é host/cliente MCP → servidor oficial → respostas estruturadas → motor Python → JSON/HTML. Gateway GPT apenas lê relatórios produzidos por essa cadeia. Falta de capacidade do servidor limita a funcionalidade; não autoriza conector alternativo.
+
+| ID | Cenário e resultado esperado | Tarefas |
+|---|---|---|
+| V33 | Ferramenta ausente/renomeada, schema incompatível ou ação de escrita dentro de ferramenta mista: recusar operação, identificar limitação e não realizar chamada REST/OData/SDK/CLI ADO; offline funciona sem rede | T03, T14, T17, T23, T28 |
+
+Esforços anteriores são estimativas condicionais ao catálogo MCP conectado. Reestimar após T03/T04 com cobertura e limites medidos; nenhum prazo implica disponibilidade de histórico ou autenticação não interativa não comprovados. [MCP oficial e matriz de cobertura](../../../docs/ado-mcp-contract.md).

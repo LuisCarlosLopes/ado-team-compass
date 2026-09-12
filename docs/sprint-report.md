@@ -1,6 +1,8 @@
-# Relatório HTML de sprint e apoio à decisão — v1.2
+# Relatório HTML de sprint e apoio à decisão — v1.3
 
 Estado: especificação de produto; HTML ainda não implementado. Data: 12/09/2026. Este documento amplia T22 e antecipa o relatório operacional para a v0.1. Histórico e comparações que dependem de dados passados entram progressivamente na v0.2.
+
+**Origem obrigatória:** todos os dados ADO usados neste relatório chegam exclusivamente pelo [MCP oficial Microsoft](https://github.com/microsoft/azure-devops-mcp). Configurações e decisões humanas têm proveniência distinta. Sem ferramenta/cobertura no MCP, o indicador é indisponível ou parcial; nunca haverá fallback REST/OData direto. [Contrato](ado-mcp-contract.md).
 
 ## 1. Decisões que o relatório deve apoiar
 
@@ -100,7 +102,7 @@ Primeira versão: abrir item no ADO, copiar recomendação e exportar lista de d
 
 O registro exportado contém run ID, finding ID, ação, responsável informado, prazo informado, estado (proposta, aceita, em andamento, concluída, descartada), justificativa e evidência de conclusão. O núcleo importa o arquivo explicitamente em uma nova execução, preservando trilha e origem humana. Não editar snapshots antigos. IDs de achados permanecem estáveis por regra + entidade; reaparecimento em outra execução não é automaticamente uma nova ação.
 
-Ação recomendada não é ação executada. Criar tarefas, alterar responsáveis ou postar comentários no ADO continua fora do escopo de leitura. Uma futura escrita exigirá contrato próprio com prévia da mudança, autorização, checagem de revisão do item e idempotência; este pedido de estudo não ativa escrita.
+Ação recomendada não é ação executada. Criar tarefas, alterar responsáveis ou postar comentários no ADO continua fora do escopo de leitura. Uma futura escrita também usará exclusivamente ferramenta do MCP oficial e exigirá contrato próprio com prévia da mudança, autorização, checagem de revisão do item e idempotência; este pedido de estudo não ativa escrita.
 
 ## 5. Conteúdo por release
 

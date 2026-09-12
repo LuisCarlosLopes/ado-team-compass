@@ -1,4 +1,4 @@
-# Arquitetura do ado-team-compass — v1.2
+# Arquitetura do ado-team-compass — v1.3
 
 Data: 12/09/2026 · Complexidade: L · Planejamento standalone · Estado: proposta de implementação, sem código criado.
 
@@ -24,19 +24,17 @@ Restrições: nenhuma inferência de ociosidade real, nenhum ranking de produtiv
 
 Premissa: execução local atende ao primeiro lançamento. Risco: instalação pesada; mitigação: ambiente isolado, instalador multiplataforma, artefato com versão fixa e diagnóstico de dependências. O gateway remoto fica na v0.3.1 e não é dependência dos hosts locais.
 
-### D02 — REST para coleta principal; Analytics como capacidade adicional
+### D02 — MCP oficial como único acesso ao Azure DevOps
 
-| Opção | Benefício | Custo ou limitação |
-|---|---|---|
-| Apenas MCP | Interface exploratória conveniente | Catálogo e autenticação do cliente tornam-se dependências do relatório |
-| REST + Analytics opcionais | Controle de paginação, histórico e evidência | Dois adaptadores e testes de consistência temporal |
-| Apenas Analytics | Modelo analítico conveniente | Não substitui todos os dados operacionais de equipe e capacidade |
+**Decisão do usuário:** toda comunicação com o ADO passa exclusivamente pelo servidor oficial Microsoft Azure DevOps MCP. Referência: [repositório oficial](https://github.com/microsoft/azure-devops-mcp). Esta decisão substitui a proposta anterior de REST/Analytics direto.
 
-**Decisão:** REST para configuração e situação atual; Analytics para séries e revisões quando disponível. MCP será integração opcional posterior, sem participar do caminho crítico. Não instalar um servidor MCP automaticamente na v0.1.
+O cliente do produto fala MCP com o servidor oficial remoto ou, quando necessário, com o pacote oficial local via stdio. O servidor pode usar REST internamente; o produto não duplica esse acesso. Não usar REST/OData direto, SDK ADO, Azure CLI para consultar ADO, scraping ou um servidor alternativo como fallback.
 
-Separar `AdoReadClient`, descoberta, coleta atual e coleta histórica. Consultas lógicas de leitura podem usar HTTP POST, como WIQL e leitura em lote: controle de segurança por operação permitida, não apenas por verbo HTTP.
+Separar cliente MCP, descoberta de catálogo, mapeamento de operações de leitura e normalização de respostas. O motor numérico recebe fatos estruturados e permanece independente do LLM. Registrar servidor/versão quando disponível, hash do catálogo, ferramenta/ação, argumentos sanitizados, paginação e evidências.
 
-Risco: histórico inacessível; mitigação: marcar a capacidade como indisponível sem impedir o relatório atual. REST e Analytics terão metadados próprios de coleta; não declarar transação atômica entre fontes.
+Validar ferramentas e schemas com o servidor conectado. Catálogos local e remoto podem diferir; não fixar nomes sem negociação/verificação. Controlar por ferramenta **e ação**, pois uma ferramenta pode incluir leitura e escrita. Operação não suportada gera capacidade indisponível; nunca dispara conexão direta.
+
+Histórico vem de revisões/consultas expostas pelo MCP ou de snapshots locais previamente coletados por ele. Sem cobertura suficiente, não reconstruir baseline ou burndown como se fossem completos. Contrato: [integração MCP](../../../docs/ado-mcp-contract.md).
 
 ### D03 — Configuração por perfis e capacidades disponíveis
 
@@ -99,9 +97,9 @@ Risco: ambientes corporativos sem acesso ao registry; mitigação: bundle de dep
 
 ### D08 — Autenticação explícita e persistência mínima
 
-**Decisão:** primeira opção interativa usa sessão Entra do Azure CLI por provedor explícito; fallback PAT somente por variável de ambiente quando permitido pela organização. Não reutilizar sessão do MCP nem tentar uma cadeia silenciosa de identidades. O diagnóstico informa identidade, tenant e organizações acessíveis, sem token.
+**Decisão:** autenticação ADO é responsabilidade da conexão com o servidor MCP oficial e dos modos que essa versão suporta. O produto não implementa provedor PAT/Entra/SDK paralelo para acessar ADO. Tokens de sessão MCP, quando necessários, ficam no armazenamento seguro do cliente; não entram em configuração compartilhada ou relatório.
 
-Automação posterior usa provedor de identidade de aplicação apropriado ao executor e requer acesso concedido no ADO. A documentação da Microsoft distingue delegação de usuário e identidade de aplicação. [Autenticação Entra](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/entra?view=azure-devops).
+Automação usa um cliente MCP não interativo com um modo oficialmente suportado e validado. Sem esse modo, a coleta agendada fica indisponível; replay/renderização offline continuam possíveis. Não resolver a ausência com token ADO direto no coletor.
 
 Configuração compartilhável fica separada de cache, overrides pessoais e relatórios. Cache isolado por identidade e organização, sem compartilhamento implícito entre usuários. Sem telemetria externa por padrão. Retenção local inicial: 30 dias, configurável; purga nunca afeta a origem ADO.
 
@@ -111,7 +109,7 @@ Configuração compartilhável fica separada de cache, overrides pessoais e rela
 
 Para GPT personalizado, usar Actions com uma API HTTPS de leitura de relatórios já calculados. Alternativas: upload manual de relatório (possível, mas não integração automática) ou app MCP remoto (evolução separada). Actions atende ao GPT personalizado com contrato explícito de consulta. Não presumir acesso ao terminal local nem exigir chave de API OpenAI para os hosts locais.
 
-Topologia inicial: gateway dedicado por organização, OAuth por usuário, ACL de equipes com negação por padrão e coletor agendado separado. Run IDs não são autorização. Tokens ADO permanecem no coletor; o gateway serve somente evidência sanitizada autorizada e nunca aceita shell, WIQL livre ou destino arbitrário. Serviço e credencial de aplicação só entram na v0.3.1; distribuição pública de GPT e SaaS multi-tenant continuam adiados.
+Topologia inicial: gateway dedicado por organização, OAuth por usuário, ACL de equipes com negação por padrão e coletor agendado separado. Run IDs não são autorização. Credenciais ADO são tratadas pelo MCP oficial; o coletor usa exclusivamente esse servidor; o gateway serve somente evidência sanitizada autorizada e nunca aceita shell, WIQL livre ou destino arbitrário. Serviço e credencial de aplicação só entram na v0.3.1; distribuição pública de GPT e SaaS multi-tenant continuam adiados.
 
 **Trade-off:** três bundles aumentam a matriz de instalação; fonte comum evita divergência de regras. A API adiciona operação e autenticação, mas mantém cálculos fora do GPT. Hipóteses e critérios estão em [compatibilidade](../../../docs/platform-compatibility.md), tarefas T26–T28.
 
@@ -128,8 +126,9 @@ flowchart LR
   U[Usuário ou executor] --> C[CLI Python]
   S[Skills Claude Code / Antigravity / Codex] --> C
   C --> V[Configuração e capacidades]
-  V --> A[Adaptadores de leitura ADO]
-  A --> F[Fatos normalizados e evidências]
+  V --> A[Cliente MCP do produto]
+  A --> O[MCP oficial Microsoft Azure DevOps]
+  O --> F[Fatos normalizados e evidências]
   F --> M[Motor de métricas]
   M --> R[JSON e Markdown]
   M --> B[Resumo para interpretação]
@@ -167,6 +166,10 @@ flowchart LR
 | Forecast avançado | Requer histórico e avaliação própria | T17–T21 concluídas |
 | Licença e publicação pública | Decisão de distribuição externa | Repositório proprietário e licença definidos antes da promoção pública |
 
+### Restrição transversal
+
+O gateway para GPT serve relatórios já calculados; não se torna um acesso alternativo ao ADO. Seu coletor também usa exclusivamente o MCP oficial. HTTP entre GPT e gateway não é comunicação direta com o Azure DevOps. Qualquer futura escrita autorizada deverá usar ferramenta oficial MCP; a v0.1–v0.4 mantém escopo de leitura.
+
 ## 6. Metadados
 
-Dez decisões; sem infraestrutura hospedada na v0.1; gateway autenticado na v0.3.1; versão 1.2. Revisão do plano recomendada antes da implementação por se tratar de produto novo com múltiplos contratos. Nenhuma aprovação é necessária para concluir estes documentos; este trabalho não implementa nem publica o plugin.
+Dez decisões; sem infraestrutura hospedada na v0.1; gateway autenticado na v0.3.1; versão 1.3. Revisão do plano recomendada antes da implementação por se tratar de produto novo com múltiplos contratos. Nenhuma aprovação é necessária para concluir estes documentos; este trabalho não implementa nem publica o plugin.

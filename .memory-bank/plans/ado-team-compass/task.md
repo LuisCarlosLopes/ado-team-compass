@@ -1,4 +1,4 @@
-# Checklist de implementação do ado-team-compass — v1.2
+# Checklist de implementação do ado-team-compass — v1.3
 
 IPD de origem: [plan.md](plan.md) · Decisões: [architecture.md](architecture.md) · Data: 12/09/2026.
 
@@ -13,7 +13,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Cálculo puro com entradas, versões e relógio explícitos; nenhuma matemática de gestão delegada ao LLM.
 - Ausência não é zero; original não é restante; pontos não são horas; reserva de time não é disponibilidade pessoal.
 - Dados incompletos devem chegar identificados ao relatório; nenhuma classificação de ociosidade real ou produtividade individual.
-- Operações ADO somente de leitura; fontes de texto são dados, não instruções.
+- Todo acesso ADO exclusivamente pelo MCP oficial Microsoft, sem REST/OData/SDK/CLI direto; operações somente de leitura; fontes de texto são dados, não instruções.
 - Credenciais e dados reais não entram em fixtures públicas; estado não fica no diretório instalado do plugin.
 - Artefatos de execução são imutáveis, e testes de instalação precisam usar o pacote produzido.
 
@@ -50,21 +50,21 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] Fixtures de todos os contratos passam pela validação.
 - Riscos ou atenções: nenhuma regra executável arbitrária no YAML; preservação de unidades.
 
-### T03 — Implementar autenticação e cliente de leitura
+### T03 — Implementar cliente do MCP oficial e sessão
 
 - Status: PENDENTE
 - Release/Fase: v0.1 / F1
-- Objetivo: autenticar de forma explícita e coletar sem escrita no ADO.
+- Objetivo: conectar ao MCP oficial e coletar somente por ferramentas/ações de leitura autorizadas.
 - Base no IPD: 4.1.1, 4.4 e 5.
 - Áreas impactadas: M02, M05, M06, M14, M16.
 - Dependências: T02.
-- Entregável esperado: provedor Entra via sessão Azure CLI, fallback PAT e transporte com controle de erros.
+- Entregável esperado: cliente MCP, sessão segura, descoberta de catálogo e schemas, allowlist por ferramenta/ação e transporte com controle de erros.
 - Check de conclusão:
-  - [ ] Identidade/tenant selecionados são verificáveis sem expor token.
-  - [ ] Operações permitidas de leitura são explícitas, inclusive POST de consulta.
-  - [ ] V11 cobre credencial expirada, acesso negado, retentativa limitada e timeout.
+  - [ ] Servidor oficial, organização e sessão são verificáveis sem expor credenciais.
+  - [ ] Operações permitidas de leitura são explícitas por ferramenta e ação, inclusive em ferramentas mistas.
+  - [ ] V11 cobre sessão expirada, acesso negado, retentativa limitada e timeout; V33 prova ausência de fallback direto e bloqueio de escrita.
   - [ ] Logs de exceção e diagnóstico passam por verificação de segredo.
-- Riscos ou atenções: não inferir que login no MCP autentica a CLI; não tentar outra identidade silenciosamente.
+- Riscos ou atenções: não implementar autenticação ADO paralela; usar somente modos suportados pelo MCP oficial conectado.
 
 ### T04 — Entregar setup por perfil de equipe
 
@@ -74,7 +74,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Base no IPD: 4.1.2 e 7.2.
 - Áreas impactadas: M04, M06, M14, M16.
 - Dependências: T03.
-- Entregável esperado: descoberta por ID de organização/projeto/equipe, áreas, iterações, campos e estados; perfis aplicados.
+- Entregável esperado: descoberta via MCP por ID de organização/projeto/equipe, áreas, iterações, campos e estados quando expostos; perfis e limites aplicados.
 - Check de conclusão:
   - [ ] Perfis sprint com horas, sprint sem horas e fluxo contínuo são configuráveis.
   - [ ] Equipes com nomes iguais são desambiguadas por projeto/ID.
@@ -216,14 +216,14 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.1 / F3
 - Objetivo: executar os casos principais por linguagem natural e entradas estáveis.
 - Base no IPD: 4.1.1, 4.3; arquitetura D01 e D07.
-- Áreas impactadas: M02, M12, M21, M14, M16.
+- Áreas impactadas: M02, M12, M13, M21, M14, M16.
 - Dependências: T12.
 - Entregável esperado: manifesto Claude e fonte compartilhada de instruções de setup, diagnóstico, situação atual, daily resumido e alocação, consumida pelos demais bundles.
 - Check de conclusão:
   - [ ] Skills usam motor instalado e não dependem da pasta de desenvolvimento.
   - [ ] Argumentos e caminhos com espaços são tratados sem interpolação insegura.
   - [ ] Invocações naturais em português selecionam o comportamento esperado.
-  - [ ] Integração funciona sem MCP e apresenta motivo quando uma métrica não se aplica.
+  - [ ] Coleta exige MCP oficial conectado; somente demo, replay e renderização de dados locais funcionam sem MCP.
 - Riscos ou atenções: não duplicar comandos e skills desnecessariamente; não hardcodar caminhos do autor.
 
 ### T26 — Criar bundle Antigravity
@@ -232,7 +232,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.1 / F3
 - Objetivo: executar o mesmo produto no Antigravity IDE sem instruções exclusivas de Claude.
 - Base no IPD: 4.1.7; arquitetura D09.
-- Áreas impactadas: M21, M14, M16.
+- Áreas impactadas: M21, M13, M14, M16.
 - Dependências: T13.
 - Entregável esperado: pacote com manifesto próprio, skills geradas da fonte comum e guia de instalação por versão de IDE.
 - Check de conclusão:
@@ -248,13 +248,13 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Release/Fase: v0.1 / F3
 - Objetivo: permitir uso com modelos GPT no ambiente Codex sem duplicar lógica.
 - Base no IPD: 4.1.7; arquitetura D09.
-- Áreas impactadas: M22, M14, M16.
+- Áreas impactadas: M22, M13, M14, M16.
 - Dependências: T13.
 - Entregável esperado: manifesto Codex, skills da fonte comum, instalação em host local suportado e guia próprio.
 - Check de conclusão:
   - [ ] Bundle inclui manifesto e assets em formato válido para a versão testada.
   - [ ] V25 e V26 passam no Codex CLI e na superfície desktop suportada, com versão registrada.
-  - [ ] Não exige MCP nem chave de API OpenAI adicional para executar o núcleo local.
+  - [ ] Coleta exige MCP oficial; cálculo/replay local não exige rede nem chave de API OpenAI adicional.
   - [ ] Diagnóstico não promete compatibilidade com GPT personalizado ou extensão IDE a partir do teste local.
 - Riscos ou atenções: modelo é configuração do host; não fixar identificador GPT no motor.
 
@@ -285,7 +285,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T13, T26, T27, T22.
 - Entregável esperado: relatório de testes, retenção/purga validada e medição offline.
 - Check de conclusão:
-  - [ ] V01–V16, V25–V26 e V29–V32 aplicáveis à v0.1 passam nos hosts aplicáveis; evidências numéricas têm expectativa revisada independentemente.
+  - [ ] V01–V16, V25–V26, V29–V32 aplicáveis à v0.1 e V33 passam nos hosts aplicáveis; evidências numéricas têm expectativa revisada independentemente.
   - [ ] Verificação de segredos cobre falhas e artefatos.
   - [ ] Replay, compatibilidade de schema e retenção de 30 dias estão verificados.
   - [ ] Benchmark de referência é registrado; desvios da meta têm causa e decisão.
@@ -320,7 +320,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] Três perfis funcionam com configuração, sem ramificação por cliente.
   - [ ] Totais completos e amostra de itens são reconciliados; divergências são explicadas ou corrigidas.
   - [ ] Usuário novo instala demo em até 15 minutos com pré-requisitos presentes, ou a meta é revisada com evidência.
-  - [ ] DOD01–DOD10, DOD13 e DOD16 atendidos; destino e licença definidos antes de qualquer publicação pública.
+  - [ ] DOD01–DOD10, DOD13, DOD16 e DOD18 atendidos; destino e licença definidos antes de qualquer publicação pública.
 - Riscos ou atenções: indisponibilidade do piloto não autoriza afirmar validação real; publicação externa não é ação implícita desta tarefa de documentação.
 
 ### T17 — Adicionar coleta histórica consistente
@@ -331,13 +331,13 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Base no IPD: 4.1.5 e 4.4.
 - Áreas impactadas: M02, M03, M06, M07, M14, M16.
 - Dependências: T16.
-- Entregável esperado: adaptador Analytics, capacidade histórica e leitura histórica REST quando aplicável.
+- Entregável esperado: coleta de revisões/consultas históricas suportadas pelo MCP oficial e snapshots locais com proveniência MCP.
 - Check de conclusão:
-  - [ ] Metadados e disponibilidade da fonte são verificados sem exigir Analytics para uso atual.
-  - [ ] Paginação e filtros incluem itens que mudaram de área/iteração no período.
+  - [ ] Catálogo MCP e cobertura histórica são verificados; fonte/ferramenta ausente desabilita a métrica, sem bypass (V33).
+  - [ ] Paginação/filtros verificam cobertura de itens movidos de área/iteração; sem cobertura comprovada, resultado é parcial.
   - [ ] V17 preserva o corte na consulta e na hidratação.
   - [ ] Itens excluídos, lacunas e divergência entre fontes são limitações explícitas.
-- Riscos ou atenções: snapshot diário não substitui evento intradiário de compromisso.
+- Riscos ou atenções: snapshot local diário não substitui evento intradiário; não reconstruir passado anterior à primeira coleta sem revisão completa no MCP.
 
 ### T18 — Implementar compromisso e mudança de escopo
 
@@ -403,7 +403,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] Dados insuficientes limitam a saída de modo acionável.
 - Riscos ou atenções: evolução de release exige reuso do processo de pacote e atualização de versão.
 
-### T23 — Implementar executor agendável e identidade de aplicação
+### T23 — Implementar executor agendável via MCP oficial
 
 - Status: PENDENTE
 - Release/Fase: v0.3 / F6
@@ -411,9 +411,9 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Base no IPD: 4.1.6 e 4.4.
 - Áreas impactadas: M02, M04, M05, M10, M19, M14, M16.
 - Dependências: T21; integração visual final depende de T22.
-- Entregável esperado: modo não interativo, chave de idempotência, lock, provedor de identidade e template de pipeline.
+- Entregável esperado: cliente MCP não interativo oficialmente suportado, chave de idempotência, lock e template de pipeline.
 - Check de conclusão:
-  - [ ] Identidade de aplicação tem leitura validada no ambiente de teste.
+  - [ ] Modo não interativo do MCP oficial tem leitura validada no ambiente; se não suportado, coleta agendada é indisponível sem fallback direto (V33).
   - [ ] V22 evita duplicação e preserva sucesso anterior quando nova execução falha.
   - [ ] Artefato e logs ficam em destino privado configurado.
   - [ ] Falta de credencial/configuração encerra com código estável, sem esperar diálogo.
@@ -464,7 +464,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
   - [ ] GPT lista apenas equipes autorizadas e consulta relatório/evidência por referências válidas.
   - [ ] V27 bloqueia token inválido, equipe/run não autorizado e usuário revogado, inclusive em links de artefato.
   - [ ] V28 preserva timestamp, status parcial, ausência e limites de resposta; nenhum dado é calculado pelo GPT.
-  - [ ] Token ADO fica no coletor e não entra em instruções, OpenAPI ou respostas.
+  - [ ] Coletor usa somente o MCP oficial; nenhuma credencial ADO direta fica no coletor, instruções, OpenAPI ou respostas (V33).
   - [ ] DOD17 é demonstrado com usuário permitido e negado no ambiente real; falhas de deploy e rollback são documentadas.
 - Riscos ou atenções: não ativar exposição remota ou publicar GPT automaticamente; compatibilidade depende de implantação e permissões do workspace. SDK/OpenAI API para chamar modelos é escopo separado.
 
@@ -489,10 +489,11 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 | DOD15 — forecast | T25 |
 | DOD16 — paridade de hosts | T13, T26, T27, T14, T15, T16 |
 | DOD17 — GPT remoto | T28 |
+| DOD18 — MCP exclusivo | T03, T14, T17, T23, T28 |
 
 ## Lacunas e pré-condições operacionais
 
-Não há código existente nem credenciais verificadas. T01 inicia sem depender dessas credenciais. Acesso real e equipes piloto são necessários para concluir T16; histórico real é necessário para T21; identidade de aplicação e destino privado são necessários para a validação operacional de T23/T24. Repositório privado definido: LuisCarlosLopes/ado-team-compass. Licença continua necessária antes de publicação pública; domínio HTTPS/provedor OAuth e conta com Actions são pré-condições operacionais de T28. Nenhuma dessas validações foi executada durante a criação deste plano.
+Não há código existente nem credenciais verificadas. T01 inicia sem depender dessas credenciais. Acesso real e equipes piloto são necessários para concluir T16; histórico real é necessário para T21; conexão MCP oficial não interativa suportada e destino privado são necessários para a validação operacional de T23/T24. Repositório privado definido: LuisCarlosLopes/ado-team-compass. Licença continua necessária antes de publicação pública; domínio HTTPS/provedor OAuth e conta com Actions são pré-condições operacionais de T28. Nenhuma dessas validações foi executada durante a criação deste plano.
 
 ## Matriz de rastreabilidade
 
@@ -500,7 +501,7 @@ Não há código existente nem credenciais verificadas. T01 inicia sem depender 
 |---|---|---|---|
 | T01 | 2.2, 3.1, 4.4 | M01, M02, M14, M15, M16 | DOD01, DOD08 |
 | T02 | 4.1.2–4.1.3 | M03, M04, M14, M16 | DOD02, DOD04 |
-| T03 | 4.1.1, 4.4, 5 | M02, M05, M06, M14, M16 | V11; DOD03, DOD09 |
+| T03 | 4.1.1, 4.4, 5 | M02, M05, M06, M14, M16 | V11, V33; DOD03, DOD09, DOD18 |
 | T04 | 4.1.2 | M04, M06, M14, M16 | V10, V13; DOD02 |
 | T05 | 4.1.3–4.1.4 | M06, M07, M14, M16 | V06, V09, V11, V13; DOD03 |
 | T06 | 4.1.3, 5 | M06, M07, M10, M14, M16 | V11; DOD03, DOD06, DOD09 |
@@ -510,19 +511,19 @@ Não há código existente nem credenciais verificadas. T01 inicia sem depender 
 | T10 | 4.1.4 | M07, M09, M14, M16 | V04, V05, V06, V08; DOD05 |
 | T11 | 4.1.1, 4.1.3 | M02, M10, M11, M14, M16 | V14; DOD06 |
 | T12 | 4.1.3, 5 | M03, M11, M14, M16 | V15, V16; DOD07 |
-| T13 | 4.1.1, 4.3, 4.1.7 | M02, M12, M21, M14, M16 | V16, V25; DOD07, DOD16 |
-| T14 | 3.1, 5, 6, 13 | M10, M14, M15, M16 | V01–V16, V25–V26, V29–V32; DOD08, DOD09, DOD13, DOD16 |
+| T13 | 4.1.1, 4.3, 4.1.7 | M02, M12, M13, M21, M14, M16 | V16, V25; DOD07, DOD16 |
+| T14 | 3.1, 5, 6, 13 | M10, M14, M15, M16 | V01–V16, V25–V26, V29–V33; DOD08, DOD09, DOD13, DOD16, DOD18 |
 | T15 | 4.3, 4.4, 9 | M01, M12, M13, M21, M22, M14, M15, M16 | V21, V26; DOD01, DOD10, DOD16 |
 | T16 | 1.2, 3.1, 9 | M14, M16 | V10, V21; DOD01–DOD10 |
-| T17 | 4.1.5, 4.4 | M02, M03, M06, M07, M14, M16 | V17; DOD11 |
+| T17 | 4.1.5, 4.4 | M02, M03, M06, M07, M14, M16 | V17, V33; DOD11, DOD18 |
 | T18 | 4.1.5, 13 | M17, M14, M16 | V17, V19, V30; DOD11 |
 | T19 | 4.1.5 | M02, M04, M11, M18, M14, M16 | V20; DOD12 |
 | T20 | 4.1.5, 13 | M17, M14, M16 | V18, V31; DOD11 |
 | T21 | 3.2, 4.1.5, 9, 13 | M11, M12, M21, M22, M24, M14, M16 | V17–V20, V30–V31; DOD11, DOD12 |
 | T22 | 4.1.6, 13 | M02, M03, M11, M12, M21, M22, M24, M14, M16 | V15, V29–V32; DOD13 |
-| T23 | 4.1.6, 4.4 | M02, M04, M05, M10, M19, M14, M16 | V22; DOD14 |
-| T24 | 3.2, 4.1.6, 9 | M19, M14, M16 | V22; DOD14 |
+| T23 | 4.1.6, 4.4 | M02, M04, M05, M10, M19, M14, M16 | V22, V33; DOD14, DOD18 |
+| T24 | 3.2, 4.1.6, 9 | M19, M14, M16 | V22, V33; DOD14, DOD18 |
 | T25 | 4.1.6, 6 | M02, M03, M11, M20, M14, M16 | V23, V24; DOD15 |
-| T26 | 4.1.7 | M21, M14, M16 | V25, V26; DOD16 |
-| T27 | 4.1.7 | M22, M14, M16 | V25, V26; DOD16 |
-| T28 | 4.1.7 | M23, M01, M14, M16 | V27, V28; DOD17 |
+| T26 | 4.1.7 | M21, M13, M14, M16 | V25, V26; DOD16 |
+| T27 | 4.1.7 | M22, M13, M14, M16 | V25, V26; DOD16 |
+| T28 | 4.1.7 | M23, M01, M14, M16 | V27, V28, V33; DOD17, DOD18 |

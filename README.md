@@ -4,6 +4,14 @@ Visibilidade de entrega e orientação para o time, com base nos dados do Azure 
 
 Plugin planejado para Claude Code, Google Antigravity e Codex (OpenAI/GPT), com motor Python independente, cálculos auditáveis e configuração adaptável a diferentes equipes.
 
+## Canal exclusivo de acesso ao Azure DevOps
+
+**Toda comunicação do ADO Team Compass com o Azure DevOps será realizada exclusivamente pelo [MCP oficial da Microsoft](https://github.com/microsoft/azure-devops-mcp).** Isso inclui descoberta, consultas, capacidade, histórico e qualquer futura ação autorizada.
+
+O plugin não acessará diretamente APIs REST, Analytics/OData, SDKs ou CLI do ADO e não terá fallback de conexão direta. Python calcula e gera relatórios a partir das respostas do MCP. Recursos sem suporte no catálogo conectado ficam indisponíveis, com motivo explícito.
+
+[Contrato de integração e cobertura do MCP](docs/ado-mcp-contract.md).
+
 ## Estado do projeto
 
 Em planejamento. Este repositório contém a arquitetura e o plano de implementação; o plugin ainda não foi implementado.
@@ -49,7 +57,7 @@ A primeira versão prevê entrega atual, planejamento de capacidade, carga resta
 - Evidências e limitações explícitas por métrica.
 - Configuração por perfil de equipe, sem impor horas ou sprints.
 - Visão de carga sem ranking de produtividade individual.
-- Integração de leitura com o Azure DevOps.
+- Integração de leitura exclusivamente pelo MCP oficial do Azure DevOps.
 
 ## Próximo passo
 
