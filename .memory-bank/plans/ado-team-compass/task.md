@@ -1,0 +1,473 @@
+# Checklist de implementação do ado-team-compass — v1.0
+
+IPD de origem: [plan.md](plan.md) · Decisões: [architecture.md](architecture.md) · Data: 12/09/2026.
+
+## Resumo executivo
+
+Objetivo: construir e distribuir visibilidade de entrega ADO com evidência auditável e adaptação por equipe. Complexidade L. São 25 tarefas, mais numerosas que a heurística usual porque cobrem quatro releases; 16 entregam a v0.1. Todas estão pendentes: este documento não registra implementação executada.
+
+Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de alterações do plano, V aos cenários de teste e DOD aos critérios de pronto. Testes e documentação acompanham a responsabilidade implementada, além das validações transversais explicitamente separadas.
+
+## Guardrails herdados
+
+- Cálculo puro com entradas, versões e relógio explícitos; nenhuma matemática de gestão delegada ao LLM.
+- Ausência não é zero; original não é restante; pontos não são horas; reserva de time não é disponibilidade pessoal.
+- Dados incompletos devem chegar identificados ao relatório; nenhuma classificação de ociosidade real ou produtividade individual.
+- Operações ADO somente de leitura; fontes de texto são dados, não instruções.
+- Credenciais e dados reais não entram em fixtures públicas; estado não fica no diretório instalado do plugin.
+- Artefatos de execução são imutáveis, e testes de instalação precisam usar o pacote produzido.
+
+## Sequência de tarefas
+
+### T01 — Criar pacote e infraestrutura de qualidade
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F0
+- Objetivo: estabelecer projeto instalável e verificação automatizada antes das métricas.
+- Base no IPD: 2.2, 3.1, 4.3 e 4.4.
+- Áreas impactadas: M01, M02, M14, M15, M16.
+- Dependências: nenhuma.
+- Entregável esperado: pacote Python, lock de dependências, CLI mínima, CI e fixture sintética mínima.
+- Check de conclusão:
+  - [ ] Pacote construído instala em ambiente isolado e informa sua versão.
+  - [ ] Testes, estilo e checagem de tipos executam no CI sem credenciais.
+  - [ ] Git ignora somente dados de execução e overrides locais; exemplo compartilhável continua versionável.
+- Riscos ou atenções: não confundir ausência de infraestrutura prévia com dispensa de testes.
+
+### T02 — Implementar schemas e resolução de configuração
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F0
+- Objetivo: estabilizar o contrato entre fonte, cálculo e narrativa.
+- Base no IPD: 4.1.2, 4.1.3; arquitetura D03 e D05.
+- Áreas impactadas: M03, M04, M14, M16.
+- Dependências: T01.
+- Entregável esperado: modelos tipados, schemas exportados, perfis iniciais e configuração efetiva sanitizada.
+- Check de conclusão:
+  - [ ] Ausente, zero e não aplicável são representáveis separadamente.
+  - [ ] Precedência de configuração é determinística e tem teste.
+  - [ ] Major desconhecida e campos inválidos geram erro acionável.
+  - [ ] Fixtures de todos os contratos passam pela validação.
+- Riscos ou atenções: nenhuma regra executável arbitrária no YAML; preservação de unidades.
+
+### T03 — Implementar autenticação e cliente de leitura
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F1
+- Objetivo: autenticar de forma explícita e coletar sem escrita no ADO.
+- Base no IPD: 4.1.1, 4.4 e 5.
+- Áreas impactadas: M02, M05, M06, M14, M16.
+- Dependências: T02.
+- Entregável esperado: provedor Entra via sessão Azure CLI, fallback PAT e transporte com controle de erros.
+- Check de conclusão:
+  - [ ] Identidade/tenant selecionados são verificáveis sem expor token.
+  - [ ] Operações permitidas de leitura são explícitas, inclusive POST de consulta.
+  - [ ] V11 cobre credencial expirada, acesso negado, retentativa limitada e timeout.
+  - [ ] Logs de exceção e diagnóstico passam por verificação de segredo.
+- Riscos ou atenções: não inferir que login no MCP autentica a CLI; não tentar outra identidade silenciosamente.
+
+### T04 — Entregar setup por perfil de equipe
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F1
+- Objetivo: configurar várias equipes sem modificar código.
+- Base no IPD: 4.1.2 e 7.2.
+- Áreas impactadas: M04, M06, M14, M16.
+- Dependências: T03.
+- Entregável esperado: descoberta por ID de organização/projeto/equipe, áreas, iterações, campos e estados; perfis aplicados.
+- Check de conclusão:
+  - [ ] Perfis sprint com horas, sprint sem horas e fluxo contínuo são configuráveis.
+  - [ ] Equipes com nomes iguais são desambiguadas por projeto/ID.
+  - [ ] Inclusão de áreas descendentes é respeitada.
+  - [ ] Mapeamento desconhecido desabilita a métrica dependente com motivo; V10 e V13 cobertos.
+- Riscos ou atenções: descoberta técnica não prova política de negócio nem compromisso da sprint.
+
+### T05 — Coletar e normalizar a situação atual
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F1
+- Objetivo: produzir fatos completos dentro do escopo selecionado.
+- Base no IPD: 4.1.3, 4.1.4 e 4.2.
+- Áreas impactadas: M06, M07, M14, M16.
+- Dependências: T04.
+- Entregável esperado: itens, pessoas, capacidade, calendários e relações normalizados com origem.
+- Check de conclusão:
+  - [ ] Paginação e leitura em lote preservam contagens esperadas.
+  - [ ] IDs duplicados não geram fatos duplicados; V06 e V09 cobertos.
+  - [ ] Bugs, estados customizados e renomeações são tratados conforme perfil.
+  - [ ] Fonte incompleta carrega motivo e cobertura até a saída; V11 e V13 cobertos.
+- Riscos ou atenções: coleta de fontes diferentes não equivale a snapshot transacional único.
+
+### T06 — Adicionar cache, evidência e recuperação de falhas
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F1
+- Objetivo: permitir auditoria e repetição sem misturar identidades ou coletas.
+- Base no IPD: 4.1.3, 5 e 7.1.
+- Áreas impactadas: M06, M07, M10, M14, M16.
+- Dependências: T05.
+- Entregável esperado: cache isolado, identificação de fonte e estado de coleta parcial.
+- Check de conclusão:
+  - [ ] Cache separa organização, identidade, escopo, período e versão relevante.
+  - [ ] Falha intermediária não produz execução marcada como completa.
+  - [ ] Evidência minimizada permite explicar um total sem credencial ou descrição integral.
+  - [ ] Alteração de identidade não reutiliza silenciosamente cache de outro usuário.
+- Riscos ou atenções: sanitização de evidência deve manter os fatos necessários à reprodução.
+
+### T07 — Implementar qualidade por métrica
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F2
+- Objetivo: determinar quais resultados são utilizáveis para cada perfil.
+- Base no IPD: 4.1.2–4.1.4.
+- Áreas impactadas: M04, M08, M14, M16.
+- Dependências: T02, T05.
+- Entregável esperado: requisitos de cada métrica, status, cobertura e motivos.
+- Check de conclusão:
+  - [ ] V02 distingue carga conhecida de itens sem restante.
+  - [ ] V10 não penaliza equipe sem horas por campos não aplicáveis.
+  - [ ] Denominador desconhecido não vira cobertura total.
+  - [ ] Nenhum score agregado é apresentado como percentual de confiança.
+- Riscos ou atenções: cobertura de itens não é cobertura do esforço desconhecido.
+
+### T08 — Implementar calendário e capacidade restante
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F2
+- Objetivo: calcular disponibilidade reservada na janela correta.
+- Base no IPD: 4.1.4.
+- Áreas impactadas: M04, M09, M14, M16.
+- Dependências: T02; integração final depende de T05.
+- Entregável esperado: funções puras de janela, dias elegíveis, folgas e capacidade por atividade.
+- Check de conclusão:
+  - [ ] V01 valida união de feriados/folgas sem desconto duplicado.
+  - [ ] V12 valida timezone, limites de sprint e política do dia atual.
+  - [ ] V08 impede conversão implícita entre dias e horas.
+  - [ ] Folgas parciais e capacidade nula têm comportamentos documentados.
+- Riscos ou atenções: fixtures podem permitir desenvolvimento paralelo à coleta; contrato não muda unilateralmente.
+
+### T09 — Implementar carga e classificações locais
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F2
+- Objetivo: comparar carga conhecida e capacidade restante de cada equipe.
+- Base no IPD: 4.1.4.
+- Áreas impactadas: M09, M14, M16.
+- Dependências: T07, T08.
+- Entregável esperado: carga por pessoa/atividade, carga sem responsável e classes com limites explícitos.
+- Check de conclusão:
+  - [ ] V02, V03 e V07 preservam ausências e impedem divisão inválida.
+  - [ ] V09 evita soma de pai e filho; itens excluídos ficam explicados.
+  - [ ] Limiares 0,60, 0,90 e 1,10 possuem testes de fronteira.
+  - [ ] Dados parciais não geram falsa classificação de baixa carga.
+- Riscos ou atenções: todo percentual deve usar mesma janela e unidade do numerador.
+
+### T10 — Implementar consolidação entre equipes
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F2
+- Objetivo: expor reservas sobrepostas e carga observada sem fabricar disponibilidade.
+- Base no IPD: 4.1.4; arquitetura D04.
+- Áreas impactadas: M07, M09, M14, M16.
+- Dependências: T09, T06.
+- Entregável esperado: visão por pessoa na organização selecionada, com cobertura de equipes e janela comum.
+- Check de conclusão:
+  - [ ] V04 aponta reserva acima da disponibilidade pessoal.
+  - [ ] V05 deixa utilização global nula sem disponibilidade validada.
+  - [ ] V06 deduplica itens e preserva múltiplos pertencimentos.
+  - [ ] Projetos/sprints diferentes e acesso parcial têm cobertura explícita; V08 coberto.
+- Riscos ou atenções: não consolidar pessoas de organizações diferentes por nome ou e-mail.
+
+### T11 — Persistir execução e gerar relatório determinístico
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3
+- Objetivo: entregar resultado útil e auditável sem depender do assistente.
+- Base no IPD: 4.1.1, 4.1.3 e 4.2.
+- Áreas impactadas: M02, M10, M11, M14, M16.
+- Dependências: T06, T10.
+- Entregável esperado: manifesto, fatos, métricas, resumo limitado e Markdown; leitura de evidências e replay.
+- Check de conclusão:
+  - [ ] V14 confirma igualdade de métricas no replay.
+  - [ ] Cada número do relatório aponta para métrica/evidência da execução.
+  - [ ] Resumo excedente é reduzido deterministicamente com indicador de truncamento.
+  - [ ] Escrita interrompida não substitui execução válida por saída incompleta.
+- Riscos ou atenções: hashes não são assinatura de autenticidade; fatos completos não podem ser truncados.
+
+### T12 — Delimitar e validar interpretação do LLM
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3
+- Objetivo: acrescentar interpretação sem inventar números ou causalidade.
+- Base no IPD: 4.1.3, 4.1.4 e 5.
+- Áreas impactadas: M03, M11, M14, M16.
+- Dependências: T11.
+- Entregável esperado: contrato de narrativa, validação de referências e conjunto de avaliações.
+- Check de conclusão:
+  - [ ] Fatos, hipóteses e ações são campos separados.
+  - [ ] V15 e V16 rejeitam instruções em dados e referências inexistentes.
+  - [ ] Pedidos de ranking individual não geram classificação de produtividade.
+  - [ ] Falha de narrativa preserva relatório determinístico.
+- Riscos ou atenções: validação estrutural não prova verdade de toda prosa; incluir avaliação semântica por cenários e inspeção no piloto.
+
+### T13 — Criar integração Claude Code
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F3
+- Objetivo: executar os casos principais por linguagem natural e entradas estáveis.
+- Base no IPD: 4.1.1, 4.3; arquitetura D01 e D07.
+- Áreas impactadas: M02, M12, M14, M16.
+- Dependências: T12.
+- Entregável esperado: manifesto e skills de setup, diagnóstico, situação atual, daily resumido e alocação.
+- Check de conclusão:
+  - [ ] Skills usam motor instalado e não dependem da pasta de desenvolvimento.
+  - [ ] Argumentos e caminhos com espaços são tratados sem interpolação insegura.
+  - [ ] Invocações naturais em português selecionam o comportamento esperado.
+  - [ ] Integração funciona sem MCP e apresenta motivo quando uma métrica não se aplica.
+- Riscos ou atenções: não duplicar comandos e skills desnecessariamente; não hardcodar caminhos do autor.
+
+### T14 — Executar validação transversal da v0.1
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F4
+- Objetivo: provar integridade, reprodutibilidade e portabilidade do candidato.
+- Base no IPD: 3.1, 5 e 6.
+- Áreas impactadas: M10, M14, M15, M16.
+- Dependências: T13.
+- Entregável esperado: relatório de testes, retenção/purga validada e medição offline.
+- Check de conclusão:
+  - [ ] V01–V16 passam; evidências numéricas têm expectativa revisada independentemente.
+  - [ ] Verificação de segredos cobre falhas e artefatos.
+  - [ ] Replay, compatibilidade de schema e retenção de 30 dias estão verificados.
+  - [ ] Benchmark de referência é registrado; desvios da meta têm causa e decisão.
+- Riscos ou atenções: golden file aprovado não substitui teste de fórmula nem contrato externo.
+
+### T15 — Empacotar release candidata e marketplace
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F4
+- Objetivo: tornar a instalação reproduzível fora do ambiente de desenvolvimento.
+- Base no IPD: 4.3, 4.4 e 9.
+- Áreas impactadas: M01, M12, M13, M14, M15, M16.
+- Dependências: T14.
+- Entregável esperado: wheel, bundle da integração com dependências fixadas, catálogo, checksums e guia de instalação/rollback.
+- Check de conclusão:
+  - [ ] Release candidata instala em Windows, macOS e Linux sem editar código.
+  - [ ] V21 valida atualização, compatibilidade e rollback preservando dados.
+  - [ ] Instalação assistida/offline e proxy têm procedimentos explícitos.
+  - [ ] Demo não requer token nem acesso ao ADO.
+- Riscos ou atenções: usar o próprio artefato produzido; não provar instalação a partir da árvore de fontes.
+
+### T16 — Validar piloto e preparar liberação da v0.1
+
+- Status: PENDENTE
+- Release/Fase: v0.1 / F4
+- Objetivo: validar utilidade e correção em práticas reais diferentes.
+- Base no IPD: 1.2, 3.1 e 9.
+- Áreas impactadas: M14, M16; correções retornam à tarefa dona do módulo.
+- Dependências: T15; acesso e responsáveis por três equipes piloto.
+- Entregável esperado: registro sanitizado de reconciliação, compatibilidade e decisão de liberação.
+- Check de conclusão:
+  - [ ] Três perfis funcionam com configuração, sem ramificação por cliente.
+  - [ ] Totais completos e amostra de itens são reconciliados; divergências são explicadas ou corrigidas.
+  - [ ] Usuário novo instala demo em até 15 minutos com pré-requisitos presentes, ou a meta é revisada com evidência.
+  - [ ] DOD01–DOD10 atendidos; destino e licença definidos antes de qualquer publicação pública.
+- Riscos ou atenções: indisponibilidade do piloto não autoriza afirmar validação real; publicação externa não é ação implícita desta tarefa de documentação.
+
+### T17 — Adicionar coleta histórica consistente
+
+- Status: PENDENTE
+- Release/Fase: v0.2 / F5
+- Objetivo: obter fatos históricos com corte e granularidade explícitos.
+- Base no IPD: 4.1.5 e 4.4.
+- Áreas impactadas: M02, M03, M06, M07, M14, M16.
+- Dependências: T16.
+- Entregável esperado: adaptador Analytics, capacidade histórica e leitura histórica REST quando aplicável.
+- Check de conclusão:
+  - [ ] Metadados e disponibilidade da fonte são verificados sem exigir Analytics para uso atual.
+  - [ ] Paginação e filtros incluem itens que mudaram de área/iteração no período.
+  - [ ] V17 preserva o corte na consulta e na hidratação.
+  - [ ] Itens excluídos, lacunas e divergência entre fontes são limitações explícitas.
+- Riscos ou atenções: snapshot diário não substitui evento intradiário de compromisso.
+
+### T18 — Implementar compromisso e mudança de escopo
+
+- Status: PENDENTE
+- Release/Fase: v0.2 / F5
+- Objetivo: medir previsibilidade sem contaminar a baseline com dados atuais.
+- Base no IPD: 4.1.5.
+- Áreas impactadas: M17, M14, M16.
+- Dependências: T17.
+- Entregável esperado: baseline, say/do, entradas/saídas, carry-over e pontos congelados.
+- Check de conclusão:
+  - [ ] V17 e V19 validam reestimativa, entrada/saída e denominador zero.
+  - [ ] Baseline técnica é distinguida de compromisso confirmado.
+  - [ ] Itens adicionados não aumentam cumprimento da baseline original.
+  - [ ] Percentuais têm coorte, numerador, denominador e corte disponíveis.
+- Riscos ou atenções: carry-over da baseline não equivale a transferência comprovada para a próxima sprint.
+
+### T19 — Implementar regras de planejamento por perfil
+
+- Status: PENDENTE
+- Release/Fase: v0.2 / F5
+- Objetivo: apontar inconsistências de acordo com políticas explicitadas.
+- Base no IPD: 4.1.5.
+- Áreas impactadas: M02, M04, M11, M18, M14, M16.
+- Dependências: T17; regras atuais reutilizam T05.
+- Entregável esperado: catálogo de regras, severidades, exceções e relatório com IDs.
+- Check de conclusão:
+  - [ ] Regras iniciais têm casos positivos, negativos e ausências de campo.
+  - [ ] V20 confirma silêncio para políticas desativadas.
+  - [ ] Achado exibe regra/versionamento, evidência e condição violada.
+  - [ ] Exceção tem justificativa e não apaga o dado de origem.
+- Riscos ou atenções: não considerar requisito universal a existência de tasks, estimativa ou área igual à do pai.
+
+### T20 — Implementar métricas de fluxo e coortes
+
+- Status: PENDENTE
+- Release/Fase: v0.2 / F5
+- Objetivo: gerar séries históricas interpretáveis e consistentes.
+- Base no IPD: 4.1.5.
+- Áreas impactadas: M17, M14, M16.
+- Dependências: T17.
+- Entregável esperado: throughput, lead/cycle time, aging, reaberturas e percentis.
+- Check de conclusão:
+  - [ ] V18 prova a política de primeira conclusão e reabertura.
+  - [ ] Percentil informa método, unidade, amostra e janela; amostra vazia é nula.
+  - [ ] Períodos sem entrega permanecem na série.
+  - [ ] Mudança de política/processo é identificada e não produz comparação silenciosa.
+- Riscos ou atenções: correlação de WIP e cycle time não demonstra causa; não comparar pontos entre times.
+
+### T21 — Integrar e validar a release histórica
+
+- Status: PENDENTE
+- Release/Fase: v0.2 / F5
+- Objetivo: entregar histórico e planejamento com evidência equivalente à v0.1.
+- Base no IPD: 3.2, 4.1.5 e 9.
+- Áreas impactadas: M11, M12, M14, M16.
+- Dependências: T18, T19, T20.
+- Entregável esperado: relatórios/skills de histórico e planejamento e registro de validação.
+- Check de conclusão:
+  - [ ] V17–V20 passam e DOD11–DOD12 são atendidos.
+  - [ ] Série de seis sprints ou janela de fluxo equivalente é reconciliada em equipe com histórico disponível.
+  - [ ] Regressões da v0.1 passam sem exigir histórico.
+  - [ ] Dados insuficientes limitam a saída de modo acionável.
+- Riscos ou atenções: evolução de release exige reuso do processo de pacote e atualização de versão.
+
+### T22 — Gerar dashboard HTML offline
+
+- Status: PENDENTE
+- Release/Fase: v0.3 / F6
+- Objetivo: facilitar leitura e compartilhamento controlado da mesma execução.
+- Base no IPD: 4.1.6.
+- Áreas impactadas: M02, M11, M14, M16.
+- Dependências: T21.
+- Entregável esperado: HTML autocontido, acessível e navegável localmente.
+- Check de conclusão:
+  - [ ] DOD13 atendido sem CDN ou conexão de rede.
+  - [ ] Números coincidem com JSON/Markdown; limitações não somem nos gráficos.
+  - [ ] V15 garante escaping e ausência de execução de conteúdo do ADO.
+  - [ ] Layout funciona em tamanhos de tela previstos e possui tabela equivalente aos gráficos.
+- Riscos ou atenções: arquivo local não implica hospedagem nem URL persistente.
+
+### T23 — Implementar executor agendável e identidade de aplicação
+
+- Status: PENDENTE
+- Release/Fase: v0.3 / F6
+- Objetivo: executar coleta e relatório sem sessão interativa do assistente.
+- Base no IPD: 4.1.6 e 4.4.
+- Áreas impactadas: M02, M04, M05, M10, M19, M14, M16.
+- Dependências: T21; integração visual final depende de T22.
+- Entregável esperado: modo não interativo, chave de idempotência, lock, provedor de identidade e template de pipeline.
+- Check de conclusão:
+  - [ ] Identidade de aplicação tem leitura validada no ambiente de teste.
+  - [ ] V22 evita duplicação e preserva sucesso anterior quando nova execução falha.
+  - [ ] Artefato e logs ficam em destino privado configurado.
+  - [ ] Falta de credencial/configuração encerra com código estável, sem esperar diálogo.
+- Riscos ou atenções: implementação do template não ativa agenda nem publica relatório por conta própria.
+
+### T24 — Validar operação, retenção e avisos
+
+- Status: PENDENTE
+- Release/Fase: v0.3 / F6
+- Objetivo: tornar a execução repetida previsível e recuperável.
+- Base no IPD: 3.2, 4.1.6 e 9.
+- Áreas impactadas: M19, M14, M16.
+- Dependências: T22, T23.
+- Entregável esperado: runbook de operação, aviso local opcional e evidência de execução agendada.
+- Check de conclusão:
+  - [ ] DOD14 atendido e V22 exercitado em integração.
+  - [ ] Hook consulta apenas metadados locais e não dispara autenticação/rede.
+  - [ ] Runbook cobre expiração de credencial, retry, retenção, rollback e artefato parcial.
+  - [ ] Canal de notificação só é ativado com configuração e autorização, sem mensagens repetidas quando nada mudou.
+- Riscos ou atenções: não confundir cronologia da agenda com calendário de trabalho ou fuso do time.
+
+### T25 — Entregar forecast experimental com backtesting
+
+- Status: PENDENTE
+- Release/Fase: v0.4 / F7
+- Objetivo: projetar conclusão sob premissas verificáveis e medir a qualidade da projeção.
+- Base no IPD: 4.1.6 e 6.
+- Áreas impactadas: M02, M03, M11, M20, M14, M16.
+- Dependências: T17, T20, T21; não exige automação da v0.3.
+- Entregável esperado: distribuição de datas, p50/p85, premissas, semente, amostra e relatório retrospectivo.
+- Check de conclusão:
+  - [ ] V23 recusa amostra insuficiente e preserva períodos de throughput zero.
+  - [ ] V24 impede vazamento de futuro e reproduz o resultado por semente.
+  - [ ] Escopo restante, equipe, comparabilidade e cenários estão declarados.
+  - [ ] DOD15 atendido; cobertura empírica é publicada e resultado permanece experimental se não calibrado.
+- Riscos ou atenções: percentil é cenário probabilístico condicionado ao modelo, não garantia de prazo.
+
+## Cobertura do DoD
+
+| Critério | Tarefas responsáveis |
+|---|---|
+| DOD01 — instalação e demo | T01, T15, T16 |
+| DOD02 — setup por perfil | T02, T04 |
+| DOD03 — leitura e falhas | T03, T05, T06 |
+| DOD04 — ausências/unidades | T02, T07, T09 |
+| DOD05 — calendário e carga | T08, T09, T10 |
+| DOD06 — auditoria | T06, T11 |
+| DOD07 — narrativa | T12, T13, T16 |
+| DOD08 — qualidade | T01, T14, T16 |
+| DOD09 — segredos/retenção | T03, T06, T14 |
+| DOD10 — piloto/distribuição | T15, T16 |
+| DOD11 — histórico | T17, T18, T20, T21 |
+| DOD12 — planejamento | T19, T21 |
+| DOD13 — HTML | T22 |
+| DOD14 — operação | T23, T24 |
+| DOD15 — forecast | T25 |
+
+## Lacunas e pré-condições operacionais
+
+Não há código existente nem credenciais verificadas. T01 inicia sem depender dessas credenciais. Acesso real e equipes piloto são necessários para concluir T16; histórico real é necessário para T21; identidade de aplicação e destino privado são necessários para a validação operacional de T23/T24. Nome de repositório e licença devem ser definidos antes da publicação pública. Nenhuma dessas validações foi executada durante a criação deste plano.
+
+## Matriz de rastreabilidade
+
+| Tarefa | Base no IPD | Áreas | Testes e DoD principais |
+|---|---|---|---|
+| T01 | 2.2, 3.1, 4.4 | M01, M02, M14, M15, M16 | DOD01, DOD08 |
+| T02 | 4.1.2–4.1.3 | M03, M04, M14, M16 | DOD02, DOD04 |
+| T03 | 4.1.1, 4.4, 5 | M02, M05, M06, M14, M16 | V11; DOD03, DOD09 |
+| T04 | 4.1.2 | M04, M06, M14, M16 | V10, V13; DOD02 |
+| T05 | 4.1.3–4.1.4 | M06, M07, M14, M16 | V06, V09, V11, V13; DOD03 |
+| T06 | 4.1.3, 5 | M06, M07, M10, M14, M16 | V11; DOD03, DOD06, DOD09 |
+| T07 | 4.1.2–4.1.4 | M04, M08, M14, M16 | V02, V10; DOD04 |
+| T08 | 4.1.4 | M04, M09, M14, M16 | V01, V08, V12; DOD05 |
+| T09 | 4.1.4 | M09, M14, M16 | V02, V03, V07, V08, V09; DOD04, DOD05 |
+| T10 | 4.1.4 | M07, M09, M14, M16 | V04, V05, V06, V08; DOD05 |
+| T11 | 4.1.1, 4.1.3 | M02, M10, M11, M14, M16 | V14; DOD06 |
+| T12 | 4.1.3, 5 | M03, M11, M14, M16 | V15, V16; DOD07 |
+| T13 | 4.1.1, 4.3 | M02, M12, M14, M16 | V16; DOD07 |
+| T14 | 3.1, 5, 6 | M10, M14, M15, M16 | V01–V16; DOD08, DOD09 |
+| T15 | 4.3, 4.4, 9 | M01, M12, M13, M14, M15, M16 | V21; DOD01, DOD10 |
+| T16 | 1.2, 3.1, 9 | M14, M16 | V10, V21; DOD01–DOD10 |
+| T17 | 4.1.5, 4.4 | M02, M03, M06, M07, M14, M16 | V17; DOD11 |
+| T18 | 4.1.5 | M17, M14, M16 | V17, V19; DOD11 |
+| T19 | 4.1.5 | M02, M04, M11, M18, M14, M16 | V20; DOD12 |
+| T20 | 4.1.5 | M17, M14, M16 | V18; DOD11 |
+| T21 | 3.2, 4.1.5, 9 | M11, M12, M14, M16 | V17–V20; DOD11, DOD12 |
+| T22 | 4.1.6 | M02, M11, M14, M16 | V15; DOD13 |
+| T23 | 4.1.6, 4.4 | M02, M04, M05, M10, M19, M14, M16 | V22; DOD14 |
+| T24 | 3.2, 4.1.6, 9 | M19, M14, M16 | V22; DOD14 |
+| T25 | 4.1.6, 6 | M02, M03, M11, M20, M14, M16 | V23, V24; DOD15 |

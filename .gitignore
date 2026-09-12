@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.env
+.env.*
+!.env.example
+.ado-team-compass/cache/
+.ado-team-compass/runs/
+.ado-team-compass/config.local.yaml
+reports/
