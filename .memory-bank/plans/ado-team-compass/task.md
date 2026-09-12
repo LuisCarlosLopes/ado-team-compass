@@ -116,7 +116,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T07 — Implementar qualidade por métrica
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F2
 - Objetivo: determinar quais resultados são utilizáveis para cada perfil.
 - Base no IPD: 4.1.2–4.1.4.
@@ -124,15 +124,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T02, T05.
 - Entregável esperado: requisitos de cada métrica, status, cobertura e motivos.
 - Check de conclusão:
-  - [ ] V02 distingue carga conhecida de itens sem restante.
-  - [ ] V10 não penaliza equipe sem horas por campos não aplicáveis.
-  - [ ] Denominador desconhecido não vira cobertura total.
-  - [ ] Nenhum score agregado é apresentado como percentual de confiança.
+  - [x] V02 distingue carga conhecida de itens sem restante (`metrics/quality.py`, status `partial` com contadores).
+  - [x] V10 não penaliza equipe sem horas por campos não aplicáveis (`not_applicable` com motivo, sem cobertura e sem achado).
+  - [x] Denominador desconhecido não vira cobertura total (`Coverage.ratio` nulo quando `eligible` é desconhecido).
+  - [x] Nenhum score agregado é apresentado como percentual de confiança (teste verifica ausência dessa API).
 - Riscos ou atenções: cobertura de itens não é cobertura do esforço desconhecido.
 
 ### T08 — Implementar calendário e capacidade restante
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F2
 - Objetivo: calcular disponibilidade reservada na janela correta.
 - Base no IPD: 4.1.4.
@@ -140,15 +140,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T02; integração final depende de T05.
 - Entregável esperado: funções puras de janela, dias elegíveis, folgas e capacidade por atividade.
 - Check de conclusão:
-  - [ ] V01 valida união de feriados/folgas sem desconto duplicado.
-  - [ ] V12 valida timezone, limites de sprint e política do dia atual.
-  - [ ] V08 impede conversão implícita entre dias e horas.
-  - [ ] Folgas parciais e capacidade nula têm comportamentos documentados.
+  - [x] V01 valida união de feriados/folgas sem desconto duplicado (capacidade 24, não 18).
+  - [x] V12 valida timezone, limites de sprint e política do dia atual (fim inclusivo normalizado; sem rateio intradiário).
+  - [x] V08 impede conversão implícita entre dias e horas (reservas em unidades distintas não agregam).
+  - [x] Folgas parciais e capacidade nula têm comportamentos documentados (maior fração vence; per_day nulo permanece ausente).
 - Riscos ou atenções: fixtures podem permitir desenvolvimento paralelo à coleta; contrato não muda unilateralmente.
 
 ### T09 — Implementar carga e classificações locais
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F2
 - Objetivo: comparar carga conhecida e capacidade restante de cada equipe.
 - Base no IPD: 4.1.4.
@@ -156,10 +156,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T07, T08.
 - Entregável esperado: carga por pessoa/atividade, carga sem responsável e classes com limites explícitos.
 - Check de conclusão:
-  - [ ] V02, V03 e V07 preservam ausências e impedem divisão inválida.
-  - [ ] V09 evita soma de pai e filho; itens excluídos ficam explicados.
-  - [ ] Limiares 0,60, 0,90 e 1,10 possuem testes de fronteira.
-  - [ ] Dados parciais não geram falsa classificação de baixa carga.
+  - [x] V02, V03 e V07 preservam ausências e impedem divisão inválida (`CARGA_SEM_CAPACIDADE`; zero/zero sem percentual).
+  - [x] V09 evita soma de pai e filho; itens excluídos ficam explicados (nível único + achados por item).
+  - [x] Limiares 0,60, 0,90 e 1,10 possuem testes de fronteira (8 casos parametrizados).
+  - [x] Dados parciais não geram falsa classificação de baixa carga (`DADOS_INSUFICIENTES` com limite inferior).
 - Riscos ou atenções: todo percentual deve usar mesma janela e unidade do numerador.
 
 ### T10 — Implementar consolidação entre equipes
