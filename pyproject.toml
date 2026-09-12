@@ -40,6 +40,7 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ado_team_compass"]
+artifacts = ["src/ado_team_compass/profiles/*.yaml", "src/ado_team_compass/schemas/*.json"]
 
 [tool.ruff]
 line-length = 100
@@ -68,3 +69,4 @@ markers = ["integration: requires real ADO access (opt-in, never in public CI)"]
 module = "tests.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+disallow_untyped_calls = false

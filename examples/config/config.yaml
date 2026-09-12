@@ -1,0 +1,65 @@
+# Configuração compartilhável de exemplo. Não contém credenciais: a sessão do
+# Azure DevOps é mantida pelo cliente MCP oficial e referenciada por 'session_ref'.
+schema_version: "1.0"
+
+connections:
+  - alias: contoso
+    organization: contoso
+    server:
+      name: azure-devops
+      transport: stdio
+      command: ["npx", "-y", "@azure-devops/mcp", "contoso"]
+      expected_version: null
+      session_ref: contoso-default
+
+teams:
+  # Perfil com capacidade em horas.
+  - alias: plataforma
+    connection: contoso
+    project_id: 6f1b1e1a-0000-4000-8000-000000000001
+    team_id: 6f1b1e1a-0000-4000-8000-00000000000a
+    project_name: Plataforma
+    team_name: Plataforma - Core
+    profile: sprint_with_capacity
+    capabilities: [current_status, allocation]
+    scope:
+      area_paths: ["Plataforma\\Core"]
+      include_descendants: true
+      item_types: ["Product Backlog Item", "Bug", "Task"]
+      bug_behavior: as_requirement
+    process:
+      state_categories:
+        New: proposed
+        Approved: proposed
+        Committed: in_progress
+        Done: completed
+        Removed: removed
+      blocked_states: ["Blocked"]
+      impediment_source: tag:impedimento
+    calendar:
+      timezone: America/Sao_Paulo
+      working_days: [0, 1, 2, 3, 4]
+      holidays: ["2026-09-07"]
+      current_day_policy: exclude
+    allocation:
+      unit: hours
+      thresholds:
+        below_range: "0.60"
+        within_range: "0.90"
+        attention: "1.10"
+
+  # Perfil de fluxo contínuo: sem sprint e sem capacidade reservada.
+  - alias: suporte
+    connection: contoso
+    project_id: 6f1b1e1a-0000-4000-8000-000000000001
+    team_id: 6f1b1e1a-0000-4000-8000-00000000000b
+    team_name: Suporte
+    profile: continuous_flow
+    capabilities: [current_status]
+    calendar:
+      timezone: America/Sao_Paulo
+
+output:
+  directory: .ado-team-compass/runs
+  language: pt-BR
+  retention_days: 30

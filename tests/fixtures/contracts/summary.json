@@ -1,0 +1,12 @@
+{
+  "run_id": "2026-09-12T10-00-00Z-plataforma",
+  "team_id": "t1",
+  "metrics": [
+    {"id": "known_remaining_work", "definition_version": "1.0", "status": "partial",
+     "quantity": {"value": "16", "unit": "hours"}, "coverage": {"eligible": 2, "valid": 1}}
+  ],
+  "findings": [],
+  "limitations": ["classificação de baixa carga impedida por dados incompletos"],
+  "truncated": false,
+  "size_limit_bytes": 24576
+}

@@ -36,7 +36,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T02 — Implementar schemas e resolução de configuração
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F0
 - Objetivo: estabilizar o contrato entre fonte, cálculo e narrativa.
 - Base no IPD: 4.1.2, 4.1.3; arquitetura D03 e D05.
@@ -44,10 +44,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T01.
 - Entregável esperado: modelos tipados, schemas exportados, perfis iniciais e configuração efetiva sanitizada.
 - Check de conclusão:
-  - [ ] Ausente, zero e não aplicável são representáveis separadamente.
-  - [ ] Precedência de configuração é determinística e tem teste.
-  - [ ] Major desconhecida e campos inválidos geram erro acionável.
-  - [ ] Fixtures de todos os contratos passam pela validação.
+  - [x] Ausente, zero e não aplicável são representáveis separadamente (`Quantity.value` nulo, `MetricStatus`, `Coverage` com denominador desconhecido).
+  - [x] Precedência de configuração é determinística e tem teste (`product_default → profile → team → local → run`, com proveniência por chave).
+  - [x] Major desconhecida e campos inválidos geram erro acionável (`E_CFG_SCHEMA_MAJOR_DESCONHECIDA` → saída 6; `E_CFG_INVALIDA` com caminho da violação).
+  - [x] Fixtures de todos os contratos passam pela validação (`tests/fixtures/contracts/`, ida e volta preservada).
 - Riscos ou atenções: nenhuma regra executável arbitrária no YAML; preservação de unidades.
 
 ### T03 — Implementar cliente do MCP oficial e sessão

@@ -1,0 +1,6 @@
+# Perfil: fluxo contínuo sem sprint. Sem capacidade reservada e sem compromisso de sprint.
+capabilities: [current_status]
+process:
+  accounting_level: requirement
+allocation:
+  unit: items

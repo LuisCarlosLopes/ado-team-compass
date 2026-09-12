@@ -21,13 +21,15 @@ _SECRET_HINTS = (
     "secret",
     "password",
     "senha",
-    "pat",
     "authorization",
     "cookie",
     "apikey",
     "api_key",
     "credential",
 )
+
+# "pat" só é segredo como chave inteira ou sufixo: "path" não deve ser redigido.
+_SECRET_EXACT = ("pat", "ado_pat")
 
 _REDACTED = "[redigido]"
 
@@ -50,7 +52,8 @@ def sanitize_detail(detail: dict[str, Any] | None) -> dict[str, Any]:
     sanitized: dict[str, Any] = {}
     for key, value in detail.items():
         lowered = key.lower()
-        if any(hint in lowered for hint in _SECRET_HINTS):
+        is_secret = any(hint in lowered for hint in _SECRET_HINTS) or lowered in _SECRET_EXACT
+        if is_secret:
             sanitized[key] = _REDACTED
         elif isinstance(value, dict):
             sanitized[key] = sanitize_detail(value)

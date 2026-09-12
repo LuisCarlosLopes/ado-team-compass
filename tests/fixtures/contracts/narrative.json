@@ -1,0 +1,15 @@
+{
+  "run_id": "2026-09-12T10-00-00Z-plataforma",
+  "referenced_metric_ids": ["known_remaining_work"],
+  "referenced_item_ids": [102],
+  "hypotheses": [
+    {"statement": "A carga conhecida é um limite inferior porque há itens sem estimativa.",
+     "references": ["known_remaining_work", "evidence/items/102"]}
+  ],
+  "actions": [
+    {"statement": "Revisar os itens abertos sem trabalho restante com a equipe.",
+     "references": ["evidence/items/102"],
+     "condition_to_confirm": "confirmar se os itens continuam no escopo da iteração"}
+  ],
+  "rejected_fragments": ["a equipe está 30% ociosa"]
+}

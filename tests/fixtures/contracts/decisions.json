@@ -1,0 +1,9 @@
+{
+  "decisions": [
+    {"id": "dec-001", "origin_run_id": "2026-09-12T10-00-00Z-plataforma", "finding_id": "f1",
+     "statement": "Estimar os itens 102 e 103 na próxima daily.",
+     "owner": "p1", "due_date": "2026-09-15", "status": "open",
+     "evidence": ["evidence/items/102"],
+     "recorded_at": "2026-09-12T11:00:00Z", "recorded_by": "pessoa-um"}
+  ]
+}

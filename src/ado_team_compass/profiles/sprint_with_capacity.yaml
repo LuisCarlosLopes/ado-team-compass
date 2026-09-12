@@ -1,0 +1,9 @@
+# Perfil: sprint com capacidade em horas.
+capabilities: [current_status, allocation]
+process:
+  remaining_work_field: Microsoft.VSTS.Scheduling.RemainingWork
+  original_estimate_field: Microsoft.VSTS.Scheduling.OriginalEstimate
+  completed_work_field: Microsoft.VSTS.Scheduling.CompletedWork
+  accounting_level: leaf_task
+allocation:
+  unit: hours

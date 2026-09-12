@@ -1,0 +1,20 @@
+{
+  "run_id": "2026-09-12T10-00-00Z-plataforma",
+  "team_id": "t1",
+  "metrics": [
+    {"id": "known_remaining_work", "definition_version": "1.0", "status": "partial",
+     "quantity": {"value": "16", "unit": "hours"},
+     "coverage": {"eligible": 2, "valid": 1},
+     "quality": {"eligible": 2, "known": 1, "missing": 1,
+                 "reasons": ["itens sem trabalho restante"]},
+     "references": ["evidence/items/101", "evidence/items/102"]},
+    {"id": "observed_utilization", "definition_version": "1.0", "status": "unavailable",
+     "unavailable_reason": "capacidade reservada desconhecida para a janela"}
+  ],
+  "findings": [
+    {"id": "f1", "rule_id": "remaining_work_missing", "rule_version": "1.0",
+     "severity": "atencao", "message": "Dois itens abertos sem trabalho restante.",
+     "item_ids": [102], "evidence": ["evidence/items/102"],
+     "condition_to_confirm": "confirmar com a pessoa responsável se há estimativa"}
+  ]
+}

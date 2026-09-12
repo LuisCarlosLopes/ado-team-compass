@@ -1,0 +1,7 @@
+# Perfil: sprint sem horas. Carga por horas não é aplicável.
+capabilities: [current_status]
+process:
+  story_points_field: Microsoft.VSTS.Scheduling.StoryPoints
+  accounting_level: requirement
+allocation:
+  unit: points

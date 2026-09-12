@@ -1,0 +1,14 @@
+# Copie para .ado-team-compass/config.local.yaml (ignorado no Git).
+# Guarda dados pessoais de disponibilidade e ajustes desta máquina.
+teams:
+  plataforma:
+    calendar:
+      team_days_off: ["2026-09-14"]
+    allocation:
+      personal_availability:
+        - person: 00000000-0000-0000-0000-000000000001
+          unit: hours
+          per_day: "6"
+          source: "informado pela pessoa em 12/09/2026"
+output:
+  directory: .ado-team-compass/runs
