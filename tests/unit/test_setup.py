@@ -1,8 +1,8 @@
 """T04 — setup por perfil: descoberta por IDs, desambiguação e limitações. V10 e V13."""
 
 import json
-from contextlib import contextmanager
 from collections.abc import Mapping
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
