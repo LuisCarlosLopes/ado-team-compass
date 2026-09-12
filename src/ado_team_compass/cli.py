@@ -11,14 +11,24 @@ import json
 import logging
 import sys
 from collections.abc import Callable, Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from ado_team_compass import __version__
 from ado_team_compass.config.loader import ResolvedConfig, load_config
-from ado_team_compass.contracts.config import ConnectionConfig, McpServerConfig, McpTransport
+from ado_team_compass.contracts.config import (
+    ConnectionConfig,
+    McpServerConfig,
+    McpTransport,
+    TeamConfig,
+)
+from ado_team_compass.contracts.report import TeamReport
 from ado_team_compass.diagnostics import TransportFactory, diagnose
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
+from ado_team_compass.pipeline import RunOutcome, execute_status, replay_run
+from ado_team_compass.reporting import render_markdown
+from ado_team_compass.runs import RunStore
 
 __all__ = ["COMMANDS", "build_parser", "main"]
 
@@ -52,6 +62,9 @@ def _not_implemented(command: _Command) -> Handler:
 
 DEFAULT_CONFIG_PATH = Path(".ado-team-compass/config.yaml")
 
+#: Instante fixo da demonstração: o relatório sintético é reproduzível.
+DEMO_AS_OF = datetime.fromisoformat("2026-09-15T12:00:00-03:00")
+
 
 def _config_path(args: argparse.Namespace) -> Path:
     explicit: Path | None = getattr(args, "config", None)
@@ -72,6 +85,292 @@ def _load_optional_config(args: argparse.Namespace) -> ResolvedConfig | None:
             load_config(path)
         return None
     return load_config(path)
+
+
+def _resolve_as_of(args: argparse.Namespace) -> datetime:
+    """Instante de referência explícito; sem ele, o relógio é lido uma única vez aqui."""
+    raw: str | None = getattr(args, "as_of", None)
+    if raw is None:
+        return datetime.now(UTC)
+    try:
+        moment = datetime.fromisoformat(raw)
+    except ValueError as error:
+        raise ConfigError(
+            "E_ENTRADA_AS_OF_INVALIDA",
+            f"O instante de referência {raw!r} não é ISO-8601 válido.",
+            detail={"as_of": raw},
+            remediation="Use, por exemplo, 2026-09-15T12:00:00-03:00.",
+        ) from error
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+
+
+def _require_config(args: argparse.Namespace) -> ResolvedConfig:
+    resolved = _load_optional_config(args)
+    if resolved is None:
+        raise ConfigError(
+            "E_CFG_AUSENTE",
+            "Nenhuma configuração foi encontrada para esta execução.",
+            remediation="Execute 'setup' ou informe --config.",
+        )
+    return resolved
+
+
+def _select_team(resolved: ResolvedConfig, args: argparse.Namespace) -> TeamConfig:
+    """Seleção inequívoca: sem equipe definida, execução não interativa é erro."""
+    selector: str | None = getattr(args, "team", None)
+    if selector is not None:
+        try:
+            return resolved.config.team(selector)
+        except KeyError as error:
+            raise ConfigError(
+                "E_EQUIPE_DESCONHECIDA",
+                f"A equipe {selector!r} não existe na configuração.",
+                detail={"team": selector, "available": [t.alias for t in resolved.config.teams]},
+                remediation="Use um alias ou ID da lista de equipes configuradas.",
+            ) from error
+    if len(resolved.config.teams) == 1:
+        return resolved.config.teams[0]
+    raise ConfigError(
+        "E_EQUIPE_AMBIGUA",
+        "A configuração tem mais de uma equipe e nenhuma foi selecionada.",
+        detail={"available": [team.alias for team in resolved.config.teams]},
+        remediation="Informe --team com o alias ou o ID da equipe; nenhuma é escolhida por padrão.",
+    )
+
+
+def _store_for(resolved: ResolvedConfig) -> RunStore:
+    return RunStore(Path(resolved.config.output.directory))
+
+
+def _emit_outcome(outcome: RunOutcome, args: argparse.Namespace) -> ExitCode:
+    if args.format == "markdown":
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(outcome.markdown, encoding="utf-8")
+        else:
+            sys.stdout.write(outcome.markdown)
+    else:
+        _emit(
+            {
+                "run_id": outcome.run.manifest.run_id,
+                "state": outcome.run.manifest.state.value,
+                "run_directory": str(outcome.run.directory),
+                "report": outcome.report.model_dump(mode="json"),
+            },
+            args,
+        )
+    LOGGER.info("Execução %s gravada em %s", outcome.run.manifest.run_id, outcome.run.directory)
+    return outcome.exit_code
+
+
+def _run_collection(args: argparse.Namespace, *, transport_factory: Any = None) -> RunOutcome:
+    from ado_team_compass.adapters.ado_mcp import AdoMcpClient
+    from ado_team_compass.mcp.session.official import official_transport
+
+    resolved = _require_config(args)
+    team = _select_team(resolved, args)
+    connection = next(
+        connection
+        for connection in resolved.config.connections
+        if connection.alias == team.connection
+    )
+    if args.offline:
+        raise ConfigError(
+            "E_COLETA_OFFLINE",
+            "A coleta exige o servidor MCP oficial conectado.",
+            remediation="Use 'demo', 'replay' ou 'report' sobre uma execução já coletada.",
+        )
+    factory = transport_factory or getattr(args, "_transport_factory", None) or official_transport
+    as_of = _resolve_as_of(args)
+    with factory(connection) as transport:
+        client = AdoMcpClient(transport=transport)
+        client.handshake()
+        return execute_status(
+            client,
+            team,
+            organization=connection.organization,
+            as_of=as_of,
+            store=_store_for(resolved),
+            resolved=resolved,
+            iteration_path=getattr(args, "period", None),
+        )
+
+
+def _handle_status(args: argparse.Namespace) -> ExitCode:
+    return _emit_outcome(_run_collection(args), args)
+
+
+def _handle_collect(args: argparse.Namespace) -> ExitCode:
+    outcome = _run_collection(args)
+    _emit(
+        {
+            "run_id": outcome.run.manifest.run_id,
+            "state": outcome.run.manifest.state.value,
+            "run_directory": str(outcome.run.directory),
+            "partial_reasons": list(outcome.run.manifest.partial_reasons),
+            "items": len(outcome.report.evidence_references),
+        },
+        args,
+    )
+    return outcome.exit_code
+
+
+def _handle_demo(args: argparse.Namespace) -> ExitCode:
+    """Relatório completo com dados sintéticos: sem credencial e sem rede."""
+    from ado_team_compass.adapters.ado_mcp import AdoMcpClient
+    from ado_team_compass.config import resolve_config
+    from ado_team_compass.demo import ORGANIZATION, demo_config_document, transport
+
+    resolved = resolve_config(demo_config_document())
+    team = resolved.config.teams[0]
+    as_of = _resolve_as_of(args) if getattr(args, "as_of", None) else DEMO_AS_OF
+    directory = args.output or Path(".ado-team-compass/demo")
+    store = RunStore(directory)
+    client = AdoMcpClient(transport=transport())
+    client.handshake()
+    outcome = execute_status(
+        client,
+        team,
+        organization=ORGANIZATION,
+        as_of=as_of,
+        store=store,
+        resolved=resolved,
+    )
+    if args.format == "markdown":
+        sys.stdout.write(outcome.markdown)
+    else:
+        sys.stdout.write(
+            json.dumps(
+                {
+                    "run_id": outcome.run.manifest.run_id,
+                    "run_directory": str(outcome.run.directory),
+                    "report": outcome.report.model_dump(mode="json"),
+                },
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+                default=str,
+            )
+            + "\n"
+        )
+    return outcome.exit_code
+
+
+def _handle_report(args: argparse.Namespace) -> ExitCode:
+    """Renderiza uma execução já persistida, sem nova leitura do MCP."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run_id = getattr(args, "run", None)
+    run = store.load(run_id) if run_id else None
+    if run is None:
+        team = _select_team(resolved, args)
+        run = store.latest(team.alias)
+    if run is None:
+        raise ConfigError(
+            "E_RUN_INEXISTENTE",
+            "Não há execução persistida para renderizar.",
+            remediation="Execute 'status' ou 'collect' antes de 'report'.",
+        )
+    report = TeamReport.model_validate(run.artifact("report.json"))
+    if args.format == "markdown":
+        sys.stdout.write(render_markdown(report))
+        return ExitCode.OK
+    _emit(report.model_dump(mode="json"), args)
+    return ExitCode.PARTIAL_CAPABILITY if run.manifest.state.value != "complete" else ExitCode.OK
+
+
+def _handle_allocation(args: argparse.Namespace) -> ExitCode:
+    """Carga conhecida por pessoa da execução mais recente."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    team = _select_team(resolved, args)
+    run = store.load(args.run) if getattr(args, "run", None) else store.latest(team.alias)
+    if run is None:
+        raise ConfigError(
+            "E_RUN_INEXISTENTE",
+            "Não há execução persistida para esta equipe.",
+            remediation="Execute 'status' antes de 'allocation'.",
+        )
+    report = TeamReport.model_validate(run.artifact("report.json"))
+    _emit(
+        {
+            "run_id": report.run_id,
+            "unit": report.unit,
+            "window": report.window.model_dump(mode="json") if report.window else None,
+            "people": [row.model_dump(mode="json") for row in report.people],
+            "limitations": list(report.limitations),
+        },
+        args,
+    )
+    return ExitCode.OK
+
+
+def _handle_evidence(args: argparse.Namespace) -> ExitCode:
+    """Recupera evidência local por execução e referência, sem nova leitura do ADO."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run_id = getattr(args, "run", None)
+    if run_id is None:
+        team = _select_team(resolved, args)
+        run = store.latest(team.alias)
+        if run is None:
+            raise ConfigError(
+                "E_RUN_INEXISTENTE",
+                "Não há execução persistida para consultar evidência.",
+                remediation="Execute 'status' antes de 'evidence'.",
+            )
+    else:
+        run = store.load(run_id)
+    reference: str | None = getattr(args, "reference", None)
+    if reference is None:
+        _emit(
+            {
+                "run_id": run.manifest.run_id,
+                "artifacts": sorted(run.manifest.artifact_hashes),
+                "evidence_count": len(list((run.directory / "evidence/items").glob("*.json"))),
+                "divergent_artifacts": list(run.verify()),
+            },
+            args,
+        )
+        return ExitCode.OK
+    path = run.directory / "evidence" / "items" / f"{reference}.json"
+    if not path.is_file():
+        raise ConfigError(
+            "E_EVIDENCIA_AUSENTE",
+            f"A evidência {reference!r} não existe na execução {run.manifest.run_id}.",
+            detail={"run_id": run.manifest.run_id, "reference": reference},
+        )
+    _emit(json.loads(path.read_text(encoding="utf-8")), args)
+    return ExitCode.OK
+
+
+def _handle_replay(args: argparse.Namespace) -> ExitCode:
+    """Recalcula métricas com entradas congeladas e reporta divergências."""
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run_id = getattr(args, "run", None)
+    if run_id is None:
+        team = _select_team(resolved, args)
+        latest = store.latest(team.alias)
+        if latest is None:
+            raise ConfigError(
+                "E_RUN_INEXISTENTE",
+                "Não há execução persistida para reprocessar.",
+                remediation="Execute 'status' antes de 'replay'.",
+            )
+        run_id = latest.manifest.run_id
+    report, identical = replay_run(
+        store, run_id, resolved=resolved, team_alias=getattr(args, "team", None)
+    )
+    _emit(
+        {
+            "run_id": run_id,
+            "identical": identical,
+            "report": report.model_dump(mode="json"),
+        },
+        args,
+    )
+    return ExitCode.OK if identical else ExitCode.SCHEMA_INCOMPATIBLE
 
 
 def _handle_setup(args: argparse.Namespace) -> ExitCode:
@@ -174,13 +473,24 @@ COMMANDS: tuple[_Command, ...] = (
         "v0.1",
         _handle_doctor,
     ),
-    _Command("collect", "Coleta apenas as fontes necessárias ao escopo e período", "v0.1", None),
-    _Command("report", "Calcula e renderiza relatório de uma execução existente", "v0.1", None),
-    _Command("status", "Atalho para coleta atual e relatório de equipe", "v0.1", None),
-    _Command("allocation", "Visão de carga conhecida por pessoa/equipe", "v0.1", None),
-    _Command("evidence", "Recupera evidência local por execução e referência", "v0.1", None),
-    _Command("replay", "Recalcula métricas com entradas congeladas", "v0.1", None),
-    _Command("demo", "Gera relatório com dados sintéticos, sem rede", "v0.1", None),
+    _Command(
+        "collect",
+        "Coleta apenas as fontes necessárias ao escopo e período",
+        "v0.1",
+        _handle_collect,
+    ),
+    _Command(
+        "report", "Calcula e renderiza relatório de uma execução existente", "v0.1", _handle_report
+    ),
+    _Command("status", "Atalho para coleta atual e relatório de equipe", "v0.1", _handle_status),
+    _Command(
+        "allocation", "Visão de carga conhecida por pessoa/equipe", "v0.1", _handle_allocation
+    ),
+    _Command(
+        "evidence", "Recupera evidência local por execução e referência", "v0.1", _handle_evidence
+    ),
+    _Command("replay", "Recalcula métricas com entradas congeladas", "v0.1", _handle_replay),
+    _Command("demo", "Gera relatório com dados sintéticos, sem rede", "v0.1", _handle_demo),
     _Command("render", "Gera o HTML operacional offline", "v0.1", None),
     _Command("decisions", "Exporta e importa decisões humanas", "v0.1", None),
     _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", None),
@@ -196,6 +506,8 @@ def _add_common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--force", action="store_true", help="Autoriza sobrescrever a configuração existente"
     )
+    parser.add_argument("--run", help="ID de uma execução persistida")
+    parser.add_argument("--reference", help="Referência de evidência dentro da execução")
     parser.add_argument("--team", help="Equipe por ID ou alias inequívoco")
     parser.add_argument("--period", help="Período da análise (ex.: iteração atual ou ISO)")
     parser.add_argument("--as-of", help="Instante de referência ISO-8601 do cálculo")

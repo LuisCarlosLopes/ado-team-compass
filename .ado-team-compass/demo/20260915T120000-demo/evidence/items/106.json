@@ -1,0 +1,28 @@
+{
+  "activity": "Development",
+  "area_path": "Demo\\Core",
+  "assigned_to": "person-bruno",
+  "blocked": false,
+  "changed_at": "2026-09-15T09:30:00+00:00",
+  "completed_work": null,
+  "id": 106,
+  "item_type": "Task",
+  "iteration_path": "Demo\\Sprint 42",
+  "organization": "contoso-demo",
+  "original_estimate": null,
+  "project_id": "proj-demo",
+  "provenance": {
+    "action": "read",
+    "collected_at": "2026-09-15T12:00:00-03:00",
+    "source": "mcp",
+    "tool": "get_work_items_batch"
+  },
+  "remaining_work": null,
+  "state": "Committed",
+  "state_category": "in_progress",
+  "story_points": null,
+  "team_memberships": [
+    "team-demo"
+  ],
+  "title_excerpt": "Item de demonstração"
+}

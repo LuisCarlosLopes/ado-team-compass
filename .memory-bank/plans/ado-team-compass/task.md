@@ -180,7 +180,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T11 — Persistir execução e gerar relatório determinístico
 
-- Status: PENDENTE
+- Status: CONCLUIDA (12/09/2026)
 - Release/Fase: v0.1 / F3
 - Objetivo: entregar resultado útil e auditável sem depender do assistente.
 - Base no IPD: 4.1.1, 4.1.3 e 4.2.
@@ -188,10 +188,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T06, T10.
 - Entregável esperado: manifesto, fatos, métricas, resumo limitado e Markdown; leitura de evidências e replay.
 - Check de conclusão:
-  - [ ] V14 confirma igualdade de métricas no replay.
-  - [ ] Cada número do relatório aponta para métrica/evidência da execução.
-  - [ ] Resumo excedente é reduzido deterministicamente com indicador de truncamento.
-  - [ ] Escrita interrompida não substitui execução válida por saída incompleta.
+  - [x] V14 confirma igualdade de métricas no replay (recálculo a partir de facts.json com `as_of` do manifesto; teste prova que o relógio não é consultado).
+  - [x] Cada número do relatório aponta para métrica/evidência da execução (`metrics.json` + `evidence/items/<id>.json`, referências verificadas em teste).
+  - [x] Resumo excedente é reduzido deterministicamente com indicador de truncamento (achados ordenados por severidade/ID; métricas e limitações preservadas).
+  - [x] Escrita interrompida não substitui execução válida por saída incompleta (falha antes do manifesto marca INCOMPLETA e preserva a execução anterior).
 - Riscos ou atenções: hashes não são assinatura de autenticidade; fatos completos não podem ser truncados.
 
 ### T12 — Delimitar e validar interpretação do LLM

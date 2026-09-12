@@ -1,0 +1,64 @@
+# Situação atual — {{ report.team_alias }}
+
+| Campo | Valor |
+|---|---|
+| Execução | `{{ report.run_id }}` |
+| Equipe | `{{ report.team_id }}` (projeto `{{ report.project_id }}`) |
+| Perfil | {{ report.profile }} |
+| Instante de referência | {{ report.as_of }} |
+| Janela | {% if report.window %}{{ report.window.start.isoformat() }} até {{ report.window.end.isoformat() }} (fim exclusivo, {{ report.window.timezone }}){% else %}indisponível{% endif %} |
+| Iteração | {{ report.iteration_path or "não resolvida" }} |
+| Unidade | {{ report.unit }} |
+
+## Métricas
+
+| Métrica | Status | Valor | Cobertura de itens | Motivo |
+|---|---|---|---|---|
+{% for metric in report.metrics -%}
+| `{{ metric.id }}` | {{ metric.status.value }} | {{ fmt_metric(metric) }} | {{ fmt_coverage(metric.coverage) }} | {{ metric.unavailable_reason or "—" }} |
+{% endfor %}
+
+{% if report.people -%}
+## Carga conhecida por pessoa
+
+| Pessoa | Carga conhecida | Capacidade restante | Utilização | Classe | Itens (elegíveis/conhecidos/ausentes) |
+|---|---|---|---|---|---|
+{% for row in report.people -%}
+| `{{ row.person_id }}` | {{ fmt_quantity(row.known_load) }} | {{ fmt_quantity(row.reserved_capacity) }} | {{ fmt_ratio(row.utilization) }}{% if row.is_lower_bound %} (limite inferior){% endif %} | {{ row.load_class }} | {{ row.items_eligible }}/{{ row.items_known }}/{{ row.items_missing }} |
+{% endfor %}
+{% endif %}
+
+{% if report.findings -%}
+## Achados
+
+{% for finding in report.findings -%}
+- **{{ finding.severity }}** · `{{ finding.rule_id }}` — {{ finding.message }}
+  - Itens: {{ finding.item_ids | join(", ") or "—" }}
+  - Evidência: {{ finding.evidence | join(", ") or "—" }}
+  - A confirmar: {{ finding.condition_to_confirm or "—" }}
+{% endfor %}
+{% endif %}
+
+## Limitações e cobertura
+
+{% if report.partial_sources -%}
+Fontes parciais: {{ report.partial_sources | join(", ") }}.
+{% else -%}
+Nenhuma fonte parcial foi registrada nesta execução.
+{% endif %}
+
+{% if report.limitations -%}
+{% for note in report.limitations -%}
+- {{ note }}
+{% endfor %}
+{% else -%}
+- Nenhuma limitação registrada.
+{% endif %}
+
+## Evidências
+
+{{ report.evidence_references | length }} itens com evidência minimizada em `evidence/items/`.
+Cada total desta página é reconciliável pelas métricas em `metrics.json` e por essas evidências.
+
+Nenhum número desta página foi produzido por modelo de linguagem. Ausência de registro não
+é ociosidade, e a classe de carga não mede produtividade individual.

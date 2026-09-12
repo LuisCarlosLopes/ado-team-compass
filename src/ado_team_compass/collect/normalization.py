@@ -151,10 +151,11 @@ def normalize_work_item(
     blocked = None
     if team.process.blocked_states:
         blocked = state in team.process.blocked_states
-    if blocked is None and blocked_tag and team.process.impediment_source:
-        source = team.process.impediment_source
-        if source.startswith("tag:"):
-            blocked = source.removeprefix("tag:").lower() in blocked_tag.lower()
+    source = team.process.impediment_source
+    if blocked is None and source and source.startswith("tag:"):
+        # Com a origem de impedimento configurada por tag, a ausência da tag é informação:
+        # o item não está marcado como impedido.
+        blocked = source.removeprefix("tag:").lower() in (blocked_tag or "").lower()
 
     fact = WorkItemFact(
         id=item_id,

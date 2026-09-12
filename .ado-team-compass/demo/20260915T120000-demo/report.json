@@ -1,0 +1,228 @@
+{
+  "as_of": "2026-09-15T12:00:00-03:00",
+  "evidence_references": {
+    "100": "evidence/items/100.json",
+    "101": "evidence/items/101.json",
+    "102": "evidence/items/102.json",
+    "103": "evidence/items/103.json",
+    "104": "evidence/items/104.json",
+    "105": "evidence/items/105.json",
+    "106": "evidence/items/106.json",
+    "107": "evidence/items/107.json",
+    "108": "evidence/items/108.json"
+  },
+  "findings": [
+    {
+      "condition_to_confirm": "mapear o estado em process.state_categories",
+      "evidence": [
+        "evidence/items/108.json"
+      ],
+      "id": "unmapped_state:108",
+      "item_ids": [
+        108
+      ],
+      "message": "O estado 'Em análise' do item 108 não está mapeado; métricas dependentes ficam indisponíveis para ele.",
+      "rule_id": "unmapped_state",
+      "rule_version": "1.0",
+      "severity": "atencao"
+    }
+  ],
+  "iteration_path": "Demo\\Sprint 42",
+  "limitations": [
+    "item 105: sem valor em Microsoft.VSTS.Scheduling.RemainingWork",
+    "item 106: sem valor em Microsoft.VSTS.Scheduling.RemainingWork",
+    "item 108: estado 'Em análise' sem categoria mapeada",
+    "folgas da equipe não vieram na resposta do MCP",
+    "classe DADOS_INSUFICIENTES: percentual parcial: há itens abertos sem trabalho restante"
+  ],
+  "metrics": [
+    {
+      "coverage": {
+        "eligible": 8,
+        "valid": 8
+      },
+      "definition_version": "1.0",
+      "id": "open_items_count",
+      "quality": {
+        "eligible": 8,
+        "excluded": 0,
+        "invalid": 0,
+        "known": 8,
+        "missing": 0,
+        "reasons": []
+      },
+      "quantity": {
+        "unit": "items",
+        "value": "6"
+      },
+      "ratio": null,
+      "references": [],
+      "status": "available",
+      "unavailable_reason": null,
+      "window": null
+    },
+    {
+      "coverage": {
+        "eligible": 8,
+        "valid": 8
+      },
+      "definition_version": "1.0",
+      "id": "blocked_items_count",
+      "quality": {
+        "eligible": 8,
+        "excluded": 0,
+        "invalid": 0,
+        "known": 8,
+        "missing": 0,
+        "reasons": []
+      },
+      "quantity": {
+        "unit": "items",
+        "value": "1"
+      },
+      "ratio": null,
+      "references": [],
+      "status": "available",
+      "unavailable_reason": null,
+      "window": null
+    },
+    {
+      "coverage": {
+        "eligible": 6,
+        "valid": 4
+      },
+      "definition_version": "1.0",
+      "id": "known_remaining_work",
+      "quality": {
+        "eligible": 6,
+        "excluded": 1,
+        "invalid": 0,
+        "known": 4,
+        "missing": 2,
+        "reasons": [
+          "item 105 aberto sem trabalho restante registrado",
+          "item 106 aberto sem trabalho restante registrado",
+          "item 108 tem estado 'Em análise' sem categoria mapeada"
+        ]
+      },
+      "quantity": {
+        "unit": "hours",
+        "value": "28"
+      },
+      "ratio": null,
+      "references": [],
+      "status": "partial",
+      "unavailable_reason": null,
+      "window": null
+    },
+    {
+      "coverage": {
+        "eligible": 2,
+        "valid": 2
+      },
+      "definition_version": "1.0",
+      "id": "reserved_remaining_capacity",
+      "quality": {
+        "eligible": 2,
+        "excluded": 0,
+        "invalid": 0,
+        "known": 2,
+        "missing": 0,
+        "reasons": []
+      },
+      "quantity": {
+        "unit": "hours",
+        "value": "30"
+      },
+      "ratio": null,
+      "references": [],
+      "status": "available",
+      "unavailable_reason": null,
+      "window": null
+    },
+    {
+      "coverage": {
+        "eligible": 6,
+        "valid": 4
+      },
+      "definition_version": "1.0",
+      "id": "observed_utilization",
+      "quality": {
+        "eligible": 6,
+        "excluded": 1,
+        "invalid": 0,
+        "known": 4,
+        "missing": 2,
+        "reasons": [
+          "item 105 aberto sem trabalho restante registrado",
+          "item 106 aberto sem trabalho restante registrado",
+          "item 108 tem estado 'Em análise' sem categoria mapeada"
+        ]
+      },
+      "quantity": null,
+      "ratio": "0.9333333333333333333333333333",
+      "references": [],
+      "status": "partial",
+      "unavailable_reason": null,
+      "window": {
+        "end": "2026-09-19T00:00:00-03:00",
+        "start": "2026-09-14T00:00:00-03:00",
+        "timezone": "America/Sao_Paulo"
+      }
+    }
+  ],
+  "partial_sources": [
+    "team_days_off"
+  ],
+  "people": [
+    {
+      "display_name": "Ana",
+      "is_lower_bound": true,
+      "items_eligible": 3,
+      "items_known": 2,
+      "items_missing": 1,
+      "known_load": {
+        "unit": "hours",
+        "value": "18"
+      },
+      "load_class": "ACIMA_DA_FAIXA",
+      "person_id": "person-ana",
+      "reason": "percentual parcial: há itens abertos sem trabalho restante",
+      "reserved_capacity": {
+        "unit": "hours",
+        "value": "12"
+      },
+      "utilization": "1.5"
+    },
+    {
+      "display_name": "Bruno",
+      "is_lower_bound": true,
+      "items_eligible": 3,
+      "items_known": 2,
+      "items_missing": 1,
+      "known_load": {
+        "unit": "hours",
+        "value": "10"
+      },
+      "load_class": "DADOS_INSUFICIENTES",
+      "person_id": "person-bruno",
+      "reason": "percentual parcial: há itens abertos sem trabalho restante",
+      "reserved_capacity": {
+        "unit": "hours",
+        "value": "18"
+      },
+      "utilization": "0.5555555555555555555555555556"
+    }
+  ],
+  "profile": "sprint_with_capacity",
+  "project_id": "proj-demo",
+  "run_id": "20260915T120000-demo",
+  "team_alias": "demo",
+  "team_id": "team-demo",
+  "unit": "hours",
+  "window": {
+    "end": "2026-09-19T00:00:00-03:00",
+    "start": "2026-09-14T00:00:00-03:00",
+    "timezone": "America/Sao_Paulo"
+  }
+}

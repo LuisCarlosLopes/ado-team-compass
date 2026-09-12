@@ -124,8 +124,8 @@ def test_impediment_source_marks_the_blocked_item_from_the_configured_tag():
     facts = _collect().facts
     blocked = {item.id for item in facts.items if item.blocked}
     assert blocked == {103}
-    # Sem a tag configurada, o item não é declarado bloqueado por palpite.
-    assert next(item for item in facts.items if item.id == 101).blocked is None
+    # Com a origem por tag configurada, a ausência da tag significa "não impedido".
+    assert next(item for item in facts.items if item.id == 101).blocked is False
 
 
 # V06 — mesmo item repetido na resposta.
@@ -241,6 +241,15 @@ def test_item_titles_are_data_not_instructions():
     assert item.title is not None and "rm -rf" in item.title
     # O título é apenas texto no fato: nenhuma execução ou mudança de destino ocorre.
     assert item.iteration_path == synthetic.ITERATION_PATH
+
+
+def test_without_impediment_source_the_item_is_not_classified_by_guess():
+    team = TEAM.model_copy(
+        update={"process": TEAM.process.model_copy(update={"impediment_source": None})}
+    )
+    client = AdoMcpClient(transport=synthetic.transport())
+    result = collect_current_status(client, team, organization=synthetic.ORGANIZATION, as_of=AS_OF)
+    assert all(item.blocked is None for item in result.facts.items)
 
 
 def test_team_without_hours_keeps_collection_working():

@@ -243,7 +243,7 @@ def _collect_items(
             provenance = Provenance(
                 **provenance_base,
                 tool="get_work_items_batch",
-                references=(f"evidence/items/{entry.get('id')}",),
+                references=(f"evidence/items/{entry.get('id')}.json",),
             )
             item = normalize_work_item(
                 entry, team=team, organization=organization, provenance=provenance

@@ -41,7 +41,12 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ado_team_compass"]
-artifacts = ["src/ado_team_compass/profiles/*.yaml", "src/ado_team_compass/schemas/*.json"]
+artifacts = [
+  "src/ado_team_compass/profiles/*.yaml",
+  "src/ado_team_compass/schemas/*.json",
+  "src/ado_team_compass/reporting/templates/*",
+  "src/ado_team_compass/demo/*.json",
+]
 
 [tool.ruff]
 line-length = 100

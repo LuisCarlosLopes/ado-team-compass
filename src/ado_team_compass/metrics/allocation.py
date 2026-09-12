@@ -188,7 +188,7 @@ def _finding(rule_id: str, severity: str, message: str, item_id: int, condition:
         severity=severity,
         message=message,
         item_ids=(item_id,),
-        evidence=(f"evidence/items/{item_id}",),
+        evidence=(f"evidence/items/{item_id}.json",),
         condition_to_confirm=condition,
     )
 

@@ -32,15 +32,19 @@ class MetricRequirement:
     definition_version: str
     capability: Capability
     required_process_fields: tuple[str, ...] = ()
+    any_of_process_fields: tuple[str, ...] = ()
     requires_reservations: bool = False
     zero_is_meaningful: bool = False
     not_applicable_reason: str = "métrica não aplicável ao perfil desta equipe"
     notes: tuple[str, ...] = field(default_factory=tuple)
 
     def missing_process_fields(self, team: TeamConfig) -> tuple[str, ...]:
-        return tuple(
-            name for name in self.required_process_fields if getattr(team.process, name) is None
-        )
+        missing = [name for name in self.required_process_fields if not getattr(team.process, name)]
+        if self.any_of_process_fields and not any(
+            getattr(team.process, name) for name in self.any_of_process_fields
+        ):
+            missing.extend(self.any_of_process_fields)
+        return tuple(missing)
 
 
 METRIC_REQUIREMENTS: dict[str, MetricRequirement] = {
@@ -54,6 +58,7 @@ METRIC_REQUIREMENTS: dict[str, MetricRequirement] = {
         metric_id="blocked_items_count",
         definition_version="1.0",
         capability=Capability.CURRENT_STATUS,
+        any_of_process_fields=("impediment_source", "blocked_states"),
         zero_is_meaningful=True,
         not_applicable_reason="origem de impedimento não configurada para esta equipe",
     ),
