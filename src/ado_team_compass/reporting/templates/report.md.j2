@@ -39,6 +39,23 @@
 {% endfor %}
 {% endif %}
 
+{% if report.history %}
+## Histórico observado
+
+{% if report.history.available %}
+| Medida | Valor |
+|---|---|
+| Baseline | {{ report.history.baseline_label }} ({{ report.history.baseline_size }} itens){% if report.history.baseline_is_technical %} — baseline técnica, não prova compromisso confirmado{% endif %} |
+| Say/do | {{ fmt_ratio(report.history.say_do) }} ({{ report.history.say_do_numerator }}/{{ report.history.say_do_denominator }}) |
+| Carry-over | {{ fmt_ratio(report.history.carry_over) }} |
+| Escopo entradas/saídas | {{ report.history.scope_entered | length }}/{{ report.history.scope_exited | length }} |
+| Cycle time p50/p85 | {{ report.history.cycle_time_p50 or "nulo" }} / {{ report.history.cycle_time_p85 or "nulo" }} dias corridos (amostra {{ report.history.cycle_time_sample }}) |
+| Reaberturas | {{ report.history.reopened_item_ids | join(", ") or "nenhuma" }} |
+{% else %}
+Histórico indisponível nesta execução: {{ report.history.reasons | join("; ") }}
+{% endif %}
+
+{% endif %}
 ## Limitações e cobertura
 
 {% if report.partial_sources -%}

@@ -74,6 +74,8 @@ class WorkItemFact(StrictModel):
     activity: str | None = None
     is_leaf: bool | None = None
     blocked: bool | None = None
+    start_date: date | None = None
+    target_date: date | None = None
     created_at: datetime | None = None
     changed_at: datetime | None = None
     team_memberships: tuple[str, ...] = ()

@@ -174,6 +174,12 @@ def normalize_work_item(
         story_points=_decimal(fields.get(team.process.story_points_field or "")),
         activity=_text(entry, "Microsoft.VSTS.Common.Activity", "activity"),
         blocked=blocked,
+        start_date=_day(fields.get("Microsoft.VSTS.Scheduling.StartDate")),
+        target_date=_day(
+            fields.get("Microsoft.VSTS.Scheduling.TargetDate")
+            or fields.get("Microsoft.VSTS.Scheduling.FinishDate")
+            or fields.get("Microsoft.VSTS.Scheduling.DueDate")
+        ),
         created_at=_moment(fields.get("System.CreatedDate")),
         changed_at=_moment(fields.get("System.ChangedDate")),
         team_memberships=(team.team_id,),

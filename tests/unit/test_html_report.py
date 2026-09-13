@@ -185,7 +185,7 @@ def test_v30_effort_variation_is_unavailable_and_not_attributed_to_the_sprint(ht
 
 # V31 — fila grande sem histórico e item sem alteração.
 def test_v31_history_dependent_blocks_declare_the_limitation(html):
-    assert "Burnup, burndown, baseline de horas, duração de bloqueios, aging" in html
+    assert "Burnup, burndown, baseline de esforço, duração de bloqueios, aging" in html
     assert "Nenhum dia passado é" in html
     assert "desconhecido: sem evento de início do bloqueio" in html
 

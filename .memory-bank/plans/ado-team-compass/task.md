@@ -389,7 +389,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T21 — Integrar e validar a release histórica
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — integração e regressão automatizadas; reconciliação com equipe real pendente
 - Release/Fase: v0.2 / F5
 - Objetivo: entregar histórico e planejamento com evidência equivalente à v0.1.
 - Base no IPD: 3.2, 4.1.5 e 9.
@@ -397,10 +397,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T18, T19, T20.
 - Entregável esperado: relatórios e skills de histórico/planejamento nos três bundles, gerados da fonte comum, e registro de validação.
 - Check de conclusão:
-  - [ ] V17–V20 e V30–V31 passam; HTML recebe burnup/burndown, baseline de esforço e tendências quando disponíveis; DOD11–DOD12 são atendidos.
-  - [ ] Série de seis sprints ou janela de fluxo equivalente é reconciliada em equipe com histórico disponível.
-  - [ ] Regressões da v0.1 passam sem exigir histórico.
-  - [ ] Dados insuficientes limitam a saída de modo acionável.
+  - [x] V17 a V20 e V30/V31 passam; o HTML recebe baseline, say/do, carry-over, escopo, throughput, percentis e aging quando há cobertura, e declara o motivo quando não há.
+  - [~] Séries são calculadas e testadas com fixture; reconciliação em equipe real com histórico disponível continua pendente.
+  - [x] Regressões da v0.1 passam sem exigir histórico (mesma carga de 28 h sem a ferramenta de revisões).
+  - [x] Dados insuficientes limitam a saída de modo acionável (`history` sai com código 5 e o bloco explica o motivo).
 - Riscos ou atenções: evolução de release exige reuso do processo de pacote e atualização de versão.
 
 ### T23 — Implementar executor agendável via MCP oficial

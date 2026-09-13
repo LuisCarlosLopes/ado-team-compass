@@ -167,7 +167,13 @@ def _emit_outcome(outcome: RunOutcome, args: argparse.Namespace) -> ExitCode:
     return outcome.exit_code
 
 
-def _run_collection(args: argparse.Namespace, *, transport_factory: Any = None) -> RunOutcome:
+def _run_collection(
+    args: argparse.Namespace,
+    *,
+    transport_factory: Any = None,
+    include_history: bool = False,
+    include_planning: bool = False,
+) -> RunOutcome:
     from ado_team_compass.adapters.ado_mcp import AdoMcpClient
     from ado_team_compass.mcp.session.official import official_transport
 
@@ -197,11 +203,52 @@ def _run_collection(args: argparse.Namespace, *, transport_factory: Any = None) 
             store=_store_for(resolved),
             resolved=resolved,
             iteration_path=getattr(args, "period", None),
+            include_history=include_history,
+            include_planning=include_planning,
         )
 
 
 def _handle_status(args: argparse.Namespace) -> ExitCode:
     return _emit_outcome(_run_collection(args), args)
+
+
+def _handle_history(args: argparse.Namespace) -> ExitCode:
+    """Coleta com histórico: métricas de compromisso e fluxo quando houver cobertura."""
+    outcome = _run_collection(args, include_history=True)
+    block = outcome.report.history
+    if args.format == "markdown":
+        sys.stdout.write(outcome.markdown)
+    else:
+        _emit(
+            {
+                "run_id": outcome.run.manifest.run_id,
+                "history": block.model_dump(mode="json") if block else None,
+            },
+            args,
+        )
+    if block is None or not block.available:
+        return ExitCode.PARTIAL_CAPABILITY
+    return outcome.exit_code
+
+
+def _handle_planning(args: argparse.Namespace) -> ExitCode:
+    """Aplica as regras de planejamento habilitadas para a equipe."""
+    from ado_team_compass.metrics.planning import enabled_rules
+
+    resolved = _require_config(args)
+    team = _select_team(resolved, args)
+    outcome = _run_collection(args, include_planning=True)
+    _emit(
+        {
+            "run_id": outcome.run.manifest.run_id,
+            "enabled_rules": list(enabled_rules(team)),
+            "findings": [
+                finding.model_dump(mode="json") for finding in outcome.report.planning_findings
+            ],
+        },
+        args,
+    )
+    return outcome.exit_code
 
 
 def _handle_collect(args: argparse.Namespace) -> ExitCode:
@@ -568,8 +615,8 @@ COMMANDS: tuple[_Command, ...] = (
     _Command("demo", "Gera relatório com dados sintéticos, sem rede", "v0.1", _handle_demo),
     _Command("render", "Gera o HTML operacional offline", "v0.1", _handle_render),
     _Command("decisions", "Exporta e importa decisões humanas", "v0.1", _handle_decisions),
-    _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", None),
-    _Command("planning", "Achados de regras de planejamento", "v0.2", None),
+    _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", _handle_history),
+    _Command("planning", "Achados de regras de planejamento", "v0.2", _handle_planning),
     _Command("run-scheduled", "Execução agendada não interativa", "v0.3", None),
     _Command("forecast", "Projeção experimental com premissas", "v0.4", None),
 )

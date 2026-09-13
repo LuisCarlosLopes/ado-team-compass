@@ -20,6 +20,8 @@
     "./skills/demo",
     "./skills/doctor",
     "./skills/evidencia",
+    "./skills/historico",
+    "./skills/planejamento",
     "./skills/setup",
     "./skills/situacao-atual"
   ],

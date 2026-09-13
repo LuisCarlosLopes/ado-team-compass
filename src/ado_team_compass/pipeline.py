@@ -16,10 +16,12 @@ from typing import Any
 
 from ado_team_compass.adapters.ado_mcp import AdoMcpClient
 from ado_team_compass.collect import collect_current_status
+from ado_team_compass.collect.history import collect_history
 from ado_team_compass.config.loader import ResolvedConfig
 from ado_team_compass.contracts.common import Window
 from ado_team_compass.contracts.config import TeamConfig
 from ado_team_compass.contracts.facts import FactSet
+from ado_team_compass.contracts.history import HistorySet
 from ado_team_compass.contracts.metrics import MetricSet
 from ado_team_compass.contracts.narrative import Narrative
 from ado_team_compass.contracts.report import TeamReport
@@ -27,6 +29,8 @@ from ado_team_compass.contracts.run import RunState
 from ado_team_compass.decisions import build_candidates
 from ado_team_compass.errors import CompassError, ConfigError, ExitCode
 from ado_team_compass.metrics.engine import build_team_report
+from ado_team_compass.metrics.history_block import build_history_block
+from ado_team_compass.metrics.planning import evaluate_planning
 from ado_team_compass.reporting import build_summary, render_html, render_markdown
 from ado_team_compass.reporting.markdown import render_narrative_section
 from ado_team_compass.reporting.narrative import validate_narrative
@@ -61,6 +65,8 @@ def execute_status(
     store: RunStore,
     resolved: ResolvedConfig,
     iteration_path: str | None = None,
+    include_history: bool = False,
+    include_planning: bool = False,
 ) -> RunOutcome:
     """Coleta, calcula e persiste uma execução completa da situação atual."""
     run_id = run_id_for(as_of, team.alias)
@@ -79,6 +85,19 @@ def execute_status(
         store.abandon(directory, f"{error.code}: {error.message}")
         raise
 
+    history: HistorySet | None = None
+    if include_history:
+        try:
+            history = collect_history(
+                client,
+                team,
+                [item.id for item in collection.facts.items],
+                collected_at=as_of,
+            )
+        except CompassError as error:
+            store.abandon(directory, f"{error.code}: {error.message}")
+            raise
+
     try:
         outcome = _persist(
             store,
@@ -95,6 +114,8 @@ def execute_status(
             catalog_hash=catalog.catalog_hash if catalog else None,
             server_version=catalog.server_version if catalog else None,
             extra_limitations=collection.reasons,
+            history=history,
+            include_planning=include_planning,
         )
     except CompassError as error:
         store.abandon(directory, f"{error.code}: {error.message}")
@@ -118,6 +139,8 @@ def _persist(
     catalog_hash: str | None,
     server_version: str | None,
     extra_limitations: tuple[str, ...] = (),
+    history: HistorySet | None = None,
+    include_planning: bool = False,
 ) -> RunOutcome:
     references = write_evidence(directory, facts.items)
     report = build_team_report(
@@ -130,6 +153,31 @@ def _persist(
         evidence_references=references,
         limitations=extra_limitations,
     )
+    if history is not None:
+        block = build_history_block(
+            history,
+            facts,
+            team,
+            iteration_path=iteration_path,
+            commitment_at=window.start if window else as_of,
+            as_of=as_of,
+            window_start=window.start if window else None,
+        )
+        report = report.model_copy(
+            update={
+                "history": block,
+                "limitations": tuple(dict.fromkeys((*report.limitations, *block.reasons))),
+            }
+        )
+    if include_planning:
+        planning = evaluate_planning(facts, team, today=as_of.date())
+        report = report.model_copy(
+            update={
+                "planning_findings": planning,
+                "findings": tuple((*report.findings, *planning)),
+            }
+        )
+
     metrics = MetricSet(
         run_id=run_id, team_id=team.team_id, metrics=report.metrics, findings=report.findings
     )
@@ -146,6 +194,10 @@ def _persist(
             directory, "summary.json", summary.model_dump(mode="json")
         ),
     }
+    if history is not None:
+        hashes["history.json"] = store.write_json(
+            directory, "history.json", history.model_dump(mode="json")
+        )
     store.write_text(directory, "report.md", markdown)
     candidates = build_candidates(
         report, blocked_item_ids=tuple(item.id for item in facts.items if item.blocked)

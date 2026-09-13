@@ -223,12 +223,65 @@
 <p class="indisponivel">Nenhum item marcado como impedido pela origem configurada. Isso não prova ausência de impedimentos.</p>
 {% endif %}
 
-<h2>Blocos que dependem de histórico</h2>
+<h2>Histórico observado</h2>
+{% if report.history and report.history.available %}
+<div class="envelope">
+<table>
+  <caption>Compromisso, escopo e fluxo observados na janela, com coorte explícita</caption>
+  <tbody>
+    <tr><th scope="row">Baseline</th>
+        <td>{{ report.history.baseline_label }} · {{ report.history.baseline_size }} itens
+        {% if report.history.baseline_is_technical %}(baseline técnica: não prova compromisso confirmado){% endif %}</td></tr>
+    <tr><th scope="row">Say/do</th>
+        <td>{{ fmt_ratio(report.history.say_do) }}
+        ({{ report.history.say_do_numerator }}/{{ report.history.say_do_denominator }})</td></tr>
+    <tr><th scope="row">Carry-over da baseline</th><td>{{ fmt_ratio(report.history.carry_over) }}</td></tr>
+    <tr><th scope="row">Escopo: entradas</th><td>{{ report.history.scope_entered | join(", ") or "nenhuma" }}</td></tr>
+    <tr><th scope="row">Escopo: saídas</th><td>{{ report.history.scope_exited | join(", ") or "nenhuma" }}</td></tr>
+    <tr><th scope="row">Entrou e saiu na mesma janela</th><td>{{ report.history.scope_round_trip | join(", ") or "nenhum" }}</td></tr>
+    <tr><th scope="row">Pontos comprometidos / atuais</th>
+        <td>{{ report.history.committed_points if report.history.committed_points is not none else "indisponível" }}
+            / {{ report.history.current_points if report.history.current_points is not none else "indisponível" }}
+            {% if report.history.points_changed_item_ids %}· reestimados: {{ report.history.points_changed_item_ids | join(", ") }}{% endif %}</td></tr>
+    <tr><th scope="row">Cycle time p50 / p85</th>
+        <td>{{ report.history.cycle_time_p50 if report.history.cycle_time_p50 is not none else "nulo" }}
+            / {{ report.history.cycle_time_p85 if report.history.cycle_time_p85 is not none else "nulo" }}
+            dias corridos (nearest-rank, amostra {{ report.history.cycle_time_sample }})</td></tr>
+    <tr><th scope="row">Lead time p50</th>
+        <td>{{ report.history.lead_time_p50 if report.history.lead_time_p50 is not none else "nulo" }}
+            dias corridos (amostra {{ report.history.lead_time_sample }}); não é tempo até valor em produção</td></tr>
+    <tr><th scope="row">Reaberturas concluídas de novo</th><td>{{ report.history.reopened_item_ids | join(", ") or "nenhuma" }}</td></tr>
+    <tr><th scope="row">Aging do episódio mais antigo</th>
+        <td>{{ report.history.oldest_aging_days if report.history.oldest_aging_days is not none else "desconhecido" }} dias
+        {% if report.history.aging_unknown_item_ids %}· início desconhecido: {{ report.history.aging_unknown_item_ids | join(", ") }}{% endif %}</td></tr>
+  </tbody>
+</table>
+</div>
+{% if report.history.throughput %}
+<div class="envelope">
+<table>
+  <caption>Throughput por semana (primeira conclusão); semanas sem entrega permanecem com zero</caption>
+  <thead><tr><th>Semana</th><th>Itens concluídos</th></tr></thead>
+  <tbody>
+  {% for point in report.history.throughput %}
+    <tr><td>{{ point.period }}</td><td>{{ point.value }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% if report.history.small_sample %}
+<p class="indisponivel">Amostra pequena: percentis são indicativos e não constituem previsão.</p>
+{% endif %}
+<p class="selecao">Série descritiva: variação entre janelas não demonstra melhora ou piora sem contexto e cobertura.</p>
+{% else %}
 <p class="indisponivel">
-  Burnup, burndown, baseline de horas, duração de bloqueios, aging e tempo em fila ficam
-  indisponíveis nesta versão: exigem coortes e cortes históricos (v0.2). Nenhum dia passado é
-  desenhado por interpolação e nenhum gráfico fictício é exibido.
+  Burnup, burndown, baseline de esforço, duração de bloqueios, aging e tempo em fila ficam
+  indisponíveis nesta execução: exigem coortes e cortes históricos com cobertura demonstrada.
+  Nenhum dia passado é desenhado por interpolação e nenhum gráfico fictício é exibido.
+  {% if report.history %}<br>Motivo: {{ report.history.reasons | join("; ") }}{% endif %}
 </p>
+{% endif %}
 
 <h2>Achados</h2>
 {% if report.findings %}
