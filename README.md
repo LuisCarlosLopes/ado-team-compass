@@ -143,3 +143,6 @@ Em geral, não. Significa que faltou algum dado no board — item sem horas, est
 Encontrou um número inconsistente, um perfil que não representa o seu time ou uma tela que poderia ser mais clara? Abra uma [Issue](https://github.com/LuisCarlosLopes/ado-team-compass/issues) descrevendo a equipe (sem dados sensíveis), o comando usado e o resultado esperado.
 
 Sugestões de funcionalidade também são bem-vindas pela mesma página: use o modelo de issue mais próximo do seu caso para acelerar a triagem.
+
+Para detalhes sobre a política atual de submissão de código e Pull Requests, consulte as [Diretrizes de Contribuição](CONTRIBUTING.md).
+
