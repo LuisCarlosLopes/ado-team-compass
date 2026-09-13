@@ -1,0 +1,15 @@
+{
+  "name": "ado-team-compass",
+  "owner": {
+    "name": "ADO Team Compass"
+  },
+  "plugins": [
+    {
+      "name": "ado-team-compass",
+      "source": "./plugin/claude",
+      "description": "Visibilidade de entrega no Azure DevOps com cálculos auditáveis, exclusivamente pelo MCP oficial da Microsoft.",
+      "category": "productivity",
+      "keywords": ["azure-devops", "mcp", "sprint", "capacidade", "relatorio"]
+    }
+  ]
+}

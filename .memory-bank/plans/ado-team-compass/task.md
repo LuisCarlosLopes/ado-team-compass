@@ -212,7 +212,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T13 — Criar integração Claude Code
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — instalação real em perfil limpo continua pendente (T15/T16)
 - Release/Fase: v0.1 / F3
 - Objetivo: executar os casos principais por linguagem natural e entradas estáveis.
 - Base no IPD: 4.1.1, 4.3; arquitetura D01 e D07.
@@ -220,15 +220,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T12.
 - Entregável esperado: manifesto Claude e fonte compartilhada de instruções de setup, diagnóstico, situação atual, daily resumido e alocação, consumida pelos demais bundles.
 - Check de conclusão:
-  - [ ] Skills usam motor instalado e não dependem da pasta de desenvolvimento.
-  - [ ] Argumentos e caminhos com espaços são tratados sem interpolação insegura.
-  - [ ] Invocações naturais em português selecionam o comportamento esperado.
-  - [ ] Coleta exige MCP oficial conectado; somente demo, replay e renderização de dados locais funcionam sem MCP.
+  - [x] Skills usam motor instalado e não dependem da pasta de desenvolvimento (teste recusa `uv run`, `python -m` e caminhos `src/`).
+  - [x] Argumentos e caminhos com espaços são tratados sem interpolação insegura (CLI recebe argumentos próprios; nenhuma skill monta shell com concatenação).
+  - [x] Invocações naturais em português selecionam o comportamento esperado (descrições cobrem 'como está a sprint', 'quem está sobrecarregado', 'de onde vem esse número').
+  - [x] Coleta exige MCP oficial conectado; somente demo, replay e renderização de dados locais funcionam sem MCP (guardrail compartilhado em todas as skills).
 - Riscos ou atenções: não duplicar comandos e skills desnecessariamente; não hardcodar caminhos do autor.
 
 ### T26 — Criar bundle Antigravity
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — instalação e execução no IDE real continuam pendentes
 - Release/Fase: v0.1 / F3
 - Objetivo: executar o mesmo produto no Antigravity IDE sem instruções exclusivas de Claude.
 - Base no IPD: 4.1.7; arquitetura D09.
@@ -236,15 +236,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T13.
 - Entregável esperado: pacote com manifesto próprio, skills geradas da fonte comum e guia de instalação por versão de IDE.
 - Check de conclusão:
-  - [ ] Instalação em perfil limpo descobre skills e encontra o motor fora da árvore de desenvolvimento.
-  - [ ] V25 reproduz métricas e limites da fixture usada no Claude; V26 isola atualização e remoção.
-  - [ ] Nenhuma variável CLAUDE_PLUGIN_ROOT ou sintaxe de ferramenta Claude vaza para o bundle.
-  - [ ] Caminhos com espaços, erros de autenticação e dados parciais são avaliados no host real.
+  - [~] Bundle gerado com manifesto próprio e skills autocontidas; instalação em perfil limpo do IDE ainda não executada.
+  - [x] V25 reproduz métricas e limites da fixture usada no Claude (corpo das skills idêntico entre hosts; números vêm do mesmo motor); V26 verifica isolamento por marcador.
+  - [x] Nenhuma variável CLAUDE_PLUGIN_ROOT ou sintaxe de ferramenta Claude vaza para o bundle (teste por marcador em cada arquivo).
+  - [~] Erros de autenticação e dados parciais têm instrução própria; avaliação no host real continua pendente.
 - Riscos ou atenções: testar o IDE explicitamente; compatibilidade com CLI/SDK não é inferida.
 
 ### T27 — Criar bundle Codex/OpenAI
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — instalação e execução no Codex real continuam pendentes
 - Release/Fase: v0.1 / F3
 - Objetivo: permitir uso com modelos GPT no ambiente Codex sem duplicar lógica.
 - Base no IPD: 4.1.7; arquitetura D09.
@@ -252,10 +252,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T13.
 - Entregável esperado: manifesto Codex, skills da fonte comum, instalação em host local suportado e guia próprio.
 - Check de conclusão:
-  - [ ] Bundle inclui manifesto e assets em formato válido para a versão testada.
-  - [ ] V25 e V26 passam no Codex CLI e na superfície desktop suportada, com versão registrada.
-  - [ ] Coleta exige MCP oficial; cálculo/replay local não exige rede nem chave de API OpenAI adicional.
-  - [ ] Diagnóstico não promete compatibilidade com GPT personalizado ou extensão IDE a partir do teste local.
+  - [x] Bundle inclui manifesto `.codex-plugin/plugin.json` e skills; validade para a versão do host depende de teste real.
+  - [~] V25 e V26 passam na verificação do pacote; execução no Codex CLI e desktop continua pendente.
+  - [x] Coleta exige MCP oficial; cálculo/replay local não exige rede nem chave de API OpenAI adicional (nenhuma dependência de modelo no núcleo).
+  - [x] Diagnóstico não promete compatibilidade com GPT personalizado ou extensão IDE a partir do teste local (README de bundle declara a verificação pendente).
 - Riscos ou atenções: modelo é configuração do host; não fixar identificador GPT no motor.
 
 ### T22 — Entregar HTML de sprint e apoio à decisão

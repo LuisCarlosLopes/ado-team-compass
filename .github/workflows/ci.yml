@@ -29,6 +29,8 @@ jobs:
         run: uv run ruff format --check .
       - name: Tipos
         run: uv run mypy
+      - name: Bundles sincronizados com a fonte compartilhada
+        run: uv run python packaging/build_bundles.py --check
       - name: Testes determinísticos sem rede e sem credencial
         run: uv run pytest -m "not integration"
 

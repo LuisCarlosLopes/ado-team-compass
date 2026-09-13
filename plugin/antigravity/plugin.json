@@ -1,0 +1,27 @@
+{
+  "author": {
+    "name": "ADO Team Compass"
+  },
+  "description": "Visibilidade de entrega no Azure DevOps com cálculos auditáveis, exclusivamente pelo MCP oficial da Microsoft.",
+  "keywords": [
+    "azure-devops",
+    "mcp",
+    "sprint",
+    "capacidade"
+  ],
+  "name": "ado-team-compass",
+  "requirements": {
+    "engine": "ado-team-compass",
+    "engine_version": "0.1.0.dev0",
+    "mcp_server": "azure-devops (oficial Microsoft)"
+  },
+  "skills": [
+    "./skills/alocacao",
+    "./skills/demo",
+    "./skills/doctor",
+    "./skills/evidencia",
+    "./skills/setup",
+    "./skills/situacao-atual"
+  ],
+  "version": "0.1.0.dev0"
+}

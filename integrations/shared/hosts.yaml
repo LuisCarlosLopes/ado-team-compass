@@ -1,0 +1,39 @@
+# Hosts suportados e o que muda entre eles. Fórmulas, contratos e limites ficam no núcleo:
+# aqui só entram invocação, manifesto e formato de pacote.
+hosts:
+  claude:
+    display_name: Claude Code
+    bundle_dir: plugin/claude
+    manifest_path: .claude-plugin/plugin.json
+    skills_dir: skills
+    skill_file: SKILL.md
+    engine_note: >-
+      O motor é o pacote Python `ado-team-compass`, instalado no ambiente do usuário.
+      Use o executável disponível no PATH; não dependa da pasta de desenvolvimento.
+    mcp_note: >-
+      Configure o servidor MCP oficial do Azure DevOps no próprio Claude Code
+      (`claude mcp add`), apontando para o servidor remoto oficial da organização.
+  antigravity:
+    display_name: Google Antigravity
+    bundle_dir: plugin/antigravity
+    manifest_path: plugin.json
+    skills_dir: skills
+    skill_file: SKILL.md
+    engine_note: >-
+      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
+      Chame o executável pelo PATH; o IDE não injeta caminho do plugin nas instruções.
+    mcp_note: >-
+      Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do
+      Antigravity, apontando para o servidor remoto oficial da organização.
+  codex:
+    display_name: Codex
+    bundle_dir: plugin/codex
+    manifest_path: .codex-plugin/plugin.json
+    skills_dir: skills
+    skill_file: SKILL.md
+    engine_note: >-
+      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
+      Nenhuma chave de API adicional é necessária para calcular ou renderizar.
+    mcp_note: >-
+      Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do Codex,
+      apontando para o servidor remoto oficial da organização.
