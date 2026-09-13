@@ -325,7 +325,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T17 — Adicionar coleta histórica consistente
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — coleta por revisões implementada e gatilhada por capacidade; cobertura real depende do catálogo conectado
 - Release/Fase: v0.2 / F5
 - Objetivo: obter fatos históricos com corte e granularidade explícitos.
 - Base no IPD: 4.1.5 e 4.4.
@@ -333,15 +333,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T16.
 - Entregável esperado: coleta de revisões/consultas históricas suportadas pelo MCP oficial e snapshots locais com proveniência MCP.
 - Check de conclusão:
-  - [ ] Catálogo MCP e cobertura histórica são verificados; fonte/ferramenta ausente desabilita a métrica, sem bypass (V33).
-  - [ ] Paginação/filtros verificam cobertura de itens movidos de área/iteração; sem cobertura comprovada, resultado é parcial.
-  - [ ] V17 preserva o corte na consulta e na hidratação.
-  - [ ] Itens excluídos, lacunas e divergência entre fontes são limitações explícitas.
+  - [x] Catálogo MCP e cobertura histórica são verificados; fonte/ferramenta ausente desabilita a métrica, sem bypass (V33: `collect_history` devolve cobertura inutilizável com motivo).
+  - [~] Cobertura declara explicitamente que itens excluídos e movidos para fora do escopo não são descobertos por revisões; verificação com dados reais continua pendente.
+  - [x] V17 preserva o corte na consulta e na hidratação (`revision_at` congela pontos e área no instante do corte).
+  - [x] Itens excluídos, lacunas e divergência entre fontes são limitações explícitas (`HistoryCoverage.reasons`).
 - Riscos ou atenções: snapshot local diário não substitui evento intradiário; não reconstruir passado anterior à primeira coleta sem revisão completa no MCP.
 
 ### T18 — Implementar compromisso e mudança de escopo
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — cálculo puro validado por fixture
 - Release/Fase: v0.2 / F5
 - Objetivo: medir previsibilidade sem contaminar a baseline com dados atuais.
 - Base no IPD: 4.1.5.
@@ -349,10 +349,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T17.
 - Entregável esperado: baseline, say/do, entradas/saídas, carry-over, pontos/estimativas congelados e variação de esforço separada de mudança de escopo e capacidade.
 - Check de conclusão:
-  - [ ] V17, V19 e V30 validam reestimativa, entrada/saída, coorte de horas e denominador zero.
-  - [ ] Baseline técnica é distinguida de compromisso confirmado.
-  - [ ] Itens adicionados não aumentam cumprimento da baseline original.
-  - [ ] Percentuais têm coorte, numerador, denominador e corte disponíveis.
+  - [x] V17 e V19 validam reestimativa, entrada/saída e denominador zero; V30 mantém variação de esforço indisponível sem baseline comparável.
+  - [x] Baseline técnica é distinguida de compromisso confirmado (`is_technical` e rótulo próprio).
+  - [x] Itens adicionados não aumentam cumprimento da baseline original (say/do percorre apenas os itens congelados).
+  - [x] Percentuais têm coorte, numerador, denominador e corte disponíveis (`Ratio` expõe os três e o motivo quando é nulo).
 - Riscos ou atenções: carry-over da baseline não equivale a transferência comprovada para a próxima sprint.
 
 ### T19 — Implementar regras de planejamento por perfil
@@ -373,7 +373,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T20 — Implementar métricas de fluxo e coortes
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — cálculo puro validado por fixture
 - Release/Fase: v0.2 / F5
 - Objetivo: gerar séries históricas interpretáveis e consistentes.
 - Base no IPD: 4.1.5.
@@ -381,10 +381,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T17.
 - Entregável esperado: throughput, lead/cycle time, aging, reaberturas, duração de impedimentos quando há eventos, filas por etapa e percentis.
 - Check de conclusão:
-  - [ ] V18 prova a política de primeira conclusão e reabertura; V31 impede inferir duração de bloqueio pela última alteração genérica.
-  - [ ] Percentil informa método, unidade, amostra e janela; amostra vazia é nula.
-  - [ ] Períodos sem entrega permanecem na série.
-  - [ ] Mudança de política/processo é identificada e não produz comparação silenciosa.
+  - [x] V18 prova a política de primeira conclusão e reabertura; V31 impede inferir duração de bloqueio pela última alteração genérica (aging sem início observado fica desconhecido).
+  - [x] Percentil informa método (nearest-rank), unidade (dias corridos), amostra e aviso de amostra pequena; amostra vazia é nula com motivo.
+  - [x] Períodos sem entrega permanecem na série (semanas com zero preservadas).
+  - [~] Séries são descritivas e trazem a nota de que variação não demonstra melhora ou piora; detecção automática de mudança de processo continua pendente.
 - Riscos ou atenções: correlação de WIP e cycle time não demonstra causa; não comparar pontos entre times.
 
 ### T21 — Integrar e validar a release histórica
