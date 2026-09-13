@@ -9,7 +9,7 @@ instruções compartilhadas vivem na fonte comum e os bundles são regenerados p
 1. Instale o motor no ambiente do usuário:
 
    ```
-   pip install ado-team-compass==0.1.0.dev0
+   pip install ado-team-compass==0.1.0
    ```
 
 2. Configure o servidor MCP oficial do Azure DevOps no próprio Claude Code (`claude mcp add`), apontando para o servidor remoto oficial da organização.

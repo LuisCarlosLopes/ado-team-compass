@@ -30,10 +30,10 @@ Status permitidos:
 
 | Host | OS | Versão Host | Versão Compass | Install | Skill Discovery | Status | Evidence | Update | Uninstall |
 |---|---|---|---|---|---|---|---|---|---|
-| **Claude Code** | macOS / Linux / Windows | A definir | `0.1.0.dev0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
-| **Google Antigravity** | macOS / Linux / Windows | A definir | `0.1.0.dev0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
-| **Codex** | macOS / Linux / Windows | A definir | `0.1.0.dev0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
-| **Cursor** | macOS / Linux / Windows | A definir | `0.1.0.dev0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
+| **Claude Code** | macOS / Linux / Windows | A definir | `0.1.0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
+| **Google Antigravity** | macOS / Linux / Windows | A definir | `0.1.0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
+| **Codex** | macOS / Linux / Windows | A definir | `0.1.0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
+| **Cursor** | macOS / Linux / Windows | A definir | `0.1.0` | Pendente | Pendente | `Planejado` | Nenhuma | Pendente | Pendente |
 
 > [!NOTE]
 > **ChatGPT Actions / Custom GPT:** Permanece fora desta matriz local (adiado para v0.3.1).

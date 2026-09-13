@@ -13,7 +13,7 @@
   "name": "ado-team-compass",
   "requirements": {
     "engine": "ado-team-compass",
-    "engine_version": "0.1.0.dev0",
+    "engine_version": "0.1.0",
     "mcp_server": "azure-devops (oficial Microsoft)"
   },
   "skills": [
@@ -26,5 +26,5 @@
     "./skills/setup",
     "./skills/situacao-atual"
   ],
-  "version": "0.1.0.dev0"
+  "version": "0.1.0"
 }

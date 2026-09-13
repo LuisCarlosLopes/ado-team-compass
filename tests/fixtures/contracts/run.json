@@ -1,7 +1,7 @@
 {
   "run_id": "2026-09-12T10-00-00Z-plataforma",
   "schema_version": {"major": 1, "minor": 0},
-  "engine_version": "0.1.0.dev0",
+  "engine_version": "0.1.0",
   "state": "partial",
   "source_identity": "sha256:7f0c2d",
   "mcp_server_version": "0.4.0",

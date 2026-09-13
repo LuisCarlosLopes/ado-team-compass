@@ -216,7 +216,7 @@ def _key(**overrides) -> CacheKey:
         "team_id": "t1",
         "scope": "Demo\\Core|descendants=True",
         "period": "Demo\\Sprint 42",
-        "engine_version": "0.1.0.dev0",
+        "engine_version": "0.1.0",
     }
     base.update(overrides)
     return CacheKey(**base)  # type: ignore[arg-type]
