@@ -9,116 +9,290 @@
     color-scheme: light dark;
     --fundo: #ffffff; --texto: #16191d; --borda: #c9ced6; --suave: #f4f6f9;
     --atencao: #8a5300; --acima: #8c1d18; --ok: #1c5c2e; --indisponivel: #4a5158;
+    --tinta-suave: #6b7280; --hachura: rgba(140, 29, 24, .16);
   }
   @media (prefers-color-scheme: dark) {
     :root { --fundo: #14171a; --texto: #eceff3; --borda: #3a4149; --suave: #1d2126;
-            --atencao: #e0a458; --acima: #f28b82; --ok: #7fd18f; --indisponivel: #a8b0b8; }
+            --atencao: #e0a458; --acima: #f28b82; --ok: #7fd18f; --indisponivel: #a8b0b8;
+            --tinta-suave: #9aa3ad; --hachura: rgba(242, 139, 130, .18); }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 1.5rem; background: var(--fundo); color: var(--texto);
-         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
-  h2 { font-size: 1.15rem; margin: 2rem 0 .5rem; border-bottom: 1px solid var(--borda);
-       padding-bottom: .25rem; }
-  h3 { font-size: 1rem; margin: 1.25rem 0 .5rem; }
-  table { border-collapse: collapse; width: 100%; margin: .5rem 0 1rem; font-size: .92rem; }
-  caption { text-align: left; font-weight: 600; padding: .25rem 0; }
-  th, td { border: 1px solid var(--borda); padding: .35rem .5rem; text-align: left;
+  body { margin: 0; padding: 2rem 2.25rem 2.5rem; background: var(--fundo); color: var(--texto);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  main { display: flex; flex-direction: column; gap: 1.75rem; max-width: 78rem; margin: 0 auto; }
+  h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.15;
+       margin: 0; }
+  h2 { font-size: 1.05rem; font-weight: 650; margin: 0 0 .5rem;
+       border-bottom: 1px solid var(--borda); padding-bottom: .35rem; }
+  h3 { font-size: .95rem; font-weight: 650; margin: 1rem 0 .4rem; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  table { border-collapse: collapse; width: 100%; margin: .4rem 0 .5rem; font-size: .88rem; }
+  caption { text-align: left; font-size: .8rem; color: var(--tinta-suave); padding: .3rem 0; }
+  th, td { border: 1px solid var(--borda); padding: .4rem .55rem; text-align: left;
            vertical-align: top; }
-  th { background: var(--suave); }
+  th { background: var(--suave); font-weight: 600; }
   .envelope { overflow-x: auto; }
-  .cartoes { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0 1rem; padding: 0;
-             list-style: none; }
-  .cartao { border: 1px solid var(--borda); border-radius: .4rem; padding: .6rem .75rem;
-            min-width: 15rem; flex: 1 1 15rem; background: var(--suave); }
-  .cartao .valor { font-size: 1.4rem; font-weight: 650; display: block; }
-  .cartao .rotulo { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
-  .cartao .nota { font-size: .82rem; color: var(--indisponivel); }
+  .rotulo { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em;
+            color: var(--tinta-suave); font-weight: 650; }
+
+  /* faixa de contexto */
+  .contexto { display: flex; justify-content: space-between; align-items: flex-start;
+              gap: 1.5rem; flex-wrap: wrap; border-bottom: 1px solid var(--borda);
+              padding-bottom: 1rem; }
+  .contexto .escopo { font-size: .95rem; color: var(--tinta-suave); }
+  .contexto .lado { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem;
+                    text-align: right; font-size: .8rem; color: var(--tinta-suave); }
+  .estado { display: inline-flex; align-items: center; gap: .4rem; border: 1px solid currentColor;
+            border-radius: 999px; padding: .15rem .7rem; font-size: .78rem; font-weight: 600; }
+  .estado.parcial { color: var(--atencao); }
+  .estado.completa { color: var(--ok); }
+
+  /* veredito */
+  .veredito { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1.75rem;
+              align-items: start; border: 1px solid var(--borda); border-left: 5px solid
+              var(--indisponivel); border-radius: .5rem; padding: 1.5rem 1.6rem;
+              background: var(--suave); }
+  .veredito.acima { border-left-color: var(--acima); }
+  .veredito.ok { border-left-color: var(--ok); }
+  .veredito .texto { grid-column: span 5; display: flex; flex-direction: column; gap: .6rem; }
+  .veredito .medida { grid-column: span 7; display: flex; flex-direction: column; gap: .75rem; }
+  .veredito .chamada { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em;
+                       font-weight: 700; color: var(--indisponivel); }
+  .veredito.acima .chamada { color: var(--acima); }
+  .veredito.ok .chamada { color: var(--ok); }
+  .veredito h1 { font-size: 1.5rem; font-weight: 650; line-height: 1.22; text-wrap: pretty; }
+  .veredito .detalhe { font-size: .95rem; color: var(--tinta-suave); text-wrap: pretty; }
+  .veredito .aviso { font-size: .82rem; color: var(--tinta-suave);
+                     border-top: 1px dashed var(--borda); padding-top: .6rem; }
+  .destaque { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+              flex-wrap: wrap; }
+  .destaque .gap { font-size: 2.6rem; font-weight: 750; line-height: 1; }
+  .destaque .gap.acima { color: var(--acima); }
+  .destaque .lado { text-align: right; }
+  .destaque .utilizacao { font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
+
+  /* barra proporcional */
+  figure.barra { margin: 0; }
+  figure.barra svg { display: block; border: 1px solid var(--borda); border-radius: .35rem; }
+  .cabe { fill: var(--ok); }
+  .excede { color: var(--acima); }
+  .folga-reserva { fill: none; stroke: var(--borda); stroke-dasharray: 4 3; }
+  .rotulo-barra { font: 650 12px system-ui, sans-serif; fill: var(--fundo); }
+  .rotulo-excede { font: 650 12px system-ui, sans-serif; fill: var(--acima); }
+  .rotulo-folga { font: 650 12px system-ui, sans-serif; fill: var(--tinta-suave); }
+  figure.barra figcaption { font-size: .76rem; color: var(--tinta-suave); margin-top: .35rem; }
+  .limite { display: flex; align-items: flex-start; gap: .5rem; font-size: .82rem;
+            color: var(--atencao); border: 1px solid var(--atencao); border-radius: .35rem;
+            padding: .5rem .7rem; }
+
+  /* dias da sprint */
+  .dias { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .35rem; }
+  .dia { border: 1px solid var(--borda); border-radius: .3rem; padding: .45rem .2rem;
+         text-align: center; }
+  .dia .semana { font-size: .7rem; color: var(--tinta-suave); }
+  .dia .numero { font-weight: 650; }
+  .dia.passado { background: repeating-linear-gradient(135deg, rgba(0,0,0,.05) 0 5px,
+                 transparent 5px 10px); color: var(--tinta-suave); }
+  .dia.nao_util { border-style: dashed; color: var(--tinta-suave); }
+  .dia.elegivel { border-color: var(--ok); color: var(--ok); }
+  .dia.folga { border-color: var(--atencao); color: var(--atencao);
+               background: repeating-linear-gradient(135deg, var(--hachura) 0 5px,
+               transparent 5px 10px); }
+  .dia.hoje { border: 2px solid var(--texto); color: var(--texto); padding: .4rem .2rem; }
+
+  /* cartões */
+  .cartoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+             gap: .85rem; margin: 0; padding: 0; list-style: none; }
+  .cartao { border: 1px solid var(--borda); border-radius: .5rem; padding: .85rem 1rem;
+            display: flex; flex-direction: column; gap: .15rem; }
+  .cartao .valor { font-size: 1.8rem; font-weight: 700; line-height: 1.15; }
+  .cartao .valor.pequeno { font-size: 1.05rem; font-weight: 600; }
+  .cartao .nota { font-size: .78rem; color: var(--tinta-suave); text-wrap: pretty; }
+
+  /* decisões */
+  .decisao { display: grid; grid-template-columns: 2rem minmax(0, 1fr) 16rem; gap: 1rem;
+             align-items: start; border: 1px solid var(--borda); border-radius: .5rem;
+             padding: .85rem 1rem; }
+  .decisao + .decisao { margin-top: .6rem; }
+  .decisao .ordem { width: 1.9rem; height: 1.9rem; border-radius: 50%; display: flex;
+                    align-items: center; justify-content: center; font-weight: 700;
+                    font-size: .9rem; background: var(--indisponivel); color: var(--fundo); }
+  .decisao .ordem.acima { background: var(--acima); }
+  .decisao .ordem.atencao { background: var(--atencao); }
+  .decisao .acao { font-weight: 650; }
+  .decisao .problema { font-size: .88rem; color: var(--tinta-suave); text-wrap: pretty; }
+  .decisao .confirmar { font-size: .78rem; color: var(--tinta-suave);
+                        border-left: 2px solid var(--borda); padding-left: .75rem;
+                        text-wrap: pretty; }
+  .decisao .confirmar strong { color: var(--texto); display: block; }
+
+  /* limites */
+  .limites { border: 1px solid var(--borda); border-radius: .5rem; padding: 1rem 1.1rem;
+             background: var(--suave); }
+  .limites .grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+                    gap: 1rem; margin-top: .6rem; }
+  .limites .item { font-size: .84rem; color: var(--tinta-suave);
+                   border-left: 3px solid var(--indisponivel); padding-left: .65rem;
+                   text-wrap: pretty; }
+  .limites .item strong { color: var(--texto); display: block; }
+
   .selo { display: inline-block; border: 1px solid currentColor; border-radius: .25rem;
-          padding: 0 .3rem; font-size: .78rem; }
+          padding: 0 .3rem; font-size: .74rem; font-weight: 650; }
   .ACIMA_DA_FAIXA, .CARGA_SEM_CAPACIDADE { color: var(--acima); }
   .ATENCAO { color: var(--atencao); }
-  .DENTRO_DA_FAIXA { color: var(--ok); }
+  .DENTRO_DA_FAIXA, .ok { color: var(--ok); }
   .DADOS_INSUFICIENTES, .SEM_CARGA_REGISTRADA, .SEM_RESPONSAVEL { color: var(--indisponivel); }
   .indisponivel { border-left: 3px solid var(--indisponivel); padding-left: .75rem;
                   color: var(--indisponivel); }
+  .barra-pessoa { display: flex; height: .6rem; border: 1px solid var(--borda);
+                  border-radius: .2rem; overflow: hidden; min-width: 6rem; }
+  .barra-pessoa .cabe-p { background: var(--ok); }
+  .barra-pessoa .excede-p { background: repeating-linear-gradient(135deg, var(--hachura) 0 6px,
+                            transparent 6px 12px); }
   .filtros { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin: .5rem 0; }
   .filtros label { display: flex; flex-direction: column; font-size: .82rem; gap: .2rem; }
-  .selecao { font-size: .85rem; }
-  .rodape { margin-top: 2rem; font-size: .82rem; color: var(--indisponivel); }
+  .selecao { font-size: .82rem; color: var(--tinta-suave); }
+  details > summary { cursor: pointer; margin: .4rem 0; }
+  .rodape { display: flex; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+            border-top: 1px solid var(--borda); padding-top: .9rem; font-size: .78rem;
+            color: var(--tinta-suave); }
+  @media (max-width: 60rem) {
+    .veredito .texto, .veredito .medida { grid-column: span 12; }
+    .decisao { grid-template-columns: 2rem minmax(0, 1fr); }
+    .decisao .confirmar { grid-column: 2; border-left: none; padding-left: 0;
+                          border-top: 1px solid var(--borda); padding-top: .5rem; }
+    .dias { grid-auto-flow: row; grid-template-columns: repeat(7, minmax(0, 1fr));
+            grid-auto-columns: auto; }
+  }
   @media print {
     body { padding: 0; }
     .filtros, .acoes-pagina { display: none; }
+    .veredito, .limites { background: transparent; }
     table { page-break-inside: auto; }
   }
 </style>
 </head>
 <body>
 <main>
-<h1>Situação atual — {{ report.team_alias }}</h1>
-<p class="selecao">
-  Execução <code>{{ report.run_id }}</code> ·
-  {% if report.partial_sources %}<strong>relatório parcial</strong>{% else %}coleta completa{% endif %} ·
-  gerado a partir de dados do MCP oficial do Azure DevOps.
-</p>
-
-<h2>Contexto</h2>
-<div class="envelope">
-<table>
-  <caption>Faixa de contexto da execução</caption>
-  <tbody>
-    <tr><th scope="row">Equipe</th><td>{{ report.team_alias }} (<code>{{ report.team_id }}</code>)</td></tr>
-    <tr><th scope="row">Projeto</th><td><code>{{ report.project_id }}</code></td></tr>
-    <tr><th scope="row">Perfil</th><td>{{ report.profile }}</td></tr>
-    <tr><th scope="row">Sprint ou janela</th><td>{{ report.iteration_path or "janela de análise sem iteração" }}</td></tr>
-    <tr><th scope="row">Período</th>
-        <td>{% if report.window %}{{ report.window.start.isoformat() }} até {{ report.window.end.isoformat() }} (fim exclusivo, {{ report.window.timezone }}){% else %}indisponível{% endif %}</td></tr>
-    <tr><th scope="row">Data de referência</th><td>{{ report.as_of }}</td></tr>
-    <tr><th scope="row">Dias elegíveis restantes</th><td>{{ context.remaining_days }} ({{ context.current_day_policy }})</td></tr>
-    <tr><th scope="row">Escopo observado</th><td>{{ context.scope }}</td></tr>
-    <tr><th scope="row">Unidade</th><td>{{ report.unit }}</td></tr>
-    <tr><th scope="row">Fontes parciais</th><td>{{ report.partial_sources | join(", ") or "nenhuma" }}</td></tr>
-  </tbody>
-</table>
+<div class="contexto">
+  <div>
+    <div class="rotulo">Situação atual da sprint</div>
+    <h1>{{ report.team_alias }}</h1>
+    <div class="escopo">
+      {{ report.iteration_path or "janela de análise sem iteração" }}
+      {% if report.window %}&middot; {{ context.window_label }}{% endif %}
+      &middot; {{ report.profile }}
+    </div>
+  </div>
+  <div class="lado">
+    {% if report.partial_sources %}
+    <span class="estado parcial">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5"></path><path d="M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg>
+      Coleta parcial
+    </span>
+    <span>Fontes parciais: {{ report.partial_sources | join(", ") }}</span>
+    {% else %}
+    <span class="estado completa">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4 10-10"></path></svg>
+      Coleta completa
+    </span>
+    <span>Nenhuma fonte parcial registrada</span>
+    {% endif %}
+    <span>Referência {{ report.as_of }}</span>
+  </div>
 </div>
 
-<h2>O que precisa de atenção hoje</h2>
-<ul class="cartoes">
-{% for card in cards %}
-  <li class="cartao">
-    <span class="rotulo">{{ card.label }}</span>
-    <span class="valor {{ card.css_class }}">{{ card.value }}</span>
-    <span class="nota">{{ card.note }}</span>
-  </li>
-{% endfor %}
-</ul>
+<section class="veredito {{ verdict.tone }}" aria-label="Leitura da execução">
+  <div class="texto">
+    <div class="chamada">{{ verdict.eyebrow }}</div>
+    <h1>{{ verdict.headline }}</h1>
+    <p class="detalhe" style="margin: 0;">{{ verdict.subline }}</p>
+    <p class="aviso" style="margin: 0;">{{ gap.gap_note }}</p>
+  </div>
+  <div class="medida">
+    <div class="destaque">
+      <div style="display: flex; align-items: baseline; gap: .6rem;">
+        <span class="num gap {{ verdict.tone }}">{{ gap.gap }}</span>
+        <span class="detalhe">{{ context.gap_label }}</span>
+      </div>
+      <div class="lado">
+        <div class="num utilizacao {{ verdict.tone }}">{{ gap.utilization }}</div>
+        <div class="selecao">utilização observada &middot; {{ gap.utilization_note }}</div>
+      </div>
+    </div>
+    {{ capacity_svg }}
+    {% if context.lower_bound %}
+    <p class="limite" style="margin: 0;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: .15rem;"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+      <span><strong>Limite inferior:</strong> {{ context.lower_bound }}</span>
+    </p>
+    {% endif %}
+  </div>
+</section>
+
+{% if report.days %}
+<section aria-label="Dias da janela">
+  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+    <h2 style="border: none; margin: 0; padding: 0;">Dias da janela</h2>
+    <span class="selecao">
+      {{ report.remaining_working_days }} dias úteis restantes
+      {%- if report.personal_days_off %} &middot; {{ report.personal_days_off }} folgas pessoais conhecidas{% endif %}
+      &middot; {{ context.current_day_policy }}
+    </span>
+  </div>
+  <div class="dias">
+    {% for day in report.days %}
+    <div class="dia {{ day.kind }}{% if day.is_today %} hoje{% endif %}">
+      <div class="semana">{% if day.is_today %}hoje{% else %}{{ day.weekday_label }}{% endif %}</div>
+      <div class="numero num">{{ day.day_label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <details>
+    <summary class="selecao">Tabela equivalente dos dias da janela</summary>
+    <div class="envelope">
+    <table>
+      <thead><tr><th>Data</th><th>Dia</th><th>Situação</th></tr></thead>
+      <tbody>
+        {% for day in report.days %}
+        <tr><td>{{ day.date }}</td><td>{{ day.weekday_label }}</td><td>{{ day.kind }}{% if day.is_today %} (dia corrente){% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </details>
+</section>
+{% endif %}
+
+<section aria-label="Fatos do escopo observado">
+  <ul class="cartoes">
+  {% for card in cards %}
+    <li class="cartao">
+      <span class="rotulo">{{ card.label }}</span>
+      <span class="valor {{ card.css_class }}{% if card.value in ("não aplicável", "indisponível", "não informado") %} pequeno{% endif %}">{{ card.value }}</span>
+      <span class="nota">{{ card.note }}</span>
+    </li>
+  {% endfor %}
+  </ul>
+</section>
 
 {% if candidates %}
-<h3>Decisões prioritárias sugeridas</h3>
-<div class="envelope">
-<table>
-  <caption>Até três ações candidatas, com evidência e o que confirmar antes de decidir</caption>
-  <thead>
-    <tr><th>Prioridade</th><th>Problema</th><th>Impacto observado</th><th>Ação candidata</th>
-        <th>Quem decide</th><th>A confirmar</th><th>Como verificar</th><th>Evidência</th></tr>
-  </thead>
-  <tbody>
+<section aria-label="Decisões prioritárias">
+  <h2>Três decisões prioritárias</h2>
+  <p class="selecao" style="margin: 0 0 .6rem;">Ação recomendada não é ação executada: este relatório não altera nada no Azure DevOps.</p>
   {% for candidate in candidates[:3] %}
-    <tr>
-      <td>{{ loop.index }}</td>
-      <td>{{ candidate.problem }}</td>
-      <td>{{ candidate.observed_impact }}</td>
-      <td>{{ candidate.action }}</td>
-      <td>{{ candidate.decision_role }}</td>
-      <td>{{ candidate.to_confirm }}</td>
-      <td>{{ candidate.verification }}</td>
-      <td>{{ candidate.evidence | join(", ") }}</td>
-    </tr>
+  <div class="decisao">
+    <div class="ordem {% if candidate.priority <= 2 %}acima{% elif candidate.priority == 3 %}atencao{% endif %} num">{{ loop.index }}</div>
+    <div>
+      <div class="acao">{{ candidate.action }}</div>
+      <div class="problema">{{ candidate.problem }} {{ candidate.observed_impact }}</div>
+      <div class="selecao" style="margin-top: .3rem;">Quem decide: {{ candidate.decision_role }} &middot; Como verificar: {{ candidate.verification }} &middot; Evidência: {{ candidate.evidence | join(", ") }}</div>
+    </div>
+    <div class="confirmar"><strong>Confirmar antes</strong>{{ candidate.to_confirm }}</div>
+  </div>
   {% endfor %}
-  </tbody>
-</table>
-</div>
-<p class="selecao">Ação recomendada não é ação executada: este relatório não altera nada no Azure DevOps.</p>
+</section>
 {% endif %}
 
 <h2>Métricas da execução</h2>
@@ -143,7 +317,6 @@
 </div>
 
 <h2>Planejamento de capacidade e carga conhecida</h2>
-{{ capacity_svg }}
 <div class="envelope">
 <table>
   <caption>Carga conhecida contra capacidade restante reservada, na mesma janela e unidade</caption>
@@ -172,7 +345,7 @@
       {% for classe in classes %}<option value="{{ classe }}">{{ classe }}</option>{% endfor %}
     </select>
   </label>
-  <p class="selecao" id="selecao-ativa">Sem filtro: {{ report.people | length }} pessoas exibidas.</p>
+  <p class="selecao" id="selecao-ativa">Sem filtro: {{ people | length }} pessoas exibidas.</p>
 </form>
 <div class="envelope">
 <table id="tabela-pessoas">
@@ -182,10 +355,18 @@
         <th>Classe</th><th>Itens elegíveis</th><th>Com valor</th><th>Sem valor</th><th>Observação</th></tr>
   </thead>
   <tbody>
-  {% for row in report.people %}
+  {% for row in people %}
     <tr data-pessoa="{{ row.person_id }}" data-classe="{{ row.load_class }}">
       <td><code>{{ row.person_id }}</code></td>
-      <td>{{ fmt_quantity(row.known_load) }}</td>
+      <td>
+        {{ fmt_quantity(row.known_load) }}
+        {% if row.bar %}
+        <span class="barra-pessoa" role="img" aria-label="{{ row.bar.label }}">
+          <span class="cabe-p" style="width: {{ row.bar.fits }}%"></span>
+          <span class="excede-p" style="width: {{ row.bar.excess }}%"></span>
+        </span>
+        {% endif %}
+      </td>
       <td>{{ fmt_quantity(row.reserved_capacity) }}</td>
       <td>{{ fmt_ratio(row.utilization) }}{% if row.is_lower_bound %} (limite inferior){% endif %}</td>
       <td><span class="selo {{ row.load_class }}">{{ row.load_class }}</span></td>

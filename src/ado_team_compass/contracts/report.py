@@ -9,7 +9,7 @@ from pydantic import Field
 from ado_team_compass.contracts.common import Quantity, StrictModel, Window
 from ado_team_compass.contracts.metrics import Finding, Metric
 
-__all__ = ["HistoryBlock", "PersonRow", "SeriesPoint", "TeamReport"]
+__all__ = ["DayCell", "HistoryBlock", "PersonRow", "SeriesPoint", "TeamReport"]
 
 
 class PersonRow(StrictModel):
@@ -26,6 +26,20 @@ class PersonRow(StrictModel):
     items_known: int = 0
     items_missing: int = 0
     reason: str | None = None
+
+
+class DayCell(StrictModel):
+    """Um dia da janela, classificado para leitura imediata.
+
+    A classificação é de equipe: folga pessoal não vira folga da equipe. A contagem de
+    folgas pessoais conhecidas acompanha o relatório à parte.
+    """
+
+    date: str
+    weekday_label: str
+    day_label: str
+    kind: str  # passado | hoje | elegivel | folga | nao_util
+    is_today: bool = False
 
 
 class SeriesPoint(StrictModel):
@@ -83,6 +97,9 @@ class TeamReport(StrictModel):
     limitations: tuple[str, ...] = ()
     partial_sources: tuple[str, ...] = ()
     evidence_references: dict[str, str] = Field(default_factory=dict)
+    days: tuple[DayCell, ...] = ()
+    remaining_working_days: int = 0
+    personal_days_off: int = 0
     history: HistoryBlock | None = None
     planning_findings: tuple[Finding, ...] = ()
 

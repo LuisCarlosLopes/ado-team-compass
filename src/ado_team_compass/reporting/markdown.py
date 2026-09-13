@@ -17,13 +17,21 @@ from ado_team_compass.contracts.report import TeamReport
 
 __all__ = ["render_markdown", "render_narrative_section"]
 
+#: Rótulo de exibição das unidades. A unidade de origem é preservada nos dados; isto é só
+#: apresentação e nunca converte valor entre unidades.
+_UNIT_LABELS = {"hours": "h", "days": "d", "points": "pts", "items": "itens"}
+
+
+def _unit_label(unit: str) -> str:
+    return _UNIT_LABELS.get(unit, unit)
+
 
 def _fmt_quantity(quantity: Quantity | None) -> str:
     if quantity is None:
         return "não aplicável"
     if quantity.value is None:
         return "ausente"
-    return f"{_fmt_decimal(quantity.value)} {quantity.unit}"
+    return f"{_fmt_decimal(quantity.value)} {_unit_label(quantity.unit)}"
 
 
 def _fmt_decimal(value: Decimal) -> str:

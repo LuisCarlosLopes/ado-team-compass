@@ -68,7 +68,7 @@ def test_html_shows_the_same_numbers_as_the_json(tmp_path):
     metrics = store.load(outcome.run.manifest.run_id).artifact("metrics.json")
     load = next(item for item in metrics["metrics"] if item["id"] == "known_remaining_work")
     assert load["quantity"]["value"] == "28"
-    assert "28 hours" in content
+    assert "28 h" in content
     assert "93.3%" in content
 
 
@@ -159,7 +159,7 @@ def _report_for_gap() -> TeamReport:
 def test_v29_gap_is_plus_24_hours_and_120_percent_partial():
     report = _report_for_gap()
     content = render_html(report)
-    assert "+24 hours" in content
+    assert "+24 h" in content
     assert "120.0%" in content
     assert "limite inferior" in content
     # Não inventa a carga total nem prevê data de atraso.
@@ -170,7 +170,7 @@ def test_v29_gap_is_plus_24_hours_and_120_percent_partial():
 def test_v29_candidate_action_names_the_gap_without_promising_a_date():
     candidates = build_candidates(_report_for_gap())
     gap_candidate = next(item for item in candidates if item.rule_id == "known_load_above_capacity")
-    assert "+24 hours" in gap_candidate.problem
+    assert "+24 h" in gap_candidate.problem
     assert "não prevê data de atraso" in gap_candidate.to_confirm
     assert "limite inferior" in gap_candidate.observed_impact
 
@@ -357,3 +357,90 @@ def test_item_without_state_category_is_not_rendered_as_impediment(tmp_path):
     )
     content = render_html(report, items=[item])
     assert "Nenhum item marcado como impedido" in content
+
+
+# -- leitura de um olhar: o veredito é escolhido pelos números, nunca escrito -------------
+def _report_with(load_value, capacity_value, *, load_status="available", missing=0):
+    from ado_team_compass.contracts.common import QualityCounters
+
+    base = _report_for_gap()
+    metrics = []
+    for metric in base.metrics:
+        if metric.id == "known_remaining_work":
+            metric = metric.model_copy(
+                update={
+                    "status": MetricStatus(load_status),
+                    "quantity": Quantity(value=load_value, unit="hours")
+                    if load_value is not None
+                    else None,
+                    "quality": QualityCounters(eligible=13, known=10, missing=missing),
+                    "unavailable_reason": "a equipe não registra trabalho restante"
+                    if load_status == "not_applicable"
+                    else None,
+                }
+            )
+        if metric.id == "reserved_remaining_capacity":
+            metric = metric.model_copy(
+                update={
+                    "status": MetricStatus(load_status)
+                    if load_status == "not_applicable"
+                    else metric.status,
+                    "quantity": Quantity(value=capacity_value, unit="hours")
+                    if capacity_value is not None
+                    else None,
+                    "unavailable_reason": "a equipe não mantém capacidade reservada"
+                    if load_status == "not_applicable"
+                    else None,
+                }
+            )
+        metrics.append(metric)
+    return base.model_copy(update={"metrics": tuple(metrics)})
+
+
+def test_verdict_states_the_overflow_when_the_work_does_not_fit():
+    content = render_html(_report_with(Decimal(144), Decimal(120), missing=3))
+    assert "O trabalho conhecido não cabe na capacidade restante." in content
+    assert "+24 h" in content
+    assert "Limite inferior" in content
+
+
+def test_verdict_states_the_slack_when_the_work_fits():
+    content = render_html(_report_with(Decimal(60), Decimal(120)))
+    assert "O trabalho conhecido cabe na capacidade restante." in content
+    assert "de folga na reserva" in content
+    assert "não cabe" not in content
+
+
+def test_verdict_never_alarms_a_team_that_does_not_track_hours():
+    content = render_html(_report_with(None, None, load_status="not_applicable"))
+    assert "não se aplicam a esta equipe" in content
+    assert "não cabe na capacidade" not in content
+    assert "Sem barra de carga" in content
+
+
+def test_day_strip_marks_today_and_keeps_a_text_equivalent(tmp_path):
+    outcome, _ = _run(tmp_path)
+    report = outcome.report
+    assert report.days, "a execução real precisa produzir a faixa de dias"
+    assert sum(1 for day in report.days if day.is_today) == 1
+    content = (outcome.run.directory / "report.html").read_text(encoding="utf-8")
+    assert "Tabela equivalente dos dias da janela" in content
+    assert 'class="dia' in content
+
+
+def test_personal_day_off_is_not_shown_as_a_team_day_off(tmp_path):
+    """A folga da pessoa é contada à parte: ela não apaga o dia para o time inteiro."""
+    outcome, _ = _run(tmp_path)
+    report = outcome.report
+    assert report.personal_days_off == 1
+    assert not [day for day in report.days if day.kind == "folga"]
+    # Referência 15/09 numa janela de 14 a 18: restam 16, 17 e 18 como dias úteis da equipe.
+    assert report.remaining_working_days == 3
+
+
+def test_unit_label_is_presentation_only_and_never_converts():
+    from ado_team_compass.reporting.markdown import _unit_label
+
+    assert _unit_label("hours") == "h"
+    assert _unit_label("points") == "pts"
+    assert _unit_label("story-points-customizado") == "story-points-customizado"

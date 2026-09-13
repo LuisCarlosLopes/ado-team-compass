@@ -220,7 +220,7 @@ def test_markdown_is_deterministic_and_declares_its_origin(tmp_path):
     first = render_markdown(outcome.report)
     assert first == render_markdown(outcome.report)
     assert "Nenhum número desta página foi produzido por modelo de linguagem." in first
-    assert "28 hours" in first
+    assert "28 h" in first
 
 
 def test_interrupted_write_does_not_replace_a_valid_run(tmp_path):
@@ -289,7 +289,7 @@ def test_cli_demo_runs_without_network_and_emits_markdown(tmp_path, capsys):
     )
     output = capsys.readouterr().out
     assert "Situação atual — demo" in output
-    assert "28 hours" in output
+    assert "28 h" in output
 
 
 def test_cli_report_and_allocation_read_the_persisted_run(tmp_path, capsys, monkeypatch):

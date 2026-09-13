@@ -7,8 +7,9 @@ do sistema nem LLM. Todo número produzido aponta para a métrica e a evidência
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from ado_team_compass.contracts.common import (
     Capability,
@@ -20,7 +21,7 @@ from ado_team_compass.contracts.common import (
 from ado_team_compass.contracts.config import TeamConfig
 from ado_team_compass.contracts.facts import FactSet, WorkItemFact
 from ado_team_compass.contracts.metrics import Finding, Metric
-from ado_team_compass.contracts.report import PersonRow, TeamReport
+from ado_team_compass.contracts.report import DayCell, PersonRow, TeamReport
 from ado_team_compass.metrics.allocation import (
     CLOSED_CATEGORIES,
     KnownLoad,
@@ -124,6 +125,7 @@ def build_team_report(
     if classification.reason:
         notes.append(f"classe {classification.load_class.value}: {classification.reason}")
 
+    days, remaining_days, personal_days_off = _day_cells(facts, team, as_of=as_of, window=window)
     people = _person_rows(facts, team, day_factors, unit=unit, notes=notes)
     findings: list[Finding] = list(load.findings)
 
@@ -143,7 +145,82 @@ def build_team_report(
         limitations=tuple(dict.fromkeys(notes)),
         partial_sources=facts.partial_sources,
         evidence_references=dict(evidence_references or {}),
+        days=days,
+        remaining_working_days=remaining_days,
+        personal_days_off=personal_days_off,
     )
+
+
+_WEEKDAYS = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
+
+
+def _day_cells(
+    facts: FactSet, team: TeamConfig, *, as_of: datetime, window: Window | None
+) -> tuple[tuple[DayCell, ...], int, int]:
+    """Classifica cada dia da janela para a leitura de um olhar.
+
+    Folga de equipe e feriado marcam o dia; folga pessoal não, porque a janela é da equipe —
+    ela é contada à parte para não sugerir que o time inteiro parou.
+    """
+    if window is None:
+        return (), 0, 0
+    zone = ZoneInfo(window.timezone)
+    today = as_of.astimezone(zone).date()
+    first = window.start.astimezone(zone).date()
+    last = window.end.astimezone(zone).date()
+
+    team_off = {
+        day
+        for entry in facts.days_off
+        if entry.person_id is None
+        for day in _dates_between(entry.start, entry.end)
+    }
+    personal_off = {
+        (entry.person_id, day)
+        for entry in facts.days_off
+        if entry.person_id is not None
+        for day in _dates_between(entry.start, entry.end)
+        if first <= day < last
+    }
+    blocked = {*team.calendar.holidays, *team.calendar.team_days_off, *team_off}
+
+    cells: list[DayCell] = []
+    remaining = 0
+    current = first
+    while current < last:
+        if current.weekday() not in team.calendar.working_days:
+            kind = "nao_util"
+        elif current in blocked:
+            kind = "folga"
+        elif current < today:
+            kind = "passado"
+        elif current == today:
+            kind = "hoje"
+        else:
+            kind = "elegivel"
+            remaining += 1
+        cells.append(
+            DayCell(
+                date=current.isoformat(),
+                weekday_label=_WEEKDAYS[current.weekday()],
+                day_label=f"{current.day:02d}",
+                kind=kind,
+                # O dia corrente é marcado mesmo quando não é dia útil.
+                is_today=current == today,
+            )
+        )
+        current += timedelta(days=1)
+    return tuple(cells), remaining, len(personal_off)
+
+
+def _dates_between(start: date, end: date) -> list[date]:
+    """Dias de um intervalo com fim exclusivo."""
+    days: list[date] = []
+    current = start
+    while current < end:
+        days.append(current)
+        current += timedelta(days=1)
+    return days
 
 
 def _blocked_metric(
