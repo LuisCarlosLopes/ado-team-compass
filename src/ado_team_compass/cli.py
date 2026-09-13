@@ -28,7 +28,13 @@ from ado_team_compass.contracts.facts import FactSet
 from ado_team_compass.contracts.report import TeamReport
 from ado_team_compass.decisions import export_decisions, import_decisions, merge_decisions
 from ado_team_compass.diagnostics import TransportFactory, diagnose
-from ado_team_compass.errors import CapabilityUnavailable, CompassError, ConfigError, ExitCode
+from ado_team_compass.errors import (
+    CapabilityUnavailable,
+    CompassError,
+    ConfigError,
+    ExitCode,
+    extract_compass_error,
+)
 from ado_team_compass.pipeline import RunOutcome, execute_status, replay_run
 from ado_team_compass.reporting import render_html, render_markdown
 from ado_team_compass.runs import RunStore
@@ -200,6 +206,8 @@ def _run_collection(
         )
     factory = transport_factory or getattr(args, "_transport_factory", None) or official_transport
     as_of = _resolve_as_of(args)
+    history_enabled = include_history or bool(getattr(args, "with_history", False))
+    planning_enabled = include_planning or bool(getattr(args, "with_planning", False))
     with factory(connection) as transport:
         client = AdoMcpClient(transport=transport)
         client.handshake()
@@ -211,8 +219,8 @@ def _run_collection(
             store=_store_for(resolved),
             resolved=resolved,
             iteration_path=getattr(args, "period", None),
-            include_history=include_history,
-            include_planning=include_planning,
+            include_history=history_enabled,
+            include_planning=planning_enabled,
         )
 
 
@@ -917,6 +925,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             json.dumps({"error": error.as_dict()}, ensure_ascii=False, indent=2) + "\n"
         )
         return int(error.exit_code)
+    except BaseExceptionGroup as eg:
+        compass_error = extract_compass_error(eg)
+        if compass_error is not None:
+            LOGGER.error("%s", compass_error)
+            sys.stderr.write(
+                json.dumps({"error": compass_error.as_dict()}, ensure_ascii=False, indent=2) + "\n"
+            )
+            return int(compass_error.exit_code)
+        raise
 
 
 if __name__ == "__main__":  # pragma: no cover

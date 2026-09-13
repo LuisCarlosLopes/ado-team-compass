@@ -14,6 +14,7 @@ __all__ = [
     "ExitCode",
     "PartialResult",
     "SchemaVersionError",
+    "extract_compass_error",
     "sanitize_detail",
 ]
 
@@ -133,3 +134,15 @@ class SchemaVersionError(CompassError):
     """Schema ou versão incompatível com esta instalação."""
 
     exit_code = ExitCode.SCHEMA_INCOMPATIBLE
+
+
+def extract_compass_error(exc: BaseException) -> CompassError | None:
+    """Extrai uma instância de CompassError, mesmo se empacotada em ExceptionGroup."""
+    if isinstance(exc, CompassError):
+        return exc
+    if isinstance(exc, BaseExceptionGroup):
+        for item in exc.exceptions:
+            found = extract_compass_error(item)
+            if found is not None:
+                return found
+    return None

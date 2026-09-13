@@ -82,14 +82,33 @@ class OfficialMcpTransport:
         exc: BaseException | None,
         traceback: TracebackType | None,
     ) -> None:
+        def _contains(target: BaseException, group: BaseExceptionGroup) -> bool:
+            for item in group.exceptions:
+                if item is target:
+                    return True
+                if isinstance(item, BaseExceptionGroup) and _contains(target, item):
+                    return True
+            return False
+
         try:
             if self._session_cm is not None:
                 self._session_cm.__exit__(exc_type, exc, traceback)
+        except BaseExceptionGroup as eg:
+            # Desempacota exceção original se o task group do AnyIO a tiver empacotado em grupo
+            if exc is not None and _contains(exc, eg):
+                raise exc from None
+            raise
         finally:
             self._session = self._session_cm = None
-            if self._portal_cm is not None:
-                self._portal_cm.__exit__(exc_type, exc, traceback)
-            self._portal = self._portal_cm = None
+            try:
+                if self._portal_cm is not None:
+                    self._portal_cm.__exit__(exc_type, exc, traceback)
+            except BaseExceptionGroup as peg:
+                if exc is not None and _contains(exc, peg):
+                    raise exc from None
+                raise
+            finally:
+                self._portal = self._portal_cm = None
 
     def _open_session(self) -> Any:
         from contextlib import asynccontextmanager

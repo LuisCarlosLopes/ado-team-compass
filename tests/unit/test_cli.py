@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from pathlib import Path
 
 import pytest
 
@@ -107,3 +108,83 @@ def test_cli_supports_python_m_execution():
     import ado_team_compass.__main__ as main_module
 
     assert callable(main_module.main)
+
+
+def test_main_handles_exception_group_with_compass_error(monkeypatch, capsys):
+    """Garante que ExceptionGroup contendo CompassError é tratado com saída limpa na CLI."""
+
+    def _raising_handler(_args):
+        raise ExceptionGroup("grupo", [ConfigError("E_ERR_TESTE", "Erro encapsulado")])
+
+    version_cmd = next(c for c in COMMANDS if c.name == "version")
+    monkeypatch.setattr(version_cmd, "handler", _raising_handler)
+
+    exit_code = main(["version"])
+    assert exit_code == int(ExitCode.INVALID_INPUT)
+    captured = capsys.readouterr()
+    json_start = captured.err.find("{")
+    assert json_start != -1
+    payload = json.loads(captured.err[json_start:])
+    assert payload["error"]["code"] == "E_ERR_TESTE"
+    assert payload["error"]["message"] == "Erro encapsulado"
+
+
+def test_run_collection_honors_with_history_flag(monkeypatch):
+    """Garante que args.with_history ativa include_history na coleta."""
+
+    from ado_team_compass.cli import _run_collection
+    from ado_team_compass.config import resolve_config
+    from ado_team_compass.demo import demo_config_document
+
+    captured_history_param: dict[str, bool] = {}
+
+    def _fake_execute_status(*_args, **kwargs):
+        captured_history_param["include_history"] = kwargs.get("include_history", False)
+        # Retorna resultado sintético mínimo para não estourar
+        outcome = SimpleNamespace(
+            exit_code=ExitCode.OK,
+            run=SimpleNamespace(
+                directory=Path("/tmp"),
+                manifest=SimpleNamespace(
+                    run_id="run-teste", state=SimpleNamespace(value="complete"), partial_reasons=()
+                ),
+            ),
+            report=SimpleNamespace(evidence_references=[]),
+        )
+        return outcome
+
+    from types import SimpleNamespace
+
+    monkeypatch.setattr("ado_team_compass.cli.execute_status", _fake_execute_status)
+    monkeypatch.setattr(
+        "ado_team_compass.cli._require_config",
+        lambda _args: resolve_config(demo_config_document()),
+    )
+
+    class DummyTransport:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+    class DummyClient:
+        def __init__(self, transport=None):
+            pass
+
+        def handshake(self):
+            pass
+
+    monkeypatch.setattr("ado_team_compass.adapters.ado_mcp.AdoMcpClient", DummyClient)
+
+    args = argparse.Namespace(
+        offline=False,
+        with_history=True,
+        with_planning=False,
+        team=None,
+        as_of=None,
+        period=None,
+        _transport_factory=lambda _c: DummyTransport(),
+    )
+    _run_collection(args)
+    assert captured_history_param["include_history"] is True
