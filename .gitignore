@@ -11,6 +11,7 @@ build/
 .env
 .env.*
 !.env.example
+.cursor/mcp.json
 .ado-team-compass/cache/
 .ado-team-compass/runs/
 .ado-team-compass/config.local.yaml

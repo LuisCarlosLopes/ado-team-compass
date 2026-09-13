@@ -1,12 +1,13 @@
 """T01 — contrato mínimo da CLI: versão, códigos de saída e stdout/stderr separados."""
 
+import argparse
 import json
 
 import pytest
 
 from ado_team_compass import __version__
 from ado_team_compass.cli import COMMANDS, main
-from ado_team_compass.errors import ExitCode
+from ado_team_compass.errors import ConfigError, ExitCode
 
 
 def test_version_command_emits_json_on_stdout(capsys):
@@ -29,12 +30,20 @@ def test_no_command_returns_invalid_input_and_writes_help_to_stderr(capsys):
     assert "ado-team-compass" in captured.err
 
 
-def test_unimplemented_command_error_payload(capsys):
-    main(["forecast"])
-    stderr = capsys.readouterr().err
-    payload = json.loads(stderr[stderr.index("{") :])
-    assert payload["error"]["code"] == "E_CMD_NAO_DISPONIVEL"
-    assert payload["error"]["exit_code"] == int(ExitCode.INVALID_INPUT)
+def test_every_catalogued_command_has_a_handler():
+    assert all(command.handler is not None for command in COMMANDS)
+
+
+def test_unimplemented_command_reports_its_release(capsys):
+    """O aviso de entrada ainda não disponível continua válido para releases futuras."""
+    from ado_team_compass.cli import _Command, _not_implemented
+
+    command = _Command("futuro", "Entrada futura", "v9.9", None)
+    with pytest.raises(ConfigError) as error:
+        _not_implemented(command)(argparse.Namespace())
+    assert error.value.code == "E_CMD_NAO_DISPONIVEL"
+    assert error.value.detail["release"] == "v9.9"
+    assert error.value.exit_code == ExitCode.INVALID_INPUT
 
 
 def test_output_option_writes_file_instead_of_stdout(tmp_path, capsys):

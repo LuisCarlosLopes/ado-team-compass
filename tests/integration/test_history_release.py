@@ -154,3 +154,29 @@ def test_history_artifacts_validate_against_the_contract(outcome):
 
     payload = json.loads((outcome.run.directory / "history.json").read_text(encoding="utf-8"))
     assert HistorySet.model_validate(payload).coverage.is_usable
+
+
+def test_forecast_entry_requires_history_and_declares_its_status(
+    outcome, monkeypatch, capsys, tmp_path
+):
+    """T25 — a entrada `forecast` só projeta sobre execução com histórico disponível."""
+    import json as _json
+
+    from ado_team_compass.cli import main
+    from ado_team_compass.errors import ExitCode
+
+    document = demo_config_document()
+    document["output"] = {"directory": str(outcome.run.directory.parent)}
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(_json.dumps(document), encoding="utf-8")
+    monkeypatch.setenv("ADO_TEAM_COMPASS_CONFIG", str(config_path))
+
+    code = main(["forecast", "--run", outcome.run.manifest.run_id])
+    payload = _json.loads(capsys.readouterr().out)
+    assert payload["status"] == "experimental"
+    assert payload["seed"]
+    assert payload["premises"]
+    # A amostra sintética é curta: a projeção é negada com o requisito faltante.
+    assert payload["available"] is False
+    assert any("requisito faltante" in reason for reason in payload["reasons"])
+    assert code == int(ExitCode.PARTIAL_CAPABILITY)

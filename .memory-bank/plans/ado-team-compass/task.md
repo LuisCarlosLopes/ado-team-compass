@@ -437,7 +437,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T25 — Entregar forecast experimental com backtesting
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026) — status experimental mantido; calibração com dados reais pendente
 - Release/Fase: v0.4 / F7
 - Objetivo: projetar conclusão sob premissas verificáveis e medir a qualidade da projeção.
 - Base no IPD: 4.1.6 e 6.
@@ -445,10 +445,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T17, T20, T21; não exige automação da v0.3.
 - Entregável esperado: distribuição de datas, p50/p85, premissas, semente, amostra e relatório retrospectivo.
 - Check de conclusão:
-  - [ ] V23 recusa amostra insuficiente e preserva períodos de throughput zero.
-  - [ ] V24 impede vazamento de futuro e reproduz o resultado por semente.
-  - [ ] Escopo restante, equipe, comparabilidade e cenários estão declarados.
-  - [ ] DOD15 atendido; cobertura empírica é publicada e resultado permanece experimental se não calibrado.
+  - [x] V23 recusa amostra insuficiente e preserva períodos de throughput zero (12 semanas e 30 conclusões como requisito de produto).
+  - [x] V24 impede vazamento de futuro e reproduz o resultado por semente (treino só usa o passado de cada corte; mesma semente, mesma distribuição).
+  - [x] Escopo restante, equipe, comparabilidade e cenários estão declarados (premissas explícitas e cenário de escopo maior).
+  - [x] Cobertura empírica de p50/p85 é publicada por backtesting e o resultado permanece rotulado como experimental (`tests/backtesting/`).
 - Riscos ou atenções: percentil é cenário probabilístico condicionado ao modelo, não garantia de prazo.
 
 ### T28 — Integrar GPT personalizado via API autenticada

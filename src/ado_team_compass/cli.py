@@ -28,7 +28,7 @@ from ado_team_compass.contracts.facts import FactSet
 from ado_team_compass.contracts.report import TeamReport
 from ado_team_compass.decisions import export_decisions, import_decisions, merge_decisions
 from ado_team_compass.diagnostics import TransportFactory, diagnose
-from ado_team_compass.errors import CompassError, ConfigError, ExitCode
+from ado_team_compass.errors import CapabilityUnavailable, CompassError, ConfigError, ExitCode
 from ado_team_compass.pipeline import RunOutcome, execute_status, replay_run
 from ado_team_compass.reporting import render_html, render_markdown
 from ado_team_compass.runs import RunStore
@@ -395,6 +395,70 @@ def _handle_evidence(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def _handle_forecast(args: argparse.Namespace) -> ExitCode:
+    """Projeção experimental sobre a série de throughput de uma execução histórica."""
+    from ado_team_compass.metrics.forecast import backtest, simulate
+
+    resolved = _require_config(args)
+    store = _store_for(resolved)
+    run = _run_for(args, resolved, store)
+    report = TeamReport.model_validate(run.artifact("report.json"))
+    block = report.history
+    if block is None or not block.available or not block.throughput:
+        raise CapabilityUnavailable(
+            "E_FORECAST_SEM_HISTORICO",
+            "A projeção exige uma execução com histórico disponível.",
+            detail={"run_id": report.run_id},
+            remediation="Execute 'history' em uma equipe com cobertura histórica.",
+        )
+    sample = [point.value for point in block.throughput]
+    remaining = _remaining_items(report)
+    result = simulate(sample, remaining, seed=int(getattr(args, "seed", 0) or 20260913))
+    evaluation = backtest(sample, seed=result.seed)
+    _emit(
+        {
+            "run_id": report.run_id,
+            "status": "experimental",
+            "available": result.available,
+            "remaining_items": remaining,
+            "sample": list(result.sample),
+            "seed": result.seed,
+            "iterations": result.iterations,
+            "premises": list(result.premises),
+            "scenarios": [
+                {
+                    "name": scenario.name,
+                    "remaining_items": scenario.remaining_items,
+                    "p50_periods": scenario.p50_periods,
+                    "p85_periods": scenario.p85_periods,
+                }
+                for scenario in result.scenarios
+            ],
+            "backtesting": {
+                "evaluated_cutoffs": evaluation.evaluated,
+                "p50_coverage": str(evaluation.p50_coverage)
+                if evaluation.p50_coverage is not None
+                else None,
+                "p85_coverage": str(evaluation.p85_coverage)
+                if evaluation.p85_coverage is not None
+                else None,
+                "reasons": list(evaluation.reasons),
+            },
+            "reasons": list(result.reasons),
+        },
+        args,
+    )
+    return ExitCode.OK if result.available else ExitCode.PARTIAL_CAPABILITY
+
+
+def _remaining_items(report: TeamReport) -> int:
+    """Escopo restante explícito: itens abertos contabilizados na execução."""
+    metric = report.metric("open_items_count")
+    if metric is None or metric.quantity is None or metric.quantity.value is None:
+        return 0
+    return int(metric.quantity.value)
+
+
 def _handle_run_scheduled(args: argparse.Namespace) -> ExitCode:
     """Execução agendada: idempotente por chave, com lock e sem interação."""
     from ado_team_compass.adapters.ado_mcp import AdoMcpClient
@@ -672,7 +736,7 @@ COMMANDS: tuple[_Command, ...] = (
     _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", _handle_history),
     _Command("planning", "Achados de regras de planejamento", "v0.2", _handle_planning),
     _Command("run-scheduled", "Execução agendada não interativa", "v0.3", _handle_run_scheduled),
-    _Command("forecast", "Projeção experimental com premissas", "v0.4", None),
+    _Command("forecast", "Projeção experimental com premissas", "v0.4", _handle_forecast),
 )
 
 
@@ -690,6 +754,7 @@ def _add_common_options(parser: argparse.ArgumentParser) -> None:
         help="Inclui coleta histórica quando o catálogo conectado suportar",
     )
     parser.add_argument("--reference", help="Referência de evidência dentro da execução")
+    parser.add_argument("--seed", type=int, help="Semente da simulação experimental")
     parser.add_argument(
         "--import-file",
         dest="import_file",
