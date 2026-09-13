@@ -22,3 +22,4 @@ mcp.json
 # A configuração compartilhável de uma equipe é versionada no repositório dela, não aqui.
 /.ado-team-compass/
 reports/
+.memory-bank/plans/

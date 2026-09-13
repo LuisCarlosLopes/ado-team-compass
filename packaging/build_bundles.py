@@ -27,9 +27,23 @@ COMMON = SKILLS / "common.md"
 
 #: Marcadores que jamais podem vazar de um host para outro.
 FOREIGN_MARKERS = {
-    "claude": ("ANTIGRAVITY_", "CODEX_", ".codex-plugin"),
-    "antigravity": ("CLAUDE_PLUGIN_ROOT", "CODEX_", ".claude-plugin", ".codex-plugin"),
-    "codex": ("CLAUDE_PLUGIN_ROOT", "ANTIGRAVITY_", ".claude-plugin"),
+    "claude": ("ANTIGRAVITY_", "CODEX_", "CURSOR_", ".codex-plugin", ".cursor-plugin"),
+    "antigravity": (
+        "CLAUDE_PLUGIN_ROOT",
+        "CODEX_",
+        "CURSOR_",
+        ".claude-plugin",
+        ".codex-plugin",
+        ".cursor-plugin",
+    ),
+    "codex": ("CLAUDE_PLUGIN_ROOT", "ANTIGRAVITY_", "CURSOR_", ".claude-plugin", ".cursor-plugin"),
+    "cursor": (
+        "CLAUDE_PLUGIN_ROOT",
+        "ANTIGRAVITY_",
+        "CODEX_",
+        ".claude-plugin",
+        ".codex-plugin",
+    ),
 }
 
 
@@ -63,6 +77,16 @@ def render_skill(source: Path, host: Mapping[str, Any]) -> str:
 
 
 def manifest(host_key: str, host: Mapping[str, Any], version: str) -> dict[str, Any]:
+    # Manifesto mínimo CLI-safe (DECISÃO-002): schema estrito aceita apenas name e description.
+    if host_key == "antigravity":
+        return {
+            "name": "ado-team-compass",
+            "description": (
+                "Visibilidade de entrega no Azure DevOps com cálculos auditáveis, "
+                "exclusivamente pelo MCP oficial da Microsoft."
+            ),
+        }
+
     skills = [path.stem for path in _skill_sources()]
     base: dict[str, Any] = {
         "name": "ado-team-compass",

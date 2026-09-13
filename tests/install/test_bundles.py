@@ -15,9 +15,23 @@ SKILL_NAMES = sorted(
 )
 
 FOREIGN = {
-    "claude": ("ANTIGRAVITY_", "CODEX_", ".codex-plugin"),
-    "antigravity": ("CLAUDE_PLUGIN_ROOT", "CODEX_", ".claude-plugin", ".codex-plugin"),
-    "codex": ("CLAUDE_PLUGIN_ROOT", "ANTIGRAVITY_", ".claude-plugin"),
+    "claude": ("ANTIGRAVITY_", "CODEX_", "CURSOR_", ".codex-plugin", ".cursor-plugin"),
+    "antigravity": (
+        "CLAUDE_PLUGIN_ROOT",
+        "CODEX_",
+        "CURSOR_",
+        ".claude-plugin",
+        ".codex-plugin",
+        ".cursor-plugin",
+    ),
+    "codex": ("CLAUDE_PLUGIN_ROOT", "ANTIGRAVITY_", "CURSOR_", ".claude-plugin", ".cursor-plugin"),
+    "cursor": (
+        "CLAUDE_PLUGIN_ROOT",
+        "ANTIGRAVITY_",
+        "CODEX_",
+        ".claude-plugin",
+        ".codex-plugin",
+    ),
 }
 
 
@@ -43,8 +57,20 @@ def test_each_host_has_its_own_manifest_format(host_key):
     assert manifest_path.is_file()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     assert manifest["name"] == "ado-team-compass"
-    assert manifest["requirements"]["mcp_server"].startswith("azure-devops")
-    assert sorted(entry.split("/")[-1] for entry in manifest["skills"]) == SKILL_NAMES
+    assert "description" in manifest
+    if host_key == "antigravity":
+        assert "requirements" not in manifest
+        assert "skills" not in manifest
+        assert "author" not in manifest
+        assert "keywords" not in manifest
+    else:
+        assert manifest["requirements"]["mcp_server"].startswith("azure-devops")
+        assert sorted(entry.split("/")[-1] for entry in manifest["skills"]) == SKILL_NAMES
+
+
+def test_antigravity_manifest_is_cli_safe_minimal():
+    manifest = json.loads((ROOT / "plugin/antigravity/plugin.json").read_text(encoding="utf-8"))
+    assert set(manifest.keys()) == {"name", "description"}
 
 
 def test_claude_manifest_lives_in_the_claude_plugin_directory():
@@ -59,6 +85,10 @@ def test_antigravity_manifest_lives_at_the_bundle_root():
 
 def test_codex_manifest_has_its_own_directory():
     assert (ROOT / "plugin/codex/.codex-plugin/plugin.json").is_file()
+
+
+def test_cursor_manifest_lives_in_cursor_plugin_directory():
+    assert (ROOT / "plugin/cursor/.cursor-plugin/plugin.json").is_file()
 
 
 # V26 — nenhuma variável ou sintaxe exclusiva de outro host vaza para o bundle.
@@ -130,7 +160,9 @@ def test_host_notes_are_specific_to_each_host():
     assert "Claude Code" in _skill("claude", "doctor")
     assert "Antigravity" in _skill("antigravity", "doctor")
     assert "Codex" in _skill("codex", "doctor")
+    assert "Cursor" in _skill("cursor", "doctor")
     assert "Antigravity" not in _skill("claude", "doctor")
+    assert "Claude Code" not in _skill("cursor", "doctor")
 
 
 def test_bundle_readme_documents_installation_and_limits():

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from packaging.package_bundles import package_all, package_bundle
 
-HOSTS = ("antigravity", "claude", "codex")
+HOSTS = ("antigravity", "claude", "codex", "cursor")
 
 
 @pytest.fixture
@@ -48,6 +48,7 @@ def test_package_carries_the_manifest_of_its_own_host(fake_engine, tmp_path, hos
         "claude": ".claude-plugin/plugin.json",
         "antigravity": "plugin.json",
         "codex": ".codex-plugin/plugin.json",
+        "cursor": ".cursor-plugin/plugin.json",
     }[host_key]
     assert expected in names
     assert "python -m pip install engine/" in install

@@ -1,245 +1,143 @@
 # ADO Team Compass
-> Motor analítico e distribuível para visibilidade de entrega e capacidade no Azure DevOps com cálculos auditáveis, operando exclusivamente via Model Context Protocol (MCP) oficial da Microsoft.
+> Transforme o board do Azure DevOps em um relatório de sprint claro, auditável e pronto para a daily — em segundos.
 
-[![CI](https://github.com/LuisCarlosLopes/ado-team-compass/actions/workflows/ci.yml/badge.svg)](https://github.com/LuisCarlosLopes/ado-team-compass/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](pyproject.toml)
-[![Package Manager](https://img.shields.io/badge/package%20manager-uv-blueviolet.svg)](https://github.com/astral-sh/uv)
-[![Protocol](https://img.shields.io/badge/protocol-MCP%20Official-0078D4.svg)](https://github.com/microsoft/azure-devops-mcp)
-[![Type Checking](https://img.shields.io/badge/types-Mypy%20Strict-informational.svg)](pyproject.toml)
-[![Code Style](https://img.shields.io/badge/code%20style-Ruff-000000.svg)](pyproject.toml)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)](LICENSE)
+[![Última versão](https://img.shields.io/github/v/release/LuisCarlosLopes/ado-team-compass?display_name=tag&label=versão&color=0B5CAB)](https://github.com/LuisCarlosLopes/ado-team-compass/releases/latest)
+[![Plataformas](https://img.shields.io/badge/plataformas-macOS%20%7C%20Linux%20%7C%20Windows-informational)](#-instalação)
+[![Licença](https://img.shields.io/badge/licença-Privada-lightgrey)](LICENSE)
 
-## 📌 Visão Geral
+<!-- [Screenshot / Demo GIF placeholder] -->
 
-O **ADO Team Compass** soluciona a fragmentação de visibilidade e a ausência de previsibilidade confiável em fluxos de entrega gerenciados no Azure DevOps. Tradicionalmente, equipes de engenharia e lideranças técnicas enfrentam relatórios opacos, agregações manuais e ferramentas que dependem de tokens dispersos ou de chamadas REST desestruturadas. O projeto estabelece uma camada analítica que separa de forma estrita a extração de fatos brutos, a execução de cálculos matemáticos auditáveis e a interpretação orientada a evidências.
+## ✨ O que é e por que usar?
 
-A aplicação adota como premissa mandatória o consumo de dados do Azure DevOps **exclusivamente através do servidor oficial Model Context Protocol (MCP) da Microsoft** (`microsoft/azure-devops-mcp`). Toda a coleta é determinística e imutável, preservando rastreabilidade criptográfica (SHA-256) dos fatos e evidências locais. O motor produz relatórios em HTML autossuficientes e offline, tabelas em Markdown e dados estruturados em JSON, alimentando tanto execuções automatizadas em pipelines de CI/CD quanto assistentes de IA (Claude Code, Google Antigravity, OpenAI Codex e ChatGPT Actions).
+Times que entregam no Azure DevOps perdem tempo montando a daily à mão: exportam planilhas, somam horas no Excel e ainda assim não sabem se o trabalho conhecido cabe na capacidade restante — nem o que está realmente bloqueado. O ADO Team Compass lê a situação da equipe e devolve um relatório objetivo: o que está aberto, o que está impedido, se a carga cabe na reserva e o que precisa de decisão hoje.
 
-```mermaid
-flowchart TD
-    subgraph Azure["Azure DevOps & Provedor MCP"]
-        ADO[Azure DevOps Organization]
-        MCP[Servidor MCP Oficial Microsoft\nazure-devops-mcp]
-        ADO <--> MCP
-    end
+Foi desenhado para Scrum Masters, tech leads e gestores de entrega que precisam de uma leitura honesta do board, sem ranking individual e sem colar token do Azure DevOps na ferramenta. A autenticação fica na sessão oficial da Microsoft; você só pede o recorte da equipe e recebe o relatório.
 
-    subgraph Core["Motor ADO Team Compass (Python 3.12+)"]
-        CLI[CLI ado-team-compass]
-        Collect[Módulo de Coleta & Normalização]
-        Engine[Motor de Métricas & Diagnósticos]
-        Profiles[Perfis Declarativos de Gestão]
-        
-        CLI --> Collect
-        Collect <-->|Protocolo MCP| MCP
-        Collect --> Engine
-        Profiles --> Engine
-    end
+## ⚡ Principais Recursos
 
-    subgraph Storage["Armazenamento Local Imutável"]
-        Runs[(Diretório de Execuções\nrun.json + evidências SHA-256)]
-        Engine --> Runs
-    end
+- **Resposta pronta para a daily:** itens abertos, impedimentos e o que precisa de atenção hoje, em um único comando.
+- **Carga versus capacidade:** compara o trabalho restante conhecido com a reserva da equipe e aponta sobrecarga ou folga — sem ranquear pessoas.
+- **Relatório visual offline:** HTML autocontido para abrir no navegador, Markdown no terminal e JSON para arquivar.
+- **Perfis de gestão reais:** sprint com horas, sprint sem horas e fluxo contínuo, sem forçar um modelo que o time não usa.
+- **Números rastreáveis:** cada total aponta para a evidência local; dá para reabrir o mesmo recorte e conferir de onde veio o valor.
+- **Modo demonstração:** experimente o relatório completo sem organização, senha ou rede.
+- **Somente leitura:** nada é alterado no Azure DevOps. Sem PAT, token ou senha guardados no Compass.
+- **Uso no assistente que você já tem:** bundles para Claude Code, Google Antigravity e OpenAI Codex, para perguntar “como está a sprint?” em linguagem natural.
 
-    subgraph Delivery["Canais de Consumo & Apresentação"]
-        HTML[Relatório HTML Offline]
-        MD[Markdown Tabular / CLI]
-        Plugins[Bundles: Claude Code / Antigravity / Codex]
-        Gateway[Gateway FastAPI / GPT Actions]
-        
-        Runs --> HTML
-        Runs --> MD
-        Runs --> Plugins
-        Runs --> Gateway
-    end
-```
+## 📥 Instalação
 
-## 🚀 Funcionalidades
+Requisito: **Python 3.12 ou superior**, em macOS, Linux ou Windows.
 
-- **Canal de Acesso Exclusivo via MCP Oficial:** Interação estrita com o Azure DevOps por meio do servidor oficial da Microsoft, sem chamadas diretas a APIs REST, Analytics/OData, SDKs proprietários ou scraping.
-- **Cálculos Determinísticos e Auditabilidade:** Total separação entre apuração de métricas e síntese contextual; cada indicador aponta diretamente para o identificador e hash da evidência JSON persistida.
-- **Configuração Declarativa por Perfis:** Adaptação precisa a diferentes dinâmicas de entrega (ex.: `sprint_with_capacity` e `continuous_flow`), suportando parametrizações customizadas de estados, impedimentos e calendários (`tzdata`).
-- **Análise de Carga e Capacidade Sem Rankeamento Individual:** Visibilidade clara de carga restante e disponibilidade de equipe, mitigando sobrecargas e gargalos sem gerar métricas de ranqueamento individual de desenvolvedores.
-- **Detecção Antecipada de Impedimentos:** Mapeamento automático de bloqueios operacionais, inconsistências de fluxo e work items em estados não catalogados.
-- **Relatórios Operacionais Ricos:** Geração de relatórios em HTML autocontido (interativo e offline), Markdown estruturado para visualização em terminal e JSON serializado.
-- **Simulação Sintética (Modo Demo) e Replay:** Execução demonstrativa autocontida (`demo`) sem necessidade de credenciais ou rede, permitindo também recalcular métricas sobre dados congelados (`replay`).
-- **Automação Idempotente:** Comando `run-scheduled` com detecção de reexecuções redundantes e mecanismo de lock para pipelines de automação (GitHub Actions e Azure Pipelines).
-- **Gateway REST de Leitura para GPT Actions:** Serviço FastAPI integrado (`ado-team-compass[api]`) com autenticação JWT/OIDC e controle granular de permissões via ACL para consumo em assistentes remotos.
-- **Distribuição Multi-Assistente:** Gerador de artefatos e bundles sincronizados para integração local no Claude Code, Google Antigravity IDE e OpenAI Codex.
+### Pacote pronto (recomendado)
 
-## 📋 Pré-requisitos
-
-- **Python:** Versão `>= 3.12` (testado e homologado para Python 3.12 e 3.13).
-- **Gerenciador de Dependências:** [`uv`](https://github.com/astral-sh/uv) `>= 0.5.0` (recomendado) ou Python `venv` + `pip`.
-- **Node.js (Opcional):** `>= 18 LTS` (necessário exclusivamente caso execute o servidor MCP oficial em modo local `stdio` via `npx`).
-- **Sistema Operacional:** macOS, Linux ou Windows.
-
-## ⚙️ Instalação e Configuração
-
-### 1. Clonagem do repositório e navegação
+1. Abra a [página de Releases](https://github.com/LuisCarlosLopes/ado-team-compass/releases/latest).
+2. Baixe o arquivo `.whl` da versão mais recente.
+3. Instale:
 
 ```bash
-git clone https://github.com/LuisCarlosLopes/ado-team-compass.git
-cd ado-team-compass
+pip install ado_team_compass-*.whl
 ```
 
-### 2. Configuração de ambiente
-
-Crie a estrutura de diretórios do projeto e copie os arquivos de exemplo para parametrização:
+Confira com `ado-team-compass version`. Para ver o relatório sem conectar ao Azure DevOps:
 
 ```bash
-mkdir -p .ado-team-compass/runs
-cp examples/config/config.yaml .ado-team-compass/config.yaml
-cp examples/config/config.local.example.yaml .ado-team-compass/config.local.yaml
+ado-team-compass demo --format html --output relatorio-demo.html
 ```
 
-Edite `.ado-team-compass/config.yaml` com as referências da sua organização, projetos e times do Azure DevOps. Caso pretenda utilizar o Gateway de leitura para GPT Actions, configure as variáveis de ambiente necessárias:
+Abra `relatorio-demo.html` no navegador.
+
+### Assistentes de IA (opcional)
+
+Na mesma Release, baixe o bundle do host que você usa (Claude Code, Google Antigravity ou Codex), instale o pacote acima e aponte o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+
+## 🚀 Guia Rápido (3 passos)
+
+### 1. Configuração mínima
+
+Mantenha a sessão do servidor MCP oficial da Microsoft autenticada para a sua organização. Em seguida, descubra projetos e equipes e grave a configuração local:
 
 ```bash
-export COMPASS_RUNS_DIR=".ado-team-compass/runs"
-export COMPASS_CONFIG_FILE=".ado-team-compass/config.yaml"
-# Opcionais para execução do gateway HTTP:
-export COMPASS_ACL_FILE="automation/gateway/acl.json"
-export COMPASS_OIDC_ISSUER="https://login.microsoftonline.com/<tenant-id>/v2.0"
-export COMPASS_OIDC_AUDIENCE="api://ado-team-compass"
-export COMPASS_OIDC_JWKS_URL="https://login.microsoftonline.com/<tenant-id>/discovery/v2.0/keys"
+ado-team-compass setup --organization sua-organizacao
 ```
 
-### 3. Instalação de dependências e restauração de pacotes
-
-Utilize o `uv` para sincronizar o ambiente virtual travado com todas as dependências de desenvolvimento e o extra de API:
+Revise o perfil de cada equipe (sprint com horas, sprint sem horas ou fluxo contínuo) e confirme o acesso:
 
 ```bash
-uv sync --group dev --extra api
+ado-team-compass doctor
 ```
 
-*(Alternativa sem uv)*:
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[api]"
-pip install pytest pytest-cov ruff mypy types-PyYAML httpx
-```
+Se o assistente já tiver o servidor MCP configurado, você pode reaproveitar essa conexão com `--from-mcp-config` em vez de informar a organização de novo.
 
-### 4. Build preliminar e verificação de artefatos
-
-Gere o pacote distribuível (`wheel` e `sdist`) e valide a sincronização dos bundles:
+### 2. Comando principal
 
 ```bash
-uv run python packaging/build_bundles.py --check
-uv build
+ado-team-compass status --team sua-equipe --format html --output relatorio.html
 ```
 
-## 💻 Como Usar
+Com mais de uma equipe configurada, `--team` é obrigatório. Para a leitura no terminal, troque `--format html` por `--format markdown`.
 
-### Modo Demonstração (Sem credencial e sem conexão externa)
+### 3. Resultado esperado
 
-Execute o comando `demo` para validar a instalação e inspecionar os cálculos sobre dados sintéticos:
+O arquivo `relatorio.html` abre offline no navegador e mostra, no recorte da equipe:
+
+- o veredito da janela (cabe / não cabe / dados insuficientes);
+- carga conhecida versus capacidade restante;
+- impedimentos e estados que ainda não estão mapeados;
+- o que precisa de confirmação antes de decidir.
+
+Nenhum número do relatório é inventado: quando um dado falta no board, a métrica aparece como parcial ou indisponível, com o motivo.
+
+## 💡 Casos de Uso Comuns
+
+### Daily em cinco minutos
+
+**Problema:** a daily começa e ninguém tem um recorte único do que está aberto, bloqueado ou sem estimativa.
+
+**Entrada:**
 
 ```bash
-# Exibir o relatório formatado em Markdown diretamente no terminal
-uv run ado-team-compass demo --format markdown
-
-# Gerar o relatório operacional em HTML offline no diretório de saída
-uv run ado-team-compass demo --format html --output .ado-team-compass/runs/demo-report.html
+ado-team-compass status --team plataforma --format markdown
 ```
 
-### Operação com Dados Reais do Azure DevOps
+**Saída:** tabela da sprint com itens abertos, impedimentos ativos e até três pontos de atenção — por exemplo, “1 item bloqueado” e “2 itens sem trabalho restante”. Dá para colar no chat da daily ou ler em voz alta.
 
-Certifique-se de que a sessão do servidor MCP oficial da Microsoft esteja ativa e autenticada.
+### A sprint cabe na capacidade restante?
 
-1. **Diagnóstico do ambiente e capacidades:**
-   ```bash
-   uv run ado-team-compass doctor
-   ```
+**Problema:** o board está cheio, mas não está claro se as horas conhecidas cabem na reserva da equipe até o fim da janela.
 
-2. **Descoberta inicial e mapeamento de perfis:**
-   ```bash
-   uv run ado-team-compass setup --organization sua-organizacao
-   ```
-
-3. **Coleta e emissão de relatório da equipe:**
-   ```bash
-   uv run ado-team-compass status --team plataforma --format markdown
-   ```
-
-4. **Visualização analítica de carga e alocação:**
-   ```bash
-   uv run ado-team-compass allocation --team plataforma
-   ```
-
-5. **Inspeção de evidência específica:**
-   ```bash
-   uv run ado-team-compass evidence --run 20260915T120000-demo --reference 108
-   ```
-
-6. **Execução agendada idempotente (Pipelines/Cron):**
-   ```bash
-   uv run ado-team-compass run-scheduled --team plataforma --non-interactive
-   ```
-
-### Execução do Gateway de Leitura para GPT Actions
-
-Inicie o servidor HTTP com FastAPI e Uvicorn para atender requisições remotas autenticadas:
+**Entrada:**
 
 ```bash
-uv run uvicorn "ado_team_compass.gateway.factory:application" --host 0.0.0.0 --port 8080
+ado-team-compass allocation --team plataforma --format markdown
 ```
 
-Exemplo de chamada com cURL para validar a integridade da API:
+**Saída:** carga conhecida por pessoa e pela equipe, capacidade restante e a classe (dentro da faixa, acima da faixa ou dados insuficientes). Exemplo típico: 28 h conhecidas contra 30 h reservadas, com um responsável acima da faixa e outro sem estimativa completa — sem transformar isso em ranking de produtividade.
+
+### Conferir um número que gerou dúvida
+
+**Problema:** alguém questiona um total do relatório (“de onde saíram essas 18 horas?”).
+
+**Entrada:**
 
 ```bash
-# Verificação de integridade (Healthcheck público)
-curl -s http://127.0.0.1:8080/healthz
-
-# Consulta autorizada ao relatório mais recente de uma equipe
-curl -s -X GET http://127.0.0.1:8080/v1/teams/plataforma/report \
-  -H "Authorization: Bearer <seu-token-jwt>" \
-  -H "Accept: application/json"
+ado-team-compass evidence --run 20260915T120000-demo --reference 108
 ```
 
-## 🧪 Testes
+**Saída:** a evidência local daquele item (estado, responsável, trabalho restante), para reconciliar o total sem voltar a vasculhar o board à mão.
 
-O repositório possui uma suíte rigorosa de testes unitários, validações contratuais e checagem de tipos em conformidade com as diretrizes de CI.
+## ❓ Dúvidas Frequentes (FAQ)
 
-```bash
-# Executar a suíte de testes determinísticos (sem dependência de rede ou credenciais)
-uv run pytest -m "not integration"
+**Preciso colar um PAT ou token do Azure DevOps no Compass?**
+Não. A ferramenta não aceita e não armazena credencial do Azure DevOps. A sessão fica no servidor MCP oficial da Microsoft. Se o acesso expirar, renove essa sessão e rode `ado-team-compass doctor` de novo.
 
-# Executar testes com relatório de cobertura de código
-uv run pytest --cov=ado_team_compass tests/
+**O que preciso ter instalado?**
+Python 3.12 ou superior. Para dados reais, a sessão autenticada do MCP oficial da sua organização. Sem essa sessão, funcionam apenas `demo` e a leitura de relatórios já gerados (`report`, `render`, `evidence`, `replay`).
 
-# Executar testes de integração reais (requer acesso e sessão ativa no Azure DevOps)
-uv run pytest -m "integration"
+**O relatório veio “parcial”. É um erro?**
+Em geral, não. Significa que faltou algum dado no board — item sem horas, estado não mapeado, folga da equipe ausente. O Compass prefere marcar a lacuna a preencher com zero. Corrija o dado na origem ou o mapeamento de estados e rode `status` de novo.
 
-# Verificação de qualidade de código e estilo (linter)
-uv run ruff check .
+## 💬 Suporte e Feedback
 
-# Validação de formatação
-uv run ruff format --check .
+Encontrou um número inconsistente, um perfil que não representa o seu time ou uma tela que poderia ser mais clara? Abra uma [Issue](https://github.com/LuisCarlosLopes/ado-team-compass/issues) descrevendo a equipe (sem dados sensíveis), o comando usado e o resultado esperado.
 
-# Verificação estática de tipos (modo estrito)
-uv run mypy
-```
-
-## 🤝 Contribuição
-
-Contribuições para o projeto devem observar os seguintes padrões de engenharia:
-
-1. **Branches:** Crie branches temáticas a partir da `main` utilizando nomenclaturas semânticas:
-   - `feature/nome-da-funcionalidade`
-   - `fix/descricao-da-correcao`
-   - `chore/tarefa-ou-melhoria`
-2. **Padrão de Commits:** Adote a convenção de [Conventional Commits](https://www.conventionalcommits.org/) (ex.: `feat(metrics): add flow efficiency calculation`, `fix(mcp): sanitize query arguments`).
-3. **Qualidade Obrigatória:** Antes de abrir um Pull Request, execute localmente a suíte de verificação:
-   ```bash
-   uv run ruff check .
-   uv run ruff format --check .
-   uv run mypy
-   uv run python packaging/build_bundles.py --check
-   uv run pytest -m "not integration"
-   ```
-4. **Pull Requests:** Submeta o PR detalhando o contexto, a motivação técnica, as evidências de teste e os impactos em compatibilidade.
-
-## 📄 Licença
-
-Este projeto é protegido sob os termos de licença proprietária de seu autor. Para mais detalhes, consulte o arquivo [LICENSE](LICENSE).
+Sugestões de funcionalidade também são bem-vindas pela mesma página: use o modelo de issue mais próximo do seu caso para acelerar a triagem.

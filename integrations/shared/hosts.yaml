@@ -37,3 +37,17 @@ hosts:
     mcp_note: >-
       Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do Codex,
       apontando para o servidor remoto oficial da organização.
+  cursor:
+    display_name: Cursor
+    bundle_dir: plugin/cursor
+    manifest_path: .cursor-plugin/plugin.json
+    skills_dir: skills
+    skill_file: SKILL.md
+    engine_note: >-
+      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
+      Use o executável disponível no PATH; o Cursor executa o motor local sem alterar o board.
+    mcp_note: >-
+      Configure o servidor MCP oficial do Azure DevOps no Cursor (em `.cursor/mcp.json`
+      ou nas configurações de MCP), apontando para o servidor remoto oficial da organização.
+      Opcionalmente use `ado-team-compass setup --from-mcp-config .cursor/mcp.json`.
+
