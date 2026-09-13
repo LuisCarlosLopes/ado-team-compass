@@ -22,7 +22,7 @@ jobs:
         with:
           enable-cache: true
       - name: Sincronizar ambiente travado
-        run: uv sync --group dev --frozen
+        run: uv sync --group dev --extra api --frozen
       - name: Estilo
         run: uv run ruff check .
       - name: Formatação

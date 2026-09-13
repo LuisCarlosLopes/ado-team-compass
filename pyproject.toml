@@ -25,7 +25,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-api = ["fastapi>=0.115,<1", "uvicorn>=0.32,<1"]
+api = [
+    "fastapi>=0.115,<1",
+    "pyjwt[crypto]>=2.9,<3",
+    "uvicorn>=0.32,<1",
+]
 
 [project.scripts]
 ado-team-compass = "ado_team_compass.cli:main"
@@ -37,6 +41,7 @@ dev = [
   "ruff>=0.7",
   "mypy>=1.13",
   "types-PyYAML>=6.0.12",
+  "httpx>=0.27",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -59,6 +64,8 @@ ignore = ["ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN"]
+# FastAPI declara dependências e parâmetros de consulta como defaults; é o idioma do framework.
+"src/ado_team_compass/gateway/app.py" = ["B008"]
 
 [tool.mypy]
 python_version = "3.12"

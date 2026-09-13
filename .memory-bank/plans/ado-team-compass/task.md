@@ -309,7 +309,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T16 — Validar piloto e preparar liberação da v0.1
 
-- Status: PENDENTE
+- Status: BLOQUEADA (13/09/2026) — depende de acesso real a uma organização e de equipes piloto; roteiro preparado em docs/piloto-v0.1.md
 - Release/Fase: v0.1 / F4
 - Objetivo: validar utilidade e correção em práticas reais diferentes.
 - Base no IPD: 1.2, 3.1 e 9.
@@ -357,7 +357,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T19 — Implementar regras de planejamento por perfil
 
-- Status: PENDENTE
+- Status: CONCLUIDA (13/09/2026)
 - Release/Fase: v0.2 / F5
 - Objetivo: apontar inconsistências de acordo com políticas explicitadas.
 - Base no IPD: 4.1.5.
@@ -365,10 +365,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T17; regras atuais reutilizam T05.
 - Entregável esperado: catálogo de regras, severidades, exceções e relatório com IDs.
 - Check de conclusão:
-  - [ ] Regras iniciais têm casos positivos, negativos e ausências de campo.
-  - [ ] V20 confirma silêncio para políticas desativadas.
-  - [ ] Achado exibe regra/versionamento, evidência e condição violada.
-  - [ ] Exceção tem justificativa e não apaga o dado de origem.
+  - [x] Regras iniciais têm casos positivos, negativos e ausências de campo (`tests/unit/test_planning.py`).
+  - [x] V20 confirma silêncio para políticas desativadas (story sem task e divergência de área ficam desligadas por padrão).
+  - [x] Achado exibe regra, versão, severidade, item, evidência, política e ação sugerida.
+  - [x] Exceção por item silencia apenas aquele achado; o fato coletado permanece intacto na execução.
 - Riscos ou atenções: não considerar requisito universal a existência de tasks, estimativa ou área igual à do pai.
 
 ### T20 — Implementar métricas de fluxo e coortes
@@ -453,7 +453,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T28 — Integrar GPT personalizado via API autenticada
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — gateway, OpenAPI, instruções e testes de autorização prontos; implantação real e teste com Actions pendentes
 - Release/Fase: v0.3.1 / F6b
 - Objetivo: consultar no ChatGPT os relatórios do motor por GPT Actions, sem executar scripts locais.
 - Base no IPD: 4.1.7; arquitetura D09; matriz de compatibilidade.
@@ -461,11 +461,11 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T24; domínio HTTPS, provedor OAuth e ambiente de teste com Actions habilitado.
 - Entregável esperado: gateway dedicado por organização, contrato OpenAPI, instruções do GPT, template de implantação e testes de autorização.
 - Check de conclusão:
-  - [ ] GPT lista apenas equipes autorizadas e consulta relatório/evidência por referências válidas.
-  - [ ] V27 bloqueia token inválido, equipe/run não autorizado e usuário revogado, inclusive em links de artefato.
-  - [ ] V28 preserva timestamp, status parcial, ausência e limites de resposta; nenhum dado é calculado pelo GPT.
-  - [ ] Coletor usa somente o MCP oficial; nenhuma credencial ADO direta fica no coletor, instruções, OpenAPI ou respostas (V33).
-  - [ ] DOD17 é demonstrado com usuário permitido e negado no ambiente real; falhas de deploy e rollback são documentadas.
+  - [x] GPT lista apenas equipes autorizadas e consulta relatório/evidência por referências válidas (ACL do servidor; referência precisa ser numérica e existir na execução).
+  - [x] V27 bloqueia token inválido (401), equipe ou run não autorizado (403) e usuário revogado na requisição seguinte; evidência por run também revalida a equipe.
+  - [x] V28 preserva timestamp e aviso de atualidade, status parcial, 404 para ausência e limites de paginação; os totais são idênticos aos da CLI.
+  - [x] Coletor usa somente o MCP oficial; nenhuma credencial ADO aparece no gateway, nas instruções, no OpenAPI ou nas respostas (V33 varre o código de produto).
+  - [~] Usuário permitido e negado são demonstrados em teste de integração local; demonstração no ambiente real, com deploy e rollback, continua pendente.
 - Riscos ou atenções: não ativar exposição remota ou publicar GPT automaticamente; compatibilidade depende de implantação e permissões do workspace. SDK/OpenAI API para chamar modelos é escopo separado.
 
 ## Cobertura do DoD

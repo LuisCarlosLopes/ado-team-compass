@@ -18,7 +18,7 @@ jobs:
           enable-cache: true
 
       - name: Sincronizar ambiente travado
-        run: uv sync --group dev --frozen
+        run: uv sync --group dev --extra api --frozen
 
       - name: Qualidade
         run: |
