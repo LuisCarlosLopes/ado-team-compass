@@ -48,7 +48,9 @@ Abra `relatorio-demo.html` no navegador.
 
 ### Assistentes de IA (opcional)
 
-Na mesma Release, baixe o bundle do host que você usa (Claude Code, Google Antigravity ou Codex), instale o pacote acima e aponte o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+Na mesma Release, baixe o bundle do host que você usa (**Google Antigravity**, **Claude Code**, **Codex** ou **Cursor**), instale o pacote acima e aponte o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+
+📖 Consulte o [**Guia de Introdução do Plugin e Catálogo de Skills**](docs/get-started-plugin.md) para o passo a passo completo de instalação nos assistentes e exemplos práticos para cada uma das 8 skills disponíveis.
 
 ## 🚀 Guia Rápido (3 passos)
 
