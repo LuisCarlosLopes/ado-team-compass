@@ -5,17 +5,20 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 dist/
 build/
 *.egg-info/
 .env
 .env.*
 !.env.example
-.cursor/mcp.json
+# Configuração de MCP do host: costuma carregar PAT e caminhos da máquina.
+mcp.json
+.mcp.json
+.claude/settings.local.json
 # Execução local deste repositório: aponta para a organização real de quem executa.
 # A configuração compartilhável de uma equipe é versionada no repositório dela, não aqui.
 /.ado-team-compass/
-.ado-team-compass/cache/
-.ado-team-compass/runs/
-.ado-team-compass/config.local.yaml
 reports/
