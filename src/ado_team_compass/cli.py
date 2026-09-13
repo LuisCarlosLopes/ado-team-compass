@@ -324,7 +324,13 @@ def _handle_report(args: argparse.Namespace) -> ExitCode:
         )
     report = TeamReport.model_validate(run.artifact("report.json"))
     if args.format == "markdown":
-        sys.stdout.write(render_markdown(report))
+        logins: dict[str, str] | None = None
+        try:
+            facts = FactSet.model_validate(run.artifact("facts.json"))
+            logins = {p.id: p.unique_name for p in facts.people if p.unique_name}
+        except Exception:
+            logins = None
+        sys.stdout.write(render_markdown(report, logins=logins))
         return ExitCode.OK
     _emit(report.model_dump(mode="json"), args)
     return ExitCode.PARTIAL_CAPABILITY if run.manifest.state.value != "complete" else ExitCode.OK
@@ -520,7 +526,8 @@ def _handle_render(args: argparse.Namespace) -> ExitCode:
     run = _run_for(args, resolved, store)
     report = TeamReport.model_validate(run.artifact("report.json"))
     facts = FactSet.model_validate(run.artifact("facts.json"))
-    html = render_html(report, items=facts.items)
+    logins = {p.id: p.unique_name for p in facts.people if p.unique_name}
+    html = render_html(report, items=facts.items, logins=logins)
     destination = args.output or (run.directory / "report.html")
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(html, encoding="utf-8")

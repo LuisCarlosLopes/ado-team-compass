@@ -261,3 +261,18 @@ def test_openapi_document_declares_oauth_and_only_get_operations():
     assert "oauth2" in document["components"]["securitySchemes"]
     for path, operations in document["paths"].items():
         assert set(operations) == {"get"}, path
+
+
+def test_gateway_report_payload_does_not_leak_logins(environment):
+    """O gateway serve o relatório para modelos e clientes sem vazar logins ou PII."""
+    client, *_ = environment
+    response = client.get("/v1/teams/demo/report", headers=_auth("token-ana"))
+    assert response.status_code == 200
+    report_json = response.json()["report"]
+    serialized = json.dumps(report_json)
+    assert "bruno@empresa.com" not in serialized
+    people = report_json.get("people", [])
+    assert people, "deve haver pessoas no relatório"
+    for person in people:
+        assert "unique_name" not in person
+        assert "@" not in person["person_id"]

@@ -25,6 +25,7 @@ class Person(StrictModel):
 
     id: str
     display_name: str | None = None
+    unique_name: str | None = None
     teams: tuple[str, ...] = ()
 
 

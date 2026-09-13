@@ -21,6 +21,7 @@ from ado_team_compass.contracts.common import (
 )
 from ado_team_compass.contracts.config import TeamConfig
 from ado_team_compass.contracts.metrics import Metric
+from ado_team_compass.labels import process_field_label
 
 __all__ = ["METRIC_REQUIREMENTS", "MetricRequirement", "assess_metric", "requirement"]
 
@@ -166,9 +167,10 @@ def _not_applicable_reason(
         )
     missing = spec.missing_process_fields(team)
     if missing:
+        formatted = [f"{process_field_label(field)} (`process.{field}`)" for field in missing]
         return (
             f"{spec.not_applicable_reason}; campos de processo não configurados: "
-            f"{', '.join(missing)}"
+            f"{', '.join(formatted)}"
         )
     if spec.requires_reservations and not has_reservations:
         return spec.not_applicable_reason

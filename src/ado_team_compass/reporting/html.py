@@ -13,7 +13,7 @@ Regras do arquivo gerado:
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from html import escape
@@ -25,6 +25,7 @@ from ado_team_compass.contracts.decisions import ActionCandidate
 from ado_team_compass.contracts.facts import WorkItemFact
 from ado_team_compass.contracts.report import PersonRow, TeamReport
 from ado_team_compass.decisions import build_candidates
+from ado_team_compass.labels import field_label, metric_label
 from ado_team_compass.reporting.markdown import (
     _fmt_coverage,
     _fmt_decimal,
@@ -127,6 +128,7 @@ def render_html(
     *,
     items: Sequence[WorkItemFact] = (),
     candidates: Sequence[ActionCandidate] | None = None,
+    logins: Mapping[str, str] | None = None,
 ) -> str:
     """Gera o relatório operacional offline a partir das mesmas métricas do JSON."""
     impediments = [item for item in items if item.blocked]
@@ -143,11 +145,15 @@ def render_html(
         trim_blocks=True,
         lstrip_blocks=True,
     )
+    environment.globals["metric_label"] = metric_label
+    environment.globals["field_label"] = field_label
+    environment.filters["metric_label"] = metric_label
+    environment.filters["field_label"] = field_label
     template = environment.get_template("report.html.j2")
     open_items = report.metric("open_items_count")
     open_label = _fmt_metric(open_items) if open_items else "os itens"
     return template.render(
-        people=[_person_view(row) for row in report.people],
+        people=[_person_view(row, logins=logins) for row in report.people],
         report=report,
         context=_context(report, gap),
         verdict=_verdict(report, gap, open_label),
@@ -171,7 +177,7 @@ def render_html(
     )
 
 
-def _person_view(row: PersonRow) -> dict[str, object]:
+def _person_view(row: PersonRow, *, logins: Mapping[str, str] | None = None) -> dict[str, object]:
     """Linha da pessoa com uma barra proporcional opcional, descrita em texto."""
     bar: dict[str, object] | None = None
     load = row.known_load.value
@@ -189,6 +195,8 @@ def _person_view(row: PersonRow) -> dict[str, object]:
             ),
         }
     payload = row.model_dump(mode="json")
+    label = (logins.get(row.person_id) if logins else None) or row.person_id
+    payload["label"] = label
     payload["bar"] = bar
     payload["known_load"] = row.known_load
     payload["reserved_capacity"] = row.reserved_capacity

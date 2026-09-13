@@ -287,7 +287,7 @@
     <div>
       <div class="acao">{{ candidate.action }}</div>
       <div class="problema">{{ candidate.problem }} {{ candidate.observed_impact }}</div>
-      <div class="selecao" style="margin-top: .3rem;">Quem decide: {{ candidate.decision_role }} &middot; Como verificar: {{ candidate.verification }} &middot; Evidência: {{ candidate.evidence | join(", ") }}</div>
+      <div class="selecao" style="margin-top: .3rem;">Quem decide: {{ candidate.decision_role }} &middot; Como verificar: {{ candidate.verification }} &middot; Evidência: {{ candidate.evidence | map('metric_label') | join(", ") }}</div>
     </div>
     <div class="confirmar"><strong>Confirmar antes</strong>{{ candidate.to_confirm }}</div>
   </div>
@@ -305,7 +305,7 @@
   <tbody>
   {% for metric in report.metrics %}
     <tr>
-      <td><code>{{ metric.id }}</code></td>
+      <td title="{{ metric.id }}">{{ metric_label(metric.id) }}</td>
       <td>{{ metric.status.value }}</td>
       <td>{{ fmt_metric(metric) }}</td>
       <td>{{ fmt_coverage(metric.coverage) }}</td>
@@ -356,8 +356,8 @@
   </thead>
   <tbody>
   {% for row in people %}
-    <tr data-pessoa="{{ row.person_id }}" data-classe="{{ row.load_class }}">
-      <td><code>{{ row.person_id }}</code></td>
+    <tr data-pessoa="{{ row.label }}" data-classe="{{ row.load_class }}">
+      <td title="{{ row.person_id }}">{{ row.label }}</td>
       <td>
         {{ fmt_quantity(row.known_load) }}
         {% if row.bar %}

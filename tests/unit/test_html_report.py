@@ -444,3 +444,92 @@ def test_unit_label_is_presentation_only_and_never_converts():
     assert _unit_label("hours") == "h"
     assert _unit_label("points") == "pts"
     assert _unit_label("story-points-customizado") == "story-points-customizado"
+
+
+def test_people_table_shows_login_and_keeps_guid_in_title(tmp_path):
+    """A tabela de pessoas no HTML exibe o login e preserva o GUID no atributo title."""
+    outcome, _ = _run(tmp_path)
+    content = (outcome.run.directory / "report.html").read_text(encoding="utf-8")
+    assert '<td title="person-ana">ana@empresa.com</td>' in content
+    assert '<td title="person-bruno">bruno@empresa.com</td>' in content
+    assert 'data-pessoa="ana@empresa.com"' in content
+    assert 'data-pessoa="bruno@empresa.com"' in content
+
+
+def test_people_table_falls_back_to_guid_without_known_login():
+    """Sem login conhecido (equipe sem capacidade), a célula cai no GUID em vez de ficar vazia."""
+    report = _report_for_gap().model_copy(
+        update={
+            "people": (
+                PersonRow(
+                    person_id="guid-sem-login",
+                    known_load=Quantity(value=Decimal(10), unit="hours"),
+                    reserved_capacity=Quantity(value=Decimal(10), unit="hours"),
+                    utilization=Decimal("1.0"),
+                    load_class="DENTRO_DA_FAIXA",
+                ),
+                PersonRow(
+                    person_id="(sem responsável)",
+                    known_load=Quantity(value=Decimal(5), unit="hours"),
+                    load_class="SEM_CAPACIDADE_INFORMADA",
+                ),
+            )
+        }
+    )
+    content = render_html(report, logins=None)
+    assert '<td title="guid-sem-login">guid-sem-login</td>' in content
+    assert 'data-pessoa="guid-sem-login"' in content
+    # A linha sintética de itens sem responsável preserva o rótulo
+    assert '<td title="(sem responsável)">(sem responsável)</td>' in content
+    assert 'data-pessoa="(sem responsável)"' in content
+
+
+def test_report_json_and_evidence_do_not_contain_login(tmp_path):
+    """report.json e a evidência preservam GUID e não expõem login (regra de PII)."""
+    outcome, _ = _run(tmp_path)
+    run_dir = outcome.run.directory
+    report_data = json.loads((run_dir / "report.json").read_text(encoding="utf-8"))
+    assert "ana@empresa.com" not in json.dumps(report_data)
+    assert "bruno@empresa.com" not in json.dumps(report_data)
+
+    evidence_files = list((run_dir / "evidence" / "items").glob("*.json"))
+    assert evidence_files, "deve haver arquivos de evidência gerados"
+    for evidence_file in evidence_files:
+        evidence_content = evidence_file.read_text(encoding="utf-8")
+        assert "ana@empresa.com" not in evidence_content
+        assert "bruno@empresa.com" not in evidence_content
+
+
+def test_field_label_removes_prefix_and_preserves_plain_name():
+    """field_label remove qualquer namespace pontuado e preserva nome sem ponto."""
+    from ado_team_compass.labels import field_label
+
+    assert field_label("Microsoft.VSTS.Scheduling.RemainingWork") == "RemainingWork"
+    assert field_label("System.Tags") == "Tags"
+    assert field_label("System.WorkItemType") == "WorkItemType"
+    assert field_label("RemainingWork") == "RemainingWork"
+
+
+def test_metric_label_translates_known_metrics_and_falls_back_to_id():
+    """metric_label traduz as métricas conhecidas e devolve o ID para desconhecidas."""
+    from ado_team_compass.labels import metric_label
+
+    assert metric_label("open_items_count") == "Itens abertos"
+    assert metric_label("blocked_items_count") == "Impedimentos ativos"
+    assert metric_label("known_remaining_work") == "Carga restante conhecida"
+    assert metric_label("reserved_remaining_capacity") == "Capacidade restante reservada"
+    assert metric_label("observed_utilization") == "Utilização observada"
+    assert metric_label("custom_metric_future") == "custom_metric_future"
+
+
+def test_html_and_markdown_render_metric_friendly_labels(tmp_path):
+    """HTML e Markdown renderizam rótulos amigáveis de métricas e tooltip com ID técnico."""
+    outcome, _ = _run(tmp_path)
+    html_content = (outcome.run.directory / "report.html").read_text(encoding="utf-8")
+    assert '<td title="open_items_count">Itens abertos</td>' in html_content
+    assert '<td title="known_remaining_work">Carga restante conhecida</td>' in html_content
+
+    md_content = outcome.markdown
+    assert "| Itens abertos |" in md_content
+    assert "| Carga restante conhecida |" in md_content
+    assert "`ana@empresa.com`" in md_content

@@ -117,12 +117,20 @@ WORK_ITEMS: tuple[dict[str, Any], ...] = (
 CAPACITY: dict[str, Any] = {
     "teamCapacities": [
         {
-            "teamMember": {"id": PERSON_ANA, "displayName": "Ana"},
+            "teamMember": {
+                "id": PERSON_ANA,
+                "displayName": "Ana",
+                "uniqueName": "ana@empresa.com",
+            },
             "activities": [{"name": "Development", "capacityPerDay": 6}],
             "daysOff": [{"start": "2026-09-16T00:00:00Z", "end": "2026-09-16T00:00:00Z"}],
         },
         {
-            "teamMember": {"id": PERSON_BRUNO, "displayName": "Bruno"},
+            "teamMember": {
+                "id": PERSON_BRUNO,
+                "displayName": "Bruno",
+                "uniqueName": "bruno@empresa.com",
+            },
             "activities": [{"name": "Development", "capacityPerDay": 6}],
             "daysOff": [],
         },

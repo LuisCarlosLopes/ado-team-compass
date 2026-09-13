@@ -6,6 +6,7 @@ valor é formatado a partir das métricas — nada é recalculado aqui.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from decimal import Decimal
 
 from jinja2 import Environment, PackageLoader, StrictUndefined, select_autoescape
@@ -14,6 +15,7 @@ from ado_team_compass.contracts.common import Coverage, Quantity
 from ado_team_compass.contracts.metrics import Metric
 from ado_team_compass.contracts.narrative import Narrative
 from ado_team_compass.contracts.report import TeamReport
+from ado_team_compass.labels import field_label, metric_label
 
 __all__ = ["render_markdown", "render_narrative_section"]
 
@@ -95,7 +97,7 @@ def render_narrative_section(narrative: Narrative) -> str:
     return "\n".join(lines)
 
 
-def render_markdown(report: TeamReport) -> str:
+def render_markdown(report: TeamReport, *, logins: Mapping[str, str] | None = None) -> str:
     """Gera o Markdown do relatório de situação atual."""
     environment = Environment(
         loader=PackageLoader("ado_team_compass.reporting", "templates"),
@@ -105,9 +107,14 @@ def render_markdown(report: TeamReport) -> str:
         lstrip_blocks=True,
         keep_trailing_newline=True,
     )
+    environment.globals["metric_label"] = metric_label
+    environment.globals["field_label"] = field_label
+    environment.filters["metric_label"] = metric_label
+    environment.filters["field_label"] = field_label
     template = environment.get_template("report.md.j2")
     return template.render(
         report=report,
+        logins=logins or {},
         fmt_quantity=_fmt_quantity,
         fmt_ratio=_fmt_ratio,
         fmt_coverage=_fmt_coverage,

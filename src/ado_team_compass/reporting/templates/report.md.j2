@@ -15,7 +15,7 @@
 | Métrica | Status | Valor | Cobertura de itens | Motivo |
 |---|---|---|---|---|
 {% for metric in report.metrics -%}
-| `{{ metric.id }}` | {{ metric.status.value }} | {{ fmt_metric(metric) }} | {{ fmt_coverage(metric.coverage) }} | {{ metric.unavailable_reason or "—" }} |
+| {{ metric_label(metric.id) }} | {{ metric.status.value }} | {{ fmt_metric(metric) }} | {{ fmt_coverage(metric.coverage) }} | {{ metric.unavailable_reason or "—" }} |
 {% endfor %}
 
 {% if report.people -%}
@@ -24,7 +24,7 @@
 | Pessoa | Carga conhecida | Capacidade restante | Utilização | Classe | Itens (elegíveis/conhecidos/ausentes) |
 |---|---|---|---|---|---|
 {% for row in report.people -%}
-| `{{ row.person_id }}` | {{ fmt_quantity(row.known_load) }} | {{ fmt_quantity(row.reserved_capacity) }} | {{ fmt_ratio(row.utilization) }}{% if row.is_lower_bound %} (limite inferior){% endif %} | {{ row.load_class }} | {{ row.items_eligible }}/{{ row.items_known }}/{{ row.items_missing }} |
+| `{{ logins.get(row.person_id) or row.person_id }}` | {{ fmt_quantity(row.known_load) }} | {{ fmt_quantity(row.reserved_capacity) }} | {{ fmt_ratio(row.utilization) }}{% if row.is_lower_bound %} (limite inferior){% endif %} | {{ row.load_class }} | {{ row.items_eligible }}/{{ row.items_known }}/{{ row.items_missing }} |
 {% endfor %}
 {% endif %}
 

@@ -21,6 +21,7 @@ from ado_team_compass.contracts.facts import (
     WorkItemFact,
     WorkItemRelation,
 )
+from ado_team_compass.labels import field_label
 
 __all__ = [
     "IdentityIndex",
@@ -195,7 +196,9 @@ def normalize_work_item(
     # sem horas não recebe "falha de higiene" por campo que não usa.
     tracks_allocation = Capability.ALLOCATION in team.capabilities
     if tracks_allocation and team.process.remaining_work_field and remaining is None:
-        reasons.append(f"item {item_id}: sem valor em {team.process.remaining_work_field}")
+        reasons.append(
+            f"item {item_id}: sem valor em {field_label(team.process.remaining_work_field)}"
+        )
 
     assigned_reference = _text(entry, "System.AssignedTo", "assignedTo")
     assigned_to = assigned_reference
@@ -302,13 +305,21 @@ def normalize_capacity(payload: Any, *, team: TeamConfig) -> NormalizedCapacity:
         member = entry.get("teamMember")
         unique_name = member.get("uniqueName") if isinstance(member, Mapping) else None
         display_name = _person_name(entry)
+        login = unique_name if isinstance(unique_name, str) else None
         identities.register(
             person_id,
-            unique_name if isinstance(unique_name, str) else None,
+            login,
             display_name,
             f"{display_name} <{unique_name}>" if display_name and unique_name else None,
         )
-        people.append(Person(id=person_id, display_name=display_name, teams=(team.team_id,)))
+        people.append(
+            Person(
+                id=person_id,
+                display_name=display_name,
+                unique_name=login,
+                teams=(team.team_id,),
+            )
+        )
         activities = entry.get("activities")
         activity_entries = activities if isinstance(activities, list) else []
         if not activity_entries:

@@ -182,7 +182,8 @@ def _persist(
         run_id=run_id, team_id=team.team_id, metrics=report.metrics, findings=report.findings
     )
     summary = build_summary(report, limit_bytes=resolved.config.output.summary_limit_bytes)
-    markdown = render_markdown(report)
+    logins = {person.id: person.unique_name for person in facts.people if person.unique_name}
+    markdown = render_markdown(report, logins=logins)
 
     hashes = {
         "facts.json": store.write_json(directory, "facts.json", facts.model_dump(mode="json")),
@@ -210,7 +211,7 @@ def _persist(
     store.write_text(
         directory,
         "report.html",
-        render_html(report, items=facts.items, candidates=candidates),
+        render_html(report, items=facts.items, candidates=candidates, logins=logins),
     )
 
     partial = tuple(
