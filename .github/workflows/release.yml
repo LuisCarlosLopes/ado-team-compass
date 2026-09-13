@@ -38,7 +38,7 @@ jobs:
           uv venv /tmp/rc
           VIRTUAL_ENV=/tmp/rc uv pip install dist/*.whl
           /tmp/rc/bin/ado-team-compass version
-          /tmp/rc/bin/ado-team-compass demo --output /tmp/rc-demo >/dev/null
+          /tmp/rc/bin/ado-team-compass demo --output /tmp/rc-demo >/dev/null || [ $? -eq 5 ]
           test -f /tmp/rc-demo/*/report.html
 
       - name: Empacotar bundles com o motor

@@ -40,8 +40,8 @@ núcleo e não exigir chave OpenAI adicional para executar o motor local.
 Fonte única: [`integrations/shared/`](../integrations/shared/) (skills +
 [`hosts.yaml`](../integrations/shared/hosts.yaml)). O gerador
 [`packaging/build_bundles.py`](../packaging/build_bundles.py) copia as oito skills
-(`setup`, `doctor`, `demo`, `situacao-atual`, `alocacao`, `evidencia`, `historico`,
-`planejamento`) para cada host, com rodapé de ambiente.
+(`atc-setup`, `atc-doctor`, `atc-demo`, `atc-status`, `atc-allocation`, `atc-evidence`, `atc-history`,
+`atc-planning`) para cada host, com rodapé de ambiente.
 
 Padrão de invocação (skills locais):
 

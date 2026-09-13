@@ -91,7 +91,7 @@ ado-team-compass/
 │   └── demo/                   # Dados sintéticos mockados para execução 100% offline
 ├── integrations/shared/        # Fonte ÚNICA de instruções e skills para assistentes de IA
 │   ├── hosts.yaml              # Metadados e variáveis suportadas por assistente
-│   └── skills/                 # Arquivos markdown de skills compartilhadas (situacao-atual, alocacao, etc.)
+│   └── skills/                 # Arquivos markdown de skills compartilhadas (atc-status, atc-allocation, etc.)
 ├── plugin/                     # BUNDLES GERADOS para cada assistente (NÃO EDITAR DIRETAMENTE)
 │   ├── antigravity/            # Bundle do Google Antigravity
 │   ├── claude/                 # Bundle do Claude Code

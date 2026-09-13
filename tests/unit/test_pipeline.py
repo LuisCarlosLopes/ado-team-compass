@@ -24,6 +24,7 @@ from ado_team_compass.errors import CollectError, ConfigError, ExitCode
 from ado_team_compass.pipeline import execute_status, replay_run
 from ado_team_compass.reporting import build_summary, render_markdown
 from ado_team_compass.runs import RunStore
+from ado_team_compass.runs.store import run_id_for
 
 AS_OF = datetime.fromisoformat("2026-09-15T12:00:00-03:00")
 
@@ -279,7 +280,7 @@ def test_access_failure_abandons_the_run_without_a_manifest(tmp_path):
             resolved=resolved,
         )
     assert store.list_runs() == ()
-    run_id = "20260915T120000-demo"
+    run_id = run_id_for(AS_OF, resolved.config.teams[0].alias)
     assert (tmp_path / "runs" / run_id / "INCOMPLETA.txt").is_file()
 
 

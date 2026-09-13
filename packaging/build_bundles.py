@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from collections.abc import Mapping
 from pathlib import Path
@@ -112,8 +113,19 @@ def manifest(host_key: str, host: Mapping[str, Any], version: str) -> dict[str, 
 def build(*, check: bool) -> int:
     version = _version()
     divergent: list[str] = []
+    valid_skill_stems = {source.stem for source in _skill_sources()}
     for host_key, host in _hosts().items():
         bundle = ROOT / str(host["bundle_dir"])
+        skills_dir = bundle / str(host["skills_dir"])
+        if skills_dir.is_dir():
+            for skill_subdir in sorted(skills_dir.iterdir()):
+                if skill_subdir.is_dir() and skill_subdir.name not in valid_skill_stems:
+                    if check:
+                        rel = skill_subdir.relative_to(ROOT)
+                        divergent.append(f"diretório de skill órfão: {rel}")
+                    else:
+                        shutil.rmtree(skill_subdir)
+
         files: dict[Path, str] = {
             bundle / str(host["manifest_path"]): json.dumps(
                 manifest(host_key, host, version), ensure_ascii=False, indent=2, sort_keys=True

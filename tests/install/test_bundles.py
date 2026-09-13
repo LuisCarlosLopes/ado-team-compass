@@ -135,7 +135,8 @@ def test_skills_declare_name_and_description_front_matter():
             assert content.startswith("---\n")
             front_matter = content.split("---", 2)[1]
             metadata = yaml.safe_load(front_matter)
-            assert metadata["name"].startswith("ado-compass-")
+            assert metadata["name"].startswith("atc-")
+            assert metadata["name"] == name
             assert len(metadata["description"]) > 40
 
 
@@ -150,19 +151,19 @@ def test_skills_use_the_installed_engine_not_the_development_tree():
 
 
 def test_collection_requires_mcp_and_offline_entries_are_declared():
-    content = " ".join(_skill("claude", "situacao-atual").split())
+    content = " ".join(_skill("claude", "atc-status").split())
     assert "Sem MCP oficial conectado, funcionam apenas" in content
     for entrada in ("`demo`", "`replay`", "`report`", "`render`", "`evidence`"):
         assert entrada in content
 
 
 def test_host_notes_are_specific_to_each_host():
-    assert "Claude Code" in _skill("claude", "doctor")
-    assert "Antigravity" in _skill("antigravity", "doctor")
-    assert "Codex" in _skill("codex", "doctor")
-    assert "Cursor" in _skill("cursor", "doctor")
-    assert "Antigravity" not in _skill("claude", "doctor")
-    assert "Claude Code" not in _skill("cursor", "doctor")
+    assert "Claude Code" in _skill("claude", "atc-doctor")
+    assert "Antigravity" in _skill("antigravity", "atc-doctor")
+    assert "Codex" in _skill("codex", "atc-doctor")
+    assert "Cursor" in _skill("cursor", "atc-doctor")
+    assert "Antigravity" not in _skill("claude", "atc-doctor")
+    assert "Claude Code" not in _skill("cursor", "atc-doctor")
 
 
 def test_bundle_readme_documents_installation_and_limits():

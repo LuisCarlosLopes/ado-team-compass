@@ -71,14 +71,14 @@ Configurar o servidor oficial `azure-devops-mcp` diretamente no cliente do host:
 
 ### Passo 4 — Validação de Descoberta e Execução
 1. Abrir o assistente no host e verificar se as 8 skills são listadas e reconhecidas:
-   - `setup`
-   - `doctor`
-   - `demo`
-   - `situacao-atual`
-   - `alocacao`
-   - `evidencia`
-   - `historico`
-   - `planejamento`
+   - `atc-setup`
+   - `atc-doctor`
+   - `atc-demo`
+   - `atc-status`
+   - `atc-allocation`
+   - `atc-evidence`
+   - `atc-history`
+   - `atc-planning`
 2. Executar o comando de diagnóstico no terminal do host:
    ```bash
    ado-team-compass doctor

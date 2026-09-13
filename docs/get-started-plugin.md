@@ -152,11 +152,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 1: `ado-compass-setup`
+### Skill 1: `atc-setup`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-setup` |
+| **Identificador** | `atc-setup` |
 | **Finalidade** | Descobre projetos e equipes disponíveis na organização através do MCP oficial e gera a configuração inicial local. |
 | **Comando CLI** | `ado-team-compass setup --organization <organizacao>` |
 | **Quando usar** | Ao iniciar o uso do produto em uma nova organização ou após mudanças estruturais de equipes no Azure DevOps. |
@@ -175,11 +175,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 2: `ado-compass-doctor`
+### Skill 2: `atc-doctor`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-doctor` |
+| **Identificador** | `atc-doctor` |
 | **Finalidade** | Diagnostica a integridade do ambiente, validade do YAML, conectividade MCP e ferramentas disponíveis no catálogo. |
 | **Comando CLI** | `ado-team-compass doctor` (ou `ado-team-compass doctor --offline`) |
 | **Quando usar** | Sempre que uma consulta falhar, antes da daily ou para confirmar se a autenticação MCP continua ativa. |
@@ -204,11 +204,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 3: `ado-compass-demo`
+### Skill 3: `atc-demo`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-demo` |
+| **Identificador** | `atc-demo` |
 | **Finalidade** | Executa uma rodada sintética 100% offline, gerando todos os artefatos de uma análise real para demonstração ou homologação. |
 | **Comando CLI** | `ado-team-compass demo --format markdown` |
 | **Quando usar** | Para apresentar a ferramenta a colegas, validar uma instalação recente ou entender a estrutura do relatório. |
@@ -223,11 +223,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 4: `ado-compass-situacao-atual`
+### Skill 4: `atc-status`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-situacao-atual` |
+| **Identificador** | `atc-status` |
 | **Finalidade** | Coleta os dados mais recentes do board da equipe e apresenta a situação da sprint: itens abertos, carga conhecida, capacidade restante, gap e impedimentos. |
 | **Comando CLI** | `ado-team-compass status --team <alias> --format markdown` |
 | **Quando usar** | Preparação da Daily Scrum, alinhamento de início do dia ou quando perguntarem "como está a sprint?". |
@@ -250,11 +250,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 5: `ado-compass-alocacao`
+### Skill 5: `atc-allocation`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-alocacao` |
+| **Identificador** | `atc-allocation` |
 | **Finalidade** | Detalha a carga conhecida e a capacidade restante reservada por pessoa da equipe na execução atual. |
 | **Comando CLI** | `ado-team-compass allocation --team <alias>` |
 | **Quando usar** | Para checar balanceamento de trabalho, verificar quem pode apoiar tarefas críticas ou planejar redistribuições de esforço. |
@@ -279,11 +279,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 6: `ado-compass-planejamento`
+### Skill 6: `atc-planning`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-planejamento` |
+| **Identificador** | `atc-planning` |
 | **Finalidade** | Executa a verificação das regras de planejamento ativadas no perfil da equipe, apontando inconsistências e higiene de backlog. |
 | **Comando CLI** | `ado-team-compass planning --team <alias>` |
 | **Quando usar** | Durante sessões de refinamento, pré-planning ou revisão semanal de higiene do board. |
@@ -305,11 +305,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 7: `ado-compass-evidencia`
+### Skill 7: `atc-evidence`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-evidencia` |
+| **Identificador** | `atc-evidence` |
 | **Finalidade** | Recupera a evidência local e imutável de uma execução anterior para auditar números ou reexecutar cálculos com dados congelados (`replay`). |
 | **Comando CLI** | `ado-team-compass evidence --team <alias> --reference <id>` e `ado-team-compass replay --team <alias>` |
 | **Quando usar** | Quando alguém questionar a origem de um número ("de onde vieram essas 34 horas?") ou para auditar uma sprint passada. |
@@ -335,11 +335,11 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 
 ---
 
-### Skill 8: `ado-compass-historico`
+### Skill 8: `atc-history`
 
 | Propriedade | Detalhe |
 |---|---|
-| **Identificador** | `ado-compass-historico` |
+| **Identificador** | `atc-history` |
 | **Finalidade** | Apresenta métricas de compromisso (say/do), carry-over, mudanças de escopo (entradas e saídas) e métricas de fluxo (throughput e cycle time). |
 | **Comando CLI** | `ado-team-compass history --team <alias> --format markdown` |
 | **Quando usar** | Preparação de Retrospectivas, Sprint Reviews e análise de previsibilidade da equipe. |
@@ -371,7 +371,7 @@ Aqui está como orquestrar as skills nas cerimônias reais da sua equipe:
 ### Rotina 1: Daily Scrum em 3 Minutos
 1. Antes ou no primeiro minuto da daily, peça ao assistente:
    > *"Resumo para a daily da equipe plataforma hoje."*
-2. O assistente aciona `ado-compass-situacao-atual`.
+2. O assistente aciona `atc-status`.
 3. Você compartilha ou lê em voz alta:
    - Quais impedimentos precisam de intervenção imediata da liderança.
    - Se a equipe está em ritmo sustentável ou em sobrecarga evidente.
@@ -380,15 +380,15 @@ Aqui está como orquestrar as skills nas cerimônias reais da sua equipe:
 ### Rotina 2: Sprint Planning e Refinamento
 1. Para validar se as histórias estão prontas para a sprint:
    > *"Verifique a higiene das histórias para o planning da equipe dados."*
-   *(Aciona `ado-compass-planejamento` para apontar critérios incompletos)*
+   *(Aciona `atc-planning` para apontar critérios incompletos)*
 2. Para verificar se o compromisso cabe na capacidade do time:
    > *"Como está a projeção de alocação da equipe dados?"*
-   *(Aciona `ado-compass-alocacao` para checar gargalos em especialistas)*
+   *(Aciona `atc-allocation` para checar gargalos em especialistas)*
 
 ### Rotina 3: Retrospectiva da Sprint
 1. No encerramento da iteração:
    > *"Mostre o histórico de compromisso e entrega da última sprint da equipe mobile."*
-   *(Aciona `ado-compass-historico`)*
+   *(Aciona `atc-history`)*
 2. Discuta com a equipe:
    - O say/do refletiu o planejamento inicial?
    - O volume de itens que entraram no meio da sprint impactou os compromissos originais?

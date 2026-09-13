@@ -16,14 +16,14 @@
     "mcp_server": "azure-devops (oficial Microsoft)"
   },
   "skills": [
-    "./skills/alocacao",
-    "./skills/demo",
-    "./skills/doctor",
-    "./skills/evidencia",
-    "./skills/historico",
-    "./skills/planejamento",
-    "./skills/setup",
-    "./skills/situacao-atual"
+    "./skills/atc-allocation",
+    "./skills/atc-demo",
+    "./skills/atc-doctor",
+    "./skills/atc-evidence",
+    "./skills/atc-history",
+    "./skills/atc-planning",
+    "./skills/atc-setup",
+    "./skills/atc-status"
   ],
   "version": "0.1.0"
 }
