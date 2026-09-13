@@ -13,7 +13,7 @@ HOSTS = ("antigravity", "claude", "codex", "cursor")
 
 @pytest.fixture
 def fake_engine(tmp_path: Path) -> tuple[Path, Path]:
-    wheel = tmp_path / "ado_team_compass-0.1.0-py3-none-any.whl"
+    wheel = tmp_path / "ado_team_compass-0.2.0-py3-none-any.whl"
     wheel.write_bytes(b"wheel sintetico")
     lock = tmp_path / "uv.lock"
     lock.write_text("# lock sintético\n", encoding="utf-8")
@@ -22,7 +22,7 @@ def fake_engine(tmp_path: Path) -> tuple[Path, Path]:
 
 def test_every_host_produces_a_package_with_engine_and_lock(fake_engine, tmp_path):
     wheel, lock = fake_engine
-    packages = package_all(wheel=wheel, lock=lock, version="0.1.0", output_dir=tmp_path / "dist")
+    packages = package_all(wheel=wheel, lock=lock, version="0.2.0", output_dir=tmp_path / "dist")
     assert len(packages) == len(HOSTS)
     for package in packages:
         with zipfile.ZipFile(package) as archive:
@@ -36,7 +36,7 @@ def test_every_host_produces_a_package_with_engine_and_lock(fake_engine, tmp_pat
 @pytest.mark.parametrize("host_key", HOSTS)
 def test_package_carries_the_manifest_of_its_own_host(fake_engine, tmp_path, host_key):
     wheel, lock = fake_engine
-    package = package_bundle(host_key, wheel=wheel, lock=lock, version="0.1.0", output_dir=tmp_path)
+    package = package_bundle(host_key, wheel=wheel, lock=lock, version="0.2.0", output_dir=tmp_path)
     with zipfile.ZipFile(package) as archive:
         names = set(archive.namelist())
         install = archive.read("INSTALL.md").decode("utf-8")
@@ -53,7 +53,7 @@ def test_package_carries_the_manifest_of_its_own_host(fake_engine, tmp_path, hos
 
 def test_install_notes_explain_update_rollback_and_data_preservation(fake_engine, tmp_path):
     wheel, lock = fake_engine
-    package = package_bundle("claude", wheel=wheel, lock=lock, version="0.1.0", output_dir=tmp_path)
+    package = package_bundle("claude", wheel=wheel, lock=lock, version="0.2.0", output_dir=tmp_path)
     with zipfile.ZipFile(package) as archive:
         install = archive.read("INSTALL.md").decode("utf-8")
     assert "Atualização e remoção" in install
@@ -63,7 +63,7 @@ def test_install_notes_explain_update_rollback_and_data_preservation(fake_engine
 
 def test_package_does_not_carry_local_run_data(fake_engine, tmp_path):
     wheel, lock = fake_engine
-    package = package_bundle("claude", wheel=wheel, lock=lock, version="0.1.0", output_dir=tmp_path)
+    package = package_bundle("claude", wheel=wheel, lock=lock, version="0.2.0", output_dir=tmp_path)
     with zipfile.ZipFile(package) as archive:
         names = archive.namelist()
     assert not [name for name in names if ".ado-team-compass" in name]
