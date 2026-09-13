@@ -153,6 +153,14 @@ def _emit_outcome(outcome: RunOutcome, args: argparse.Namespace) -> ExitCode:
             args.output.write_text(outcome.markdown, encoding="utf-8")
         else:
             sys.stdout.write(outcome.markdown)
+    elif args.format == "html":
+        html_path = outcome.run.directory / "report.html"
+        html_content = html_path.read_text(encoding="utf-8") if html_path.is_file() else ""
+        if args.output is not None:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(html_content, encoding="utf-8")
+        else:
+            sys.stdout.write(html_content)
     else:
         _emit(
             {
@@ -268,14 +276,33 @@ def _handle_collect(args: argparse.Namespace) -> ExitCode:
 
 def _handle_demo(args: argparse.Namespace) -> ExitCode:
     """Relatório completo com dados sintéticos: sem credencial e sem rede."""
+    import shutil
+
     from ado_team_compass.adapters.ado_mcp import AdoMcpClient
     from ado_team_compass.config import resolve_config
     from ado_team_compass.demo import ORGANIZATION, demo_config_document, transport
+    from ado_team_compass.runs.store import run_id_for
 
     resolved = resolve_config(demo_config_document())
     team = resolved.config.teams[0]
     as_of = _resolve_as_of(args) if getattr(args, "as_of", None) else DEMO_AS_OF
-    directory = args.output or Path(".ado-team-compass/demo")
+
+    # Se args.output foi informado e não possui sufixo de arquivo, atua como
+    # diretório de persistência (compatibilidade com suíte de testes)
+    output_target: Path | None = getattr(args, "output", None)
+    if output_target is not None and not output_target.suffix:
+        directory = output_target
+        output_file: Path | None = None
+    else:
+        directory = Path(".ado-team-compass/demo")
+        output_file = output_target
+
+    # Permite reexecução idempotente do demo limpando a execução anterior
+    run_id = run_id_for(as_of, team.alias)
+    existing_run_dir = directory / run_id
+    if existing_run_dir.exists():
+        shutil.rmtree(existing_run_dir, ignore_errors=True)
+
     store = RunStore(directory)
     client = AdoMcpClient(transport=transport())
     client.handshake()
@@ -288,9 +315,12 @@ def _handle_demo(args: argparse.Namespace) -> ExitCode:
         resolved=resolved,
     )
     if args.format == "markdown":
-        sys.stdout.write(outcome.markdown)
+        content = outcome.markdown
+    elif args.format == "html":
+        html_path = outcome.run.directory / "report.html"
+        content = html_path.read_text(encoding="utf-8") if html_path.is_file() else ""
     else:
-        sys.stdout.write(
+        content = (
             json.dumps(
                 {
                     "run_id": outcome.run.manifest.run_id,
@@ -304,6 +334,13 @@ def _handle_demo(args: argparse.Namespace) -> ExitCode:
             )
             + "\n"
         )
+
+    if output_file is not None:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(content, encoding="utf-8")
+    else:
+        sys.stdout.write(content)
+
     return outcome.exit_code
 
 

@@ -72,3 +72,38 @@ def test_command_catalog_covers_planned_entries():
         "run-scheduled",
         "forecast",
     } <= names
+
+
+def test_cli_demo_is_idempotent_and_can_be_executed_multiple_times(tmp_path, capsys):
+    """Garante que rodar demo sucessivas vezes não falha por execução já existente."""
+    demo_dir = tmp_path / "demo_store"
+    # Primeira execução
+    code1 = main(["demo", "--format", "markdown", "--output", str(demo_dir)])
+    assert code1 == int(ExitCode.PARTIAL_CAPABILITY)
+    out1 = capsys.readouterr().out
+    assert "Situação atual — demo" in out1
+
+    # Segunda execução imediata no mesmo diretório
+    code2 = main(["demo", "--format", "markdown", "--output", str(demo_dir)])
+    assert code2 == int(ExitCode.PARTIAL_CAPABILITY)
+    out2 = capsys.readouterr().out
+    assert "Situação atual — demo" in out2
+
+
+def test_cli_demo_outputs_html_file(tmp_path, capsys):
+    """Garante que a opção --output com arquivo .html grava o relatório HTML corretamente."""
+    html_target = tmp_path / "output" / "relatorio-demo.html"
+    code = main(["demo", "--format", "html", "--output", str(html_target)])
+    assert code == int(ExitCode.PARTIAL_CAPABILITY)
+    assert capsys.readouterr().out == ""
+    assert html_target.is_file()
+    content = html_target.read_text(encoding="utf-8")
+    assert "<!doctype html>" in content
+    assert "Situação atual — demo" in content
+
+
+def test_cli_supports_python_m_execution():
+    """Garante que o módulo __main__ pode ser importado e expõe o ponto de entrada."""
+    import ado_team_compass.__main__ as main_module
+
+    assert callable(main_module.main)
