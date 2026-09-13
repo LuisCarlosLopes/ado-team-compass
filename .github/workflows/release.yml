@@ -1,0 +1,56 @@
+name: Release candidata
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Sincronizar ambiente travado
+        run: uv sync --group dev --frozen
+
+      - name: Qualidade
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+          uv run mypy
+          uv run pytest -m "not integration"
+
+      - name: Bundles sincronizados com a fonte compartilhada
+        run: uv run python packaging/build_bundles.py --check
+
+      - name: Construir wheel e sdist
+        run: uv build
+
+      - name: Instalar o pacote produzido em ambiente isolado
+        run: |
+          uv venv /tmp/rc
+          VIRTUAL_ENV=/tmp/rc uv pip install dist/*.whl
+          /tmp/rc/bin/ado-team-compass version
+          /tmp/rc/bin/ado-team-compass demo --output /tmp/rc-demo >/dev/null
+          test -f /tmp/rc-demo/*/report.html
+
+      - name: Empacotar bundles com o motor
+        run: |
+          VERSION=$(uv run python -c "import ado_team_compass; print(ado_team_compass.__version__)")
+          uv run python packaging/package_bundles.py \
+            --wheel "$(ls dist/*.whl)" --version "$VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-candidata
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/bundles/*.zip

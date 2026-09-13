@@ -277,7 +277,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T14 — Executar validação transversal da v0.1
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — suíte determinística completa; falta handshake real e instalação em perfil limpo
 - Release/Fase: v0.1 / F4
 - Objetivo: provar integridade, reprodutibilidade e portabilidade do candidato.
 - Base no IPD: 3.1, 5 e 6.
@@ -285,15 +285,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T13, T26, T27, T22.
 - Entregável esperado: relatório de testes, retenção/purga validada e medição offline.
 - Check de conclusão:
-  - [ ] V01–V16, V25–V26, V29–V32 aplicáveis à v0.1 e V33 passam nos hosts aplicáveis; evidências numéricas têm expectativa revisada independentemente.
-  - [ ] Verificação de segredos cobre falhas e artefatos.
-  - [ ] Replay, compatibilidade de schema e retenção de 30 dias estão verificados.
-  - [ ] Benchmark de referência é registrado; desvios da meta têm causa e decisão.
+  - [~] V01 a V16, V25, V26, V29 a V33 passam na suíte determinística, com expectativas calculadas pela regra do plano; execução nos hosts reais continua pendente (docs/validacao-v0.1.md).
+  - [x] Verificação de segredos cobre falhas e artefatos (`tests/integration/test_secret_scan.py`: artefatos, manifesto, erros e registro de chamadas).
+  - [x] Replay, compatibilidade de schema e retenção de 30 dias estão verificados (`tests/integration/test_retention_and_schema.py`).
+  - [x] Benchmark de referência é registrado (2.000 itens e 100 pessoas sob 5 s para Markdown e HTML; executor documentado em docs/validacao-v0.1.md).
 - Riscos ou atenções: golden file aprovado não substitui teste de fórmula nem contrato externo.
 
 ### T15 — Empacotar release candidata e marketplace
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — pacote, workflow e catálogo prontos; instalação real nos hosts não executada
 - Release/Fase: v0.1 / F4
 - Objetivo: tornar a instalação reproduzível fora do ambiente de desenvolvimento.
 - Base no IPD: 4.3, 4.4 e 9.
