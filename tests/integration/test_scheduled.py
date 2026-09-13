@@ -78,8 +78,8 @@ def test_v22_later_failure_preserves_the_previous_successful_report(tmp_path):
     first, _ = _run(tmp_path)
     broken = {
         **default_responses(),
-        "work_list_team_iterations": ToolCallResult(
-            tool="work_list_team_iterations", is_error=True, error_text="403 forbidden"
+        "work:list_team_iterations": ToolCallResult(
+            tool="work:list_team_iterations", is_error=True, error_text="403 forbidden"
         ),
     }
     later = AS_OF + timedelta(days=1)
@@ -96,8 +96,8 @@ def test_failure_notification_is_actionable_and_names_the_previous_report(tmp_pa
     _run(tmp_path)
     broken = {
         **default_responses(),
-        "work_list_team_iterations": ToolCallResult(
-            tool="work_list_team_iterations", is_error=True, error_text="403 forbidden"
+        "work:list_team_iterations": ToolCallResult(
+            tool="work:list_team_iterations", is_error=True, error_text="403 forbidden"
         ),
     }
     failure, _ = _run(tmp_path, as_of=AS_OF, responses=broken, force=True)

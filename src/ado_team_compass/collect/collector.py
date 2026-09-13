@@ -14,6 +14,7 @@ from typing import Any
 
 from ado_team_compass.adapters.ado_mcp import AdoMcpClient, Operation
 from ado_team_compass.collect.normalization import (
+    IdentityIndex,
     NormalizedCapacity,
     NormalizedItem,
     entries,
@@ -26,7 +27,7 @@ from ado_team_compass.collect.normalization import (
 )
 from ado_team_compass.contracts.common import Provenance, Window
 from ado_team_compass.contracts.config import TeamConfig
-from ado_team_compass.contracts.facts import FactSet, Person, WorkItemFact
+from ado_team_compass.contracts.facts import FactSet, Person, WorkItemFact, WorkItemRelation
 from ado_team_compass.errors import CapabilityUnavailable, CollectError
 from ado_team_compass.metrics.calendar import resolve_window
 from ado_team_compass.metrics.cross_team import deduplicate_items
@@ -35,6 +36,38 @@ __all__ = ["BATCH_SIZE", "CollectionResult", "collect_current_status"]
 
 #: Tamanho de lote na hidratação de itens; o servidor oficial limita lotes grandes.
 BATCH_SIZE = 200
+
+#: Campos de sistema sempre pedidos: sem `fields`, o servidor devolve um conjunto mínimo.
+SYSTEM_FIELDS = (
+    "System.Id",
+    "System.WorkItemType",
+    "System.State",
+    "System.Title",
+    "System.AssignedTo",
+    "System.AreaPath",
+    "System.IterationPath",
+    "System.Parent",
+    "System.Tags",
+    "System.CreatedDate",
+    "System.ChangedDate",
+    "Microsoft.VSTS.Common.Activity",
+    "Microsoft.VSTS.Scheduling.StartDate",
+    "Microsoft.VSTS.Scheduling.TargetDate",
+    "Microsoft.VSTS.Scheduling.FinishDate",
+    "Microsoft.VSTS.Scheduling.DueDate",
+)
+
+
+def requested_fields(team: TeamConfig) -> tuple[str, ...]:
+    """Campos pedidos na hidratação: os de sistema mais os configurados no perfil."""
+    configured = (
+        team.process.remaining_work_field,
+        team.process.original_estimate_field,
+        team.process.completed_work_field,
+        team.process.story_points_field,
+    )
+    names = [*SYSTEM_FIELDS, *(name for name in configured if name)]
+    return tuple(dict.fromkeys(names))
 
 
 @dataclass
@@ -72,19 +105,23 @@ def collect_current_status(
         client, team, as_of=as_of, iteration_path=iteration_path, partial=partial, reasons=reasons
     )
 
+    # A capacidade vem primeiro porque é ela que traz o ID estável de cada pessoa; os itens
+    # referenciam a pessoa por texto e precisam ser reconciliados com esse ID.
+    capacity = _collect_capacity(
+        client, team, iteration_id=iteration_id, partial=partial, reasons=reasons
+    )
+
     items, relations, item_reasons, items_partial = _collect_items(
         client,
         team,
         organization=organization,
         iteration_path=resolved_path,
+        iteration_id=iteration_id,
         collected_at=collected_at,
+        identities=capacity.identities,
     )
     reasons.extend(item_reasons)
     partial.extend(items_partial)
-
-    capacity = _collect_capacity(
-        client, team, iteration_id=iteration_id, partial=partial, reasons=reasons
-    )
 
     people = _merge_people(capacity.people, items)
     facts = FactSet(
@@ -175,7 +212,9 @@ def _collect_items(
     *,
     organization: str,
     iteration_path: str | None,
+    iteration_id: str | None,
     collected_at: datetime,
+    identities: IdentityIndex | None = None,
 ) -> tuple[tuple[WorkItemFact, ...], tuple[Any, ...], list[str], list[str]]:
     reasons: list[str] = []
     partial: list[str] = []
@@ -183,17 +222,25 @@ def _collect_items(
         partial.append("work_items")
         reasons.append("sem iteração resolvida, os itens da sprint não foram coletados")
         return (), (), reasons, partial
+    if iteration_id is None:
+        partial.append("work_items")
+        reasons.append(
+            "a iteração resolvida não trouxe identificador: a listagem de itens da sprint "
+            "exige o ID da iteração"
+        )
+        return (), (), reasons, partial
 
     arguments: dict[str, Any] = {
         "project": team.project_id,
         "team": team.team_id,
-        "iteration": iteration_path,
+        "iterationId": iteration_id,
     }
     if team.scope.area_paths:
         arguments["areaPaths"] = list(team.scope.area_paths)
         arguments["includeDescendants"] = team.scope.include_descendants
 
     identifiers: list[int] = []
+    linked: list[WorkItemRelation] = []
     try:
         pages = client.paginate(
             Operation.LIST_ITERATION_WORK_ITEMS,
@@ -203,11 +250,17 @@ def _collect_items(
         for page in pages:
             for entry in entries(page, "workItemRelations", "workItems"):
                 target = entry.get("target") if isinstance(entry.get("target"), dict) else entry
-                raw_id = target.get("id") if isinstance(target, dict) else None
-                if isinstance(raw_id, int):
-                    identifiers.append(raw_id)
-                elif isinstance(raw_id, str) and raw_id.isdigit():
-                    identifiers.append(int(raw_id))
+                target_id = _identifier(target.get("id") if isinstance(target, dict) else None)
+                if target_id is None:
+                    continue
+                identifiers.append(target_id)
+                # A própria listagem traz a hierarquia da iteração; ela é usada como
+                # relação observada, sem depender de campo por item.
+                source = entry.get("source")
+                relation = entry.get("rel")
+                source_id = _identifier(source.get("id") if isinstance(source, dict) else None)
+                if source_id is not None and isinstance(relation, str) and "Hierarchy" in relation:
+                    linked.append(WorkItemRelation(parent_id=source_id, child_id=target_id))
     except CapabilityUnavailable as error:
         partial.append("work_items")
         reasons.append(f"listagem de itens indisponível: {error.message}")
@@ -224,7 +277,14 @@ def _collect_items(
     for start in range(0, len(unique_ids), BATCH_SIZE):
         batch = unique_ids[start : start + BATCH_SIZE]
         try:
-            payload = client.call(Operation.GET_WORK_ITEMS_BATCH, {"ids": batch})
+            payload = client.call(
+                Operation.GET_WORK_ITEMS_BATCH,
+                {
+                    "project": team.project_id,
+                    "ids": batch,
+                    "fields": list(requested_fields(team)),
+                },
+            )
         except CapabilityUnavailable as error:
             partial.append("work_items")
             reasons.append(f"hidratação de itens indisponível: {error.message}")
@@ -246,7 +306,11 @@ def _collect_items(
                 references=(f"evidence/items/{entry.get('id')}.json",),
             )
             item = normalize_work_item(
-                entry, team=team, organization=organization, provenance=provenance
+                entry,
+                team=team,
+                organization=organization,
+                provenance=provenance,
+                identities=identities,
             )
             if item is None:
                 reasons.append("um item veio sem ID e foi descartado")
@@ -255,12 +319,24 @@ def _collect_items(
             reasons.extend(item.reasons)
 
     facts, overlapping = deduplicate_items([item.fact for item in normalized])
+    relations = tuple(dict.fromkeys((*linked, *hierarchy_relations(normalized))))
     if overlapping:
         reasons.append(
             "itens repetidos na resposta foram contados uma única vez: "
             + ", ".join(str(item_id) for item_id in overlapping)
         )
-    return facts, hierarchy_relations(normalized), reasons, partial
+    return facts, relations, reasons, partial
+
+
+def _identifier(value: Any) -> int | None:
+    """Converte o ID de um item, aceitando número ou string numérica."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return None
 
 
 def _collect_capacity(
@@ -298,6 +374,7 @@ def _collect_capacity(
         days_off=(*capacity.days_off, *team_days_off),
         people=capacity.people,
         reasons=capacity.reasons,
+        identities=capacity.identities,
     )
 
 

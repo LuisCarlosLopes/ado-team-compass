@@ -629,15 +629,30 @@ def _handle_setup(args: argparse.Namespace) -> ExitCode:
             "O setup precisa do servidor MCP oficial para descobrir projetos e equipes.",
             remediation="Execute sem --offline após autenticar a sessão do MCP oficial.",
         )
-    organization: str | None = getattr(args, "organization", None)
-    if not organization:
-        raise ConfigError(
-            "E_SETUP_ORGANIZACAO_AUSENTE",
-            "Informe a organização do Azure DevOps a ser descoberta.",
-            remediation="Use --organization <nome-da-organizacao>.",
-        )
+    from ado_team_compass.config.setup import connection_from_host_config
 
-    connection = _bootstrap_connection(organization)
+    host_config: Path | None = getattr(args, "from_mcp_config", None)
+    connection_payload: dict[str, Any] | None = None
+    if host_config is not None:
+        connection_payload = connection_from_host_config(
+            host_config,
+            getattr(args, "mcp_server", None) or "ado",
+            organization=getattr(args, "organization", None),
+        )
+        organization = str(connection_payload["organization"])
+        connection = ConnectionConfig.model_validate(connection_payload)
+    else:
+        organization = getattr(args, "organization", None) or ""
+        if not organization:
+            raise ConfigError(
+                "E_SETUP_ORGANIZACAO_AUSENTE",
+                "Informe a organização do Azure DevOps a ser descoberta.",
+                remediation=(
+                    "Use --organization <organizacao>, ou --from-mcp-config para reaproveitar "
+                    "um servidor MCP já configurado no host."
+                ),
+            )
+        connection = _bootstrap_connection(organization)
     factory: TransportFactory = getattr(args, "_transport_factory", None) or (
         lambda conn: official_transport(conn)
     )
@@ -645,7 +660,22 @@ def _handle_setup(args: argparse.Namespace) -> ExitCode:
         client = AdoMcpClient(transport=transport)
         discovery = discover(client, organization=organization)
 
-    document = build_config_document(discovery)
+    profiles: dict[str, str] = {}
+    for pair in getattr(args, "profile", None) or []:
+        alias, _, profile = str(pair).partition("=")
+        if not profile:
+            raise ConfigError(
+                "E_SETUP_PERFIL_INVALIDO",
+                f"Use --profile <alias>=<perfil>; recebido: {pair!r}.",
+                detail={"received": pair},
+            )
+        profiles[alias] = profile
+    document = build_config_document(discovery, profiles=profiles)
+    if connection_payload is not None:
+        # Preserva o transporte do host: comando, argumentos e a referência de ambiente.
+        document["connections"] = [connection_payload]
+        for team in document["teams"]:
+            team["connection"] = connection_payload["alias"]
     destination = args.output or DEFAULT_CONFIG_PATH
     write_config_document(document, destination, force=bool(getattr(args, "force", False)))
     LOGGER.info("Configuração gravada em %s", destination)
@@ -743,6 +773,26 @@ COMMANDS: tuple[_Command, ...] = (
 def _add_common_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--config", type=Path, help="Caminho explícito da configuração")
     parser.add_argument("--organization", help="Organização do Azure DevOps (entrada setup)")
+    parser.add_argument(
+        "--from-mcp-config",
+        dest="from_mcp_config",
+        type=Path,
+        help="Reaproveita um servidor MCP oficial já configurado no host (ex.: .cursor/mcp.json)",
+    )
+    parser.add_argument(
+        "--mcp-server",
+        dest="mcp_server",
+        help="Nome do servidor dentro da configuração de MCP do host (padrão: ado)",
+    )
+    parser.add_argument(
+        "--profile",
+        action="append",
+        metavar="ALIAS=PERFIL",
+        help=(
+            "Perfil de gestão de uma equipe (repetível). O processo técnico descoberto não "
+            "define o perfil sozinho."
+        ),
+    )
     parser.add_argument(
         "--force", action="store_true", help="Autoriza sobrescrever a configuração existente"
     )

@@ -8,6 +8,7 @@ existir, sem tentar caminho alternativo ao MCP oficial.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 from pydantic import Field
 
@@ -24,12 +25,18 @@ __all__ = ["CatalogInfo", "ResolvedOperation", "negotiate"]
 
 
 class ResolvedOperation(StrictModel):
-    """Ferramenta concreta escolhida para uma operação lógica."""
+    """Ferramenta e ação concretas escolhidas para uma operação lógica."""
 
     operation: Operation
     tool: str
+    action: str | None = None
+    action_parameter: str | None = None
     input_schema_hash: str
-    verified_name: bool = True
+    verified_name: bool = False
+
+    @property
+    def label(self) -> str:
+        return f"{self.tool}:{self.action}" if self.action else self.tool
 
 
 class CatalogInfo(StrictModel):
@@ -42,6 +49,7 @@ class CatalogInfo(StrictModel):
     resolved: dict[str, ResolvedOperation] = Field(default_factory=dict)
     unavailable: dict[str, str] = Field(default_factory=dict)
     rejected_write_tools: tuple[str, ...] = ()
+    unverified_operations: tuple[str, ...] = ()
 
     def operation(self, operation: Operation) -> ResolvedOperation | None:
         return self.resolved.get(operation.value)
@@ -63,12 +71,18 @@ def negotiate(
     unavailable: dict[str, str] = {}
 
     for operation, spec in allowlist.items():
-        chosen: ToolDescriptor | None = None
+        chosen: tuple[ToolDescriptor, Any] | None = None
         for candidate in spec.candidates:
-            tool = by_name.get(candidate)
+            tool = by_name.get(candidate.tool)
             if tool is None:
                 continue
-            if is_write_like(tool.name):
+            if is_write_like(tool.name) or (candidate.action and is_write_like(candidate.action)):
+                continue
+            if not tool.accepts(candidate.action):
+                unavailable[operation.value] = (
+                    f"a ferramenta {tool.name!r} não aceita a ação {candidate.action!r}; "
+                    f"ações anunciadas: {', '.join(tool.actions) or 'nenhuma'}"
+                )
                 continue
             missing = [
                 name for name in spec.required_properties if name not in tool.input_properties
@@ -79,22 +93,38 @@ def negotiate(
                     f"necessários: {', '.join(missing)}"
                 )
                 continue
-            chosen = tool
+            chosen = (tool, candidate)
             break
         if chosen is None:
             unavailable.setdefault(
                 operation.value,
                 "nenhuma ferramenta de leitura do catálogo conectado atende à operação; "
-                f"candidatos tentados: {', '.join(spec.candidates)}",
+                f"candidatos tentados: {', '.join(str(item) for item in spec.candidates)}",
             )
             continue
+        tool, candidate = chosen
+        unavailable.pop(operation.value, None)
         resolved[operation.value] = ResolvedOperation(
             operation=operation,
-            tool=chosen.name,
-            input_schema_hash=chosen.input_schema_hash,
+            tool=tool.name,
+            action=candidate.action,
+            action_parameter=tool.action_parameter,
+            input_schema_hash=tool.input_schema_hash,
+            verified_name=candidate.verified,
         )
 
-    rejected = tuple(sorted(name for name in by_name if is_write_like(name)))
+    rejected = tuple(
+        sorted(
+            {
+                name
+                for name, tool in by_name.items()
+                if is_write_like(name) or any(is_write_like(action) for action in tool.actions)
+            }
+        )
+    )
+    unverified = tuple(
+        sorted(operation for operation, entry in resolved.items() if not entry.verified_name)
+    )
     return CatalogInfo(
         channel=channel,
         server_version=server_version,
@@ -103,4 +133,5 @@ def negotiate(
         resolved=resolved,
         unavailable=unavailable,
         rejected_write_tools=rejected,
+        unverified_operations=unverified,
     )

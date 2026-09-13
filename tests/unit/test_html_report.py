@@ -97,7 +97,7 @@ def test_v15_malicious_title_is_escaped_and_never_executes(tmp_path):
         if item["id"] == 103:
             fields["System.Title"] = payload
         items.append({"id": item["id"], "fields": fields})
-    responses = {**default_responses(), "wit_get_work_items_batch": {"value": items}}
+    responses = {**default_responses(), "wit_work_item:get_batch": {"value": items}}
     outcome, _ = _run(tmp_path, responses)
     content = (outcome.run.directory / "report.html").read_text(encoding="utf-8")
     assert "<script>alert('xss')</script>" not in content

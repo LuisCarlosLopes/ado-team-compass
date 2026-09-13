@@ -9,11 +9,14 @@ Falha de autenticação vira diagnóstico acionável, nunca conexão alternativa
 from __future__ import annotations
 
 import json
+import re
+import sys
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from datetime import timedelta
+from pathlib import Path
 from types import TracebackType
-from typing import Any, Self
+from typing import Any, Self, TextIO
 
 from ado_team_compass.contracts.config import ConnectionConfig, McpTransport
 from ado_team_compass.errors import AccessError, CollectError, ConfigError
@@ -37,9 +40,11 @@ class OfficialMcpTransport:
         connection: ConnectionConfig,
         *,
         timeout_seconds: float = 30.0,
+        errlog: TextIO | None = None,
     ) -> None:
         self._connection = connection
         self._timeout = timeout_seconds
+        self._errlog: TextIO = errlog or sys.stderr
         self._portal: Any = None
         self._portal_cm: Any = None
         self._session: Any = None
@@ -124,11 +129,17 @@ class OfficialMcpTransport:
 
         from mcp.client.stdio import StdioServerParameters, stdio_client
 
-        parameters = StdioServerParameters(command=server.command[0], args=list(server.command[1:]))
+        parameters = StdioServerParameters(
+            command=server.command[0],
+            args=list(server.command[1:]),
+            env=_host_environment(server.env_ref),
+        )
 
         @asynccontextmanager
         async def stdio_streams() -> Any:
-            async with stdio_client(parameters) as streams:
+            # O servidor oficial registra diagnóstico no próprio stderr; ele é encaminhado
+            # para o destino configurado, sem se misturar à saída JSON do produto.
+            async with stdio_client(parameters, errlog=self._errlog) as streams:
                 yield streams
 
         return stdio_streams()
@@ -152,7 +163,9 @@ class OfficialMcpTransport:
         tools: list[ToolDescriptor] = []
         for tool in result.tools:
             schema = getattr(tool, "inputSchema", None) or {}
-            properties = tuple(sorted((schema.get("properties") or {}).keys()))
+            declared = schema.get("properties") or {}
+            properties = tuple(sorted(declared.keys()))
+            action_parameter, actions = _actions_of(declared)
             tools.append(
                 ToolDescriptor(
                     name=tool.name,
@@ -160,6 +173,8 @@ class OfficialMcpTransport:
                     description=getattr(tool, "description", None),
                     input_schema_hash=schema_hash(schema),
                     input_properties=properties,
+                    action_parameter=action_parameter,
+                    actions=actions,
                 )
             )
         return tuple(tools)
@@ -171,12 +186,16 @@ class OfficialMcpTransport:
             result = self._portal.call(session.call_tool, name, dict(arguments))
         except Exception as error:  # traduzido para erro do produto
             raise self._translate(error, operation=name) from error
-        payload = _structured_payload(result)
+        payload, marked = _structured_payload(result)
         if getattr(result, "isError", False):
             return ToolCallResult(
-                tool=name, is_error=True, error_text=_error_text(result), payload=payload
+                tool=name,
+                is_error=True,
+                error_text=_error_text(result),
+                payload=payload,
+                marked_untrusted=marked,
             )
-        return ToolCallResult(tool=name, payload=payload)
+        return ToolCallResult(tool=name, payload=payload, marked_untrusted=marked)
 
     def _translate(self, error: Exception, *, operation: str) -> Exception:
         text = str(error).lower()
@@ -206,27 +225,121 @@ class OfficialMcpTransport:
         )
 
 
-def _structured_payload(result: Any) -> Any:
-    """Prefere conteúdo estruturado; texto JSON é interpretado, texto livre é preservado."""
+def _actions_of(properties: Mapping[str, Any]) -> tuple[str | None, tuple[str, ...]]:
+    """Descobre o parâmetro de ação e os valores aceitos, quando a ferramenta é consolidada."""
+    for name in ("action", "operation", "op"):
+        specification = properties.get(name)
+        if not isinstance(specification, Mapping):
+            continue
+        values = specification.get("enum")
+        if isinstance(values, list) and values:
+            return name, tuple(str(value) for value in values)
+    return None, ()
+
+
+def _host_environment(env_ref: str | None) -> dict[str, str] | None:
+    """Ambiente do processo do servidor MCP, lido do host na hora da conexão.
+
+    A credencial da sessão pertence à configuração de MCP do host. Ela nunca é copiada para a
+    configuração do produto, para artefatos de execução ou para logs.
+    """
+    if env_ref is None:
+        return None
+    raw_path, _, server_name = env_ref.partition("#")
+    path = Path(raw_path).expanduser()
+    if not path.is_file():
+        raise ConfigError(
+            "E_MCP_ENV_REF_AUSENTE",
+            f"A configuração de MCP do host não foi encontrada: {path}.",
+            detail={"env_ref": env_ref},
+            remediation="Corrija 'env_ref' na conexão ou aponte para o arquivo correto.",
+        )
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise ConfigError(
+            "E_MCP_ENV_REF_INVALIDO",
+            f"A configuração de MCP do host em {path} não é JSON válido.",
+            detail={"env_ref": env_ref},
+        ) from error
+
+    servers = document.get("mcpServers") or document.get("servers") or {}
+    entry = servers.get(server_name) if isinstance(servers, dict) else None
+    if not isinstance(entry, dict):
+        raise ConfigError(
+            "E_MCP_ENV_REF_SERVIDOR",
+            f"O servidor {server_name!r} não existe na configuração de MCP do host.",
+            detail={
+                "env_ref": env_ref,
+                "available": sorted(servers) if isinstance(servers, dict) else [],
+            },
+        )
+    environment = entry.get("env")
+    if not isinstance(environment, dict):
+        return None
+
+    from mcp.client.stdio import get_default_environment
+
+    merged = dict(get_default_environment())
+    merged.update({str(key): str(value) for key, value in environment.items()})
+    return merged
+
+
+#: O servidor oficial envolve o conteúdo do Azure DevOps em delimitadores de conteúdo não
+#: confiável. O produto remove o envelope para ler os dados e registra que ele existia.
+_UNTRUSTED_OPEN = re.compile(r"\A<<(?P<token>[0-9a-f]{8,})>>[^\n]*<<(?P=token)>>\n", re.IGNORECASE)
+
+
+def _unwrap_untrusted(text: str) -> tuple[str, bool]:
+    """Remove o envelope de conteúdo não confiável, preservando o corpo exatamente como veio."""
+    match = _UNTRUSTED_OPEN.match(text)
+    if match is None:
+        return text, False
+    body = text[match.end() :]
+    closing = f"<</{match.group('token')}>>"
+    index = body.rfind(closing)
+    if index != -1:
+        body = body[:index]
+    return body.strip(), True
+
+
+def _structured_payload(result: Any) -> tuple[Any, bool]:
+    """Interpreta a resposta em blocos do servidor oficial.
+
+    O servidor devolve o contexto da chamada em um bloco de texto e os dados em outro, cada um
+    com seu próprio envelope de conteúdo não confiável. Aqui cada bloco é desembrulhado
+    separadamente: os blocos JSON viram os dados e os de texto ficam apenas como contexto.
+    O conteúdo continua sendo dado: nada nele altera instruções, comandos ou destinos.
+    """
     structured = getattr(result, "structuredContent", None)
     if structured:
-        return structured
+        return structured, False
+
+    parsed: list[Any] = []
     texts: list[str] = []
+    marked_any = False
     for block in getattr(result, "content", None) or ():
         text = getattr(block, "text", None)
-        if text is not None:
-            texts.append(text)
-    if not texts:
-        return None
-    joined = "\n".join(texts)
-    try:
-        return json.loads(joined)
-    except (json.JSONDecodeError, TypeError):
-        return joined
+        if text is None:
+            continue
+        body, marked = _unwrap_untrusted(text)
+        marked_any = marked_any or marked
+        try:
+            parsed.append(json.loads(body))
+        except (json.JSONDecodeError, TypeError):
+            texts.append(body)
+
+    if not parsed:
+        return ("\n".join(texts) or None), marked_any
+    if len(parsed) == 1:
+        return parsed[0], marked_any
+    if all(isinstance(entry, list) for entry in parsed):
+        return [item for entry in parsed for item in entry], marked_any
+    return parsed[-1], marked_any
 
 
 def _error_text(result: Any) -> str:
-    payload = _structured_payload(result)
+    payload, _ = _structured_payload(result)
     if isinstance(payload, str):
         return payload
     return json.dumps(payload, ensure_ascii=False, default=str)
@@ -234,9 +347,20 @@ def _error_text(result: Any) -> str:
 
 @contextmanager
 def official_transport(
-    connection: ConnectionConfig, *, timeout_seconds: float = 30.0
+    connection: ConnectionConfig,
+    *,
+    timeout_seconds: float = 30.0,
+    errlog_path: Path | None = None,
 ) -> Iterator[OfficialMcpTransport]:
     """Abre e fecha a sessão com o servidor MCP oficial."""
-    transport = OfficialMcpTransport(connection, timeout_seconds=timeout_seconds)
-    with transport:
-        yield transport
+    handle: TextIO | None = None
+    if errlog_path is not None:
+        errlog_path.parent.mkdir(parents=True, exist_ok=True)
+        handle = errlog_path.open("a", encoding="utf-8")
+    try:
+        transport = OfficialMcpTransport(connection, timeout_seconds=timeout_seconds, errlog=handle)
+        with transport:
+            yield transport
+    finally:
+        if handle is not None:
+            handle.close()

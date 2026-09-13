@@ -26,7 +26,7 @@ from ado_team_compass.pipeline import execute_status
 from ado_team_compass.runs import RunStore
 
 AS_OF = datetime.fromisoformat("2026-09-18T12:00:00-03:00")
-TOOLS_WITH_HISTORY = (*READ_TOOLS, "wit_list_work_item_revisions")
+TOOLS_WITH_HISTORY = READ_TOOLS
 
 
 def _revisions_for(item_id: int) -> dict[str, object]:
@@ -58,13 +58,16 @@ def _revisions_for(item_id: int) -> dict[str, object]:
     return {"value": revisions}
 
 
-def _run(tmp_path, *, tools=TOOLS_WITH_HISTORY, include_history=True):
+def _run(tmp_path, *, tools=TOOLS_WITH_HISTORY, include_history=True, without_revisions=False):
     responses = {
         **default_responses(),
-        "wit_list_work_item_revisions": [_revisions_for(item["id"]) for item in WORK_ITEMS],
+        "wit_work_item:list_revisions": [_revisions_for(item["id"]) for item in WORK_ITEMS],
     }
     resolved = resolve_config(demo_config_document())
-    client = AdoMcpClient(transport=transport(responses, tools=tools))
+    override = (
+        {"wit_work_item": ("get", "get_batch", "list_for_iteration")} if without_revisions else None
+    )
+    client = AdoMcpClient(transport=transport(responses, tools=tools, actions_override=override))
     client.handshake()
     store = RunStore(tmp_path / "runs")
     outcome = execute_status(
@@ -138,7 +141,8 @@ def test_planning_findings_are_included_and_come_from_enabled_rules_only(outcome
 
 
 def test_v01_regression_still_works_without_history(tmp_path):
-    outcome, _ = _run(tmp_path, tools=READ_TOOLS, include_history=True)
+    """Catálogo sem a ação de revisões: a v0.1 continua igual, o histórico fica indisponível."""
+    outcome, _ = _run(tmp_path, tools=READ_TOOLS, include_history=True, without_revisions=True)
     block = outcome.report.history
     assert block is not None and not block.available
     assert any("indisponível" in reason for reason in block.reasons)

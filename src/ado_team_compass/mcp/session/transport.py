@@ -26,22 +26,41 @@ __all__ = [
 
 
 class ToolDescriptor(StrictModel):
-    """Ferramenta anunciada pelo servidor conectado, com hash do schema de entrada."""
+    """Ferramenta anunciada pelo servidor conectado, com hash do schema de entrada.
+
+    O servidor oficial consolida operações em uma ferramenta só, selecionadas por um
+    parâmetro de ação. `actions` traz os valores aceitos por esse parâmetro, e é por eles que
+    a allowlist autoriza leitura sem autorizar escrita na mesma ferramenta.
+    """
 
     name: str
     title: str | None = None
     description: str | None = None
     input_schema_hash: str
     input_properties: tuple[str, ...] = ()
+    action_parameter: str | None = None
+    actions: tuple[str, ...] = ()
+
+    def accepts(self, action: str | None) -> bool:
+        """Indica se a ferramenta aceita a ação pedida."""
+        if action is None:
+            return not self.actions
+        return action in self.actions
 
 
 class ToolCallResult(StrictModel):
-    """Resultado estruturado de uma chamada de ferramenta."""
+    """Resultado estruturado de uma chamada de ferramenta.
+
+    `marked_untrusted` registra que o servidor oficial delimitou o conteúdo como não confiável.
+    O produto já trata todo conteúdo vindo do Azure DevOps como dado, nunca como instrução;
+    o campo existe para que isso fique auditável na execução.
+    """
 
     tool: str
     payload: Any = None
     is_error: bool = False
     error_text: str | None = None
+    marked_untrusted: bool = False
 
 
 def schema_hash(schema: Mapping[str, Any] | None) -> str:
@@ -105,6 +124,11 @@ class FixtureTransport:
 
     def call_tool(self, name: str, arguments: Mapping[str, Any]) -> ToolCallResult:
         self.calls.append((name, dict(arguments)))
+        action = arguments.get("action")
+        key = f"{name}:{action}" if isinstance(action, str) else name
+        if key not in self.responses and name in self.responses:
+            key = name
+        name = key
         if name not in self.responses:
             return ToolCallResult(
                 tool=name, is_error=True, error_text=f"tool {name} not found in fixture"

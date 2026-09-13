@@ -81,7 +81,8 @@ def collect_history(
         try:
             payload = client.call(
                 Operation.LIST_WORK_ITEM_REVISIONS,
-                {"project": team.project_id, "id": item_id},
+                # A ação de revisões exige `workItemId`; `id` é o parâmetro de outra ação.
+                {"project": team.project_id, "workItemId": item_id},
             )
         except CapabilityUnavailable as error:
             return HistorySet(

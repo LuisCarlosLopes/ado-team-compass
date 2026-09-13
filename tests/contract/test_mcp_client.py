@@ -21,38 +21,58 @@ from ado_team_compass.errors import (
 from ado_team_compass.mcp.session import FixtureTransport, ToolDescriptor, catalog_hash
 from ado_team_compass.mcp.session.transport import ToolCallResult, schema_hash
 
-READ_TOOLS = (
-    "core_list_projects",
-    "core_list_project_teams",
-    "work_get_team_settings",
-    "work_list_team_iterations",
-    "work_get_team_capacity",
-    "work_get_iteration_capacities",
-    "wit_list_work_items_for_iteration",
-    "wit_get_work_items_batch",
-    "wit_get_work_item_type",
-)
-MIXED_WRITE_TOOLS = (
-    "wit_update_work_item",
-    "work_backlog_reorder_items",
-    "repo_create_pull_request",
-)
+#: Catálogo espelhando o servidor oficial 2.10.0: ferramentas consolidadas por ação.
+CATALOG: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "core_list_projects": ((), ("stateFilter", "top", "continuationToken")),
+    "core_list_project_teams": ((), ("project", "top")),
+    "work": (
+        (
+            "list_iterations",
+            "list_team_iterations",
+            "get_team_settings",
+            "get_team_capacity",
+            "get_iteration_capacities",
+        ),
+        ("action", "project", "team", "iterationId"),
+    ),
+    "wit_work_item": (
+        ("get", "get_batch", "list_revisions", "list_for_iteration", "get_type"),
+        ("action", "project", "ids", "workItemId", "team", "iterationId"),
+    ),
+    "wit_query": (("get", "get_results", "wiql"), ("action", "project", "id", "wiql")),
+    # Ferramenta mista: `list` é leitura e `reorder` é escrita na mesma ferramenta.
+    "wit_backlog": (("list", "list_work_items", "reorder"), ("action", "project", "team")),
+}
+READ_TOOLS = tuple(CATALOG)
+MIXED_WRITE_TOOLS = ("wit_work_item_write", "work_capacity_write", "repo_create_branch")
 
 
-def _tool(name: str, properties: tuple[str, ...] = ("project",)) -> ToolDescriptor:
+def _tool(
+    name: str,
+    properties: tuple[str, ...] | None = None,
+    actions: tuple[str, ...] | None = None,
+) -> ToolDescriptor:
+    declared_actions, declared_properties = CATALOG.get(name, ((), ("project",)))
+    resolved_actions = declared_actions if actions is None else actions
+    resolved_properties = declared_properties if properties is None else properties
+    schema: dict[str, object] = {
+        "properties": {item: {"type": "string"} for item in resolved_properties}
+    }
     return ToolDescriptor(
         name=name,
-        input_schema_hash=schema_hash(
-            {"properties": {name: {"type": "string"} for name in properties}}
-        ),
-        input_properties=properties,
+        input_schema_hash=schema_hash(schema),
+        input_properties=resolved_properties,
+        action_parameter="action" if resolved_actions else None,
+        actions=resolved_actions,
     )
 
 
 def _transport(
     names: tuple[str, ...] = READ_TOOLS + MIXED_WRITE_TOOLS, **responses: object
 ) -> FixtureTransport:
-    return FixtureTransport(tools=tuple(_tool(name) for name in names), responses=dict(responses))
+    """Respostas são chaveadas por ferramenta; use `__` para separar a ação (`work__capacity`)."""
+    keyed = {name.replace("__", ":"): value for name, value in responses.items()}
+    return FixtureTransport(tools=tuple(_tool(name) for name in names), responses=keyed)
 
 
 def _client(transport: FixtureTransport, **kwargs) -> AdoMcpClient:
@@ -78,25 +98,54 @@ def test_handshake_resolves_read_operations_and_records_the_catalog():
     assert catalog.channel.startswith("fixture://")
 
 
-def test_write_tools_in_the_catalog_are_reported_and_never_resolved():
+def test_write_tools_and_mixed_tools_are_reported_and_never_resolved():
     catalog = _client(_transport()).handshake()
-    assert set(catalog.rejected_write_tools) == set(MIXED_WRITE_TOOLS)
+    # `wit_backlog` é mista: entra na lista por causa da ação de escrita `reorder`.
+    assert set(catalog.rejected_write_tools) == {*MIXED_WRITE_TOOLS, "wit_backlog"}
     resolved_tools = {resolved.tool for resolved in catalog.resolved.values()}
+    assert "wit_backlog" not in resolved_tools
     assert not any(is_write_like(tool) for tool in resolved_tools)
+    assert not any(
+        resolved.action and is_write_like(resolved.action) for resolved in catalog.resolved.values()
+    )
 
 
-def test_history_operations_are_unavailable_when_the_catalog_lacks_them():
-    catalog = _client(_transport()).handshake()
+def test_read_actions_of_a_mixed_tool_are_never_called_for_write():
+    """Autorizar leitura em ferramenta mista nunca autoriza a ação de escrita dela."""
+    from ado_team_compass.adapters.ado_mcp.allowlist import ToolAction
+
+    with pytest.raises(ValueError, match="semântica de escrita"):
+        ToolAction("wit_backlog", "reorder")
+
+
+def test_history_operation_is_unavailable_when_the_action_is_not_announced():
+    """A ferramenta de itens existe, mas o catálogo não anuncia a ação de revisões."""
+    tools = tuple(_tool(name) for name in READ_TOOLS)
+    reduced = tuple(
+        _tool("wit_work_item", actions=("get", "get_batch", "list_for_iteration"))
+        if tool.name == "wit_work_item"
+        else tool
+        for tool in tools
+    )
+    catalog = _client(FixtureTransport(tools=reduced)).handshake()
     assert catalog.operation(Operation.LIST_WORK_ITEM_REVISIONS) is None
-    assert "candidatos tentados" in (catalog.reason_for(Operation.LIST_WORK_ITEM_REVISIONS) or "")
+    reason = catalog.reason_for(Operation.LIST_WORK_ITEM_REVISIONS) or ""
+    assert "não aceita a ação 'list_revisions'" in reason
+    # A leitura de itens continua disponível na mesma ferramenta.
+    assert catalog.operation(Operation.GET_WORK_ITEMS_BATCH) is not None
 
 
 # V33 — ferramenta renomeada.
 def test_v33_renamed_tool_is_resolved_from_the_alternate_candidate():
-    transport = _transport(names=("work_list_iterations",))
+    """Nome antigo, de versões anteriores do servidor, resolve como candidato não verificado."""
+    transport = _transport(names=("work_list_team_iterations",))
     catalog = _client(transport).handshake()
     resolved = catalog.operation(Operation.LIST_ITERATIONS)
-    assert resolved is not None and resolved.tool == "work_list_iterations"
+    assert resolved is not None
+    assert resolved.tool == "work_list_team_iterations"
+    assert resolved.action is None
+    assert not resolved.verified_name
+    assert catalog.unverified_operations == ("list_iterations",)
 
 
 # V33 — ferramenta ausente.
@@ -111,7 +160,7 @@ def test_v33_missing_tool_makes_the_capability_unavailable_without_fallback():
 
 # V33 — schema incompatível.
 def test_v33_schema_change_stops_the_collection_with_version_error():
-    transport = _transport(wit_get_work_items_batch={"value": []})
+    transport = _transport(wit_work_item__get_batch={"value": []})
     client = _client(transport)
     with pytest.raises(SchemaVersionError) as error:
         client.call(
@@ -122,7 +171,7 @@ def test_v33_schema_change_stops_the_collection_with_version_error():
 
 
 def test_matching_schema_hash_allows_the_call():
-    transport = _transport(wit_get_work_items_batch={"value": [{"id": 1}]})
+    transport = _transport(wit_work_item__get_batch={"value": [{"id": 1}]})
     client = _client(transport)
     resolved = client.handshake().operation(Operation.GET_WORK_ITEMS_BATCH)
     assert resolved is not None
@@ -136,7 +185,7 @@ def test_matching_schema_hash_allows_the_call():
 
 # V33 — ação de escrita dentro de ferramenta mista.
 def test_v33_write_action_argument_is_refused():
-    client = _client(_transport(wit_get_work_items_batch={"value": []}))
+    client = _client(_transport(wit_work_item__get_batch={"value": []}))
     with pytest.raises(AccessError) as error:
         client.call(Operation.GET_WORK_ITEMS_BATCH, {"ids": [1], "action": "update"})
     assert error.value.code == "E_MCP_ACAO_NAO_AUTORIZADA"
@@ -167,8 +216,8 @@ def test_v11_authentication_failure_is_actionable_and_not_retried():
 
 def test_v11_permission_failure_names_the_operation():
     transport = _transport(
-        work_get_team_capacity=ToolCallResult(
-            tool="work_get_team_capacity", is_error=True, error_text="403 Forbidden"
+        work__get_team_capacity=ToolCallResult(
+            tool="work", is_error=True, error_text="403 Forbidden"
         )
     )
     with pytest.raises(AccessError) as error:
@@ -235,7 +284,7 @@ def test_transport_exception_is_translated_without_leaking_internals():
 # -- V11: paginação ----------------------------------------------------------------
 def test_pagination_follows_the_cursor_until_the_last_page():
     transport = _transport(
-        wit_list_work_items_for_iteration=[
+        wit_work_item__list_for_iteration=[
             {"value": [{"id": 1}], "continuationToken": "c1"},
             {"value": [{"id": 2}]},
         ]
@@ -248,7 +297,7 @@ def test_pagination_follows_the_cursor_until_the_last_page():
 
 def test_v11_incomplete_intermediate_page_is_never_a_silent_zero():
     transport = _transport(
-        wit_list_work_items_for_iteration=[
+        wit_work_item__list_for_iteration=[
             {"value": [{"id": 1}], "continuationToken": "c1"},
             {"continuationToken": "c2"},
         ]
@@ -261,7 +310,7 @@ def test_v11_incomplete_intermediate_page_is_never_a_silent_zero():
 
 def test_repeated_cursor_is_detected():
     transport = _transport(
-        wit_list_work_items_for_iteration=[
+        wit_work_item__list_for_iteration=[
             {"value": [], "continuationToken": "c1"},
             {"value": [], "continuationToken": "c1"},
         ]
@@ -273,7 +322,7 @@ def test_repeated_cursor_is_detected():
 
 def test_page_limit_is_enforced():
     transport = _transport(
-        wit_list_work_items_for_iteration=[
+        wit_work_item__list_for_iteration=[
             {"value": [], "continuationToken": f"c{index}"} for index in range(4)
         ]
     )
@@ -295,12 +344,13 @@ def test_v33_offline_mode_never_touches_the_transport():
 
 
 def test_call_log_is_auditable_and_sanitized():
-    transport = _transport(wit_get_work_items_batch={"value": [{"id": 1}]})
+    transport = _transport(wit_work_item__get_batch={"value": [{"id": 1}]})
     client = _client(transport)
     client.call(Operation.GET_WORK_ITEMS_BATCH, {"ids": [1], "session_token": "segredo"})
     record = client.call_log[-1]
     assert record.operation == Operation.GET_WORK_ITEMS_BATCH.value
-    assert record.tool == "wit_get_work_items_batch"
+    assert record.tool == "wit_work_item"
+    assert record.arguments["action"] == "get_batch"
     assert record.arguments["session_token"] == "[redigido]"
     assert record.payload_hash.startswith("sha256:")
     assert record.error_code is None

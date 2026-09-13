@@ -133,8 +133,8 @@ def test_complete_run_when_every_item_has_remaining_work(tmp_path):
         **__import__(
             "ado_team_compass.demo.dataset", fromlist=["default_responses"]
         ).default_responses(),
-        "wit_get_work_items_batch": {"value": complete_items},
-        "work_get_team_capacity": {
+        "wit_work_item:get_batch": {"value": complete_items},
+        "work:get_team_capacity": {
             **__import__("ado_team_compass.demo.dataset", fromlist=["CAPACITY"]).CAPACITY,
             "teamDaysOff": [],
         },
@@ -231,7 +231,7 @@ def test_interrupted_write_does_not_replace_a_valid_run(tmp_path):
         **__import__(
             "ado_team_compass.demo.dataset", fromlist=["default_responses"]
         ).default_responses(),
-        "wit_get_work_items_batch": [CollectError("E_MCP_TIMEOUT", "timeout")] * 3,
+        "wit_work_item:get_batch": [CollectError("E_MCP_TIMEOUT", "timeout")] * 3,
     }
     resolved_config = resolve_config(demo_config_document())
     client = AdoMcpClient(transport=transport(broken))
@@ -261,8 +261,8 @@ def test_access_failure_abandons_the_run_without_a_manifest(tmp_path):
         **__import__(
             "ado_team_compass.demo.dataset", fromlist=["default_responses"]
         ).default_responses(),
-        "work_list_team_iterations": ToolCallResult(
-            tool="work_list_team_iterations", is_error=True, error_text="403 forbidden"
+        "work:list_team_iterations": ToolCallResult(
+            tool="work:list_team_iterations", is_error=True, error_text="403 forbidden"
         ),
     }
     resolved = resolve_config(demo_config_document())

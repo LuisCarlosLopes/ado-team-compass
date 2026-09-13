@@ -22,24 +22,32 @@ from ado_team_compass.errors import ConfigError, ExitCode
 from ado_team_compass.mcp.session import FixtureTransport, ToolDescriptor
 from ado_team_compass.mcp.session.transport import schema_hash
 
-TOOLS = (
-    "core_list_projects",
-    "core_list_project_teams",
-    "work_get_team_settings",
-    "work_list_team_iterations",
-    "wit_list_work_items_for_iteration",
-    "wit_get_work_items_batch",
-)
+TOOLS = ("core_list_projects", "core_list_project_teams", "work", "wit_work_item")
+
+_ACTIONS = {
+    "work": ("list_iterations", "list_team_iterations", "get_team_settings"),
+    "wit_work_item": ("get_batch", "list_for_iteration", "get_type"),
+}
 
 
 def _transport(responses: Mapping[str, object], names: tuple[str, ...] = TOOLS) -> FixtureTransport:
-    return FixtureTransport(
-        tools=tuple(
-            ToolDescriptor(name=name, input_schema_hash=schema_hash({"properties": {}}))
-            for name in names
-        ),
-        responses=responses,
-    )
+    descriptors = []
+    for name in names:
+        actions = _ACTIONS.get(name, ())
+        properties: dict[str, object] = {"project": {"type": "string"}}
+        if actions:
+            properties["action"] = {"enum": list(actions)}
+        schema = {"properties": properties}
+        descriptors.append(
+            ToolDescriptor(
+                name=name,
+                input_schema_hash=schema_hash(schema),
+                input_properties=tuple(sorted(properties)),
+                action_parameter="action" if actions else None,
+                actions=actions,
+            )
+        )
+    return FixtureTransport(tools=tuple(descriptors), responses=responses)
 
 
 def _default_responses() -> dict[str, object]:
@@ -48,11 +56,20 @@ def _default_responses() -> dict[str, object]:
         "core_list_project_teams": {
             "value": [{"id": "team-1", "name": "Core"}, {"id": "team-2", "name": "Suporte"}]
         },
-        "work_get_team_settings": [
+        "wit_work_item:get_type": {
+            "name": "Task",
+            "states": [
+                {"name": "New", "category": "Proposed"},
+                {"name": "Active", "category": "InProgress"},
+                {"name": "Closed", "category": "Completed"},
+            ],
+            "fields": [{"referenceName": "Microsoft.VSTS.Scheduling.RemainingWork"}],
+        },
+        "work:get_team_settings": [
             {"teamFieldValues": [{"value": "Plataforma\\Core", "includeChildren": True}]},
             {"teamFieldValues": [{"value": "Plataforma\\Suporte", "includeChildren": False}]},
         ],
-        "work_list_team_iterations": [
+        "work:list_team_iterations": [
             {"value": [{"path": "Plataforma\\Sprint 42"}]},
             {"value": []},
         ],
@@ -84,8 +101,17 @@ def test_v13_homonymous_teams_are_disambiguated_by_project_and_id():
             {"value": [{"id": "team-1", "name": "Core"}]},
             {"value": [{"id": "team-9", "name": "Core"}]},
         ],
-        "work_get_team_settings": [{}, {}],
-        "work_list_team_iterations": [{"value": []}, {"value": []}],
+        "wit_work_item:get_type": {
+            "name": "Task",
+            "states": [
+                {"name": "New", "category": "Proposed"},
+                {"name": "Active", "category": "InProgress"},
+                {"name": "Closed", "category": "Completed"},
+            ],
+            "fields": [{"referenceName": "Microsoft.VSTS.Scheduling.RemainingWork"}],
+        },
+        "work:get_team_settings": [{}, {}],
+        "work:list_team_iterations": [{"value": []}, {"value": []}],
     }
     discovery = discover(_client(responses), organization="contoso")
     aliases = discovery.aliases()
@@ -103,7 +129,7 @@ def test_renaming_does_not_change_identity():
 # V10 — equipe sem iterações nem capacidade continua configurável.
 def test_v10_team_without_iterations_is_configurable_with_an_explicit_limitation():
     responses = _default_responses()
-    responses["work_list_team_iterations"] = [{"value": []}, {"value": []}]
+    responses["work:list_team_iterations"] = [{"value": []}, {"value": []}]
     discovery = discover(_client(responses), organization="contoso")
     assert discovery.teams[1].iterations == ()
     document = build_config_document(discovery)
@@ -132,7 +158,7 @@ def test_projects_operation_absent_stops_with_a_limitation_not_a_crash():
 
 def test_team_settings_without_areas_asks_for_explicit_configuration():
     responses = _default_responses()
-    responses["work_get_team_settings"] = [{}, {}]
+    responses["work:get_team_settings"] = [{}, {}]
     discovery = discover(_client(responses), organization="contoso")
     assert discovery.teams[0].area_paths == ()
     assert any("áreas da equipe não vieram" in note for note in discovery.teams[0].limitations)
@@ -140,7 +166,7 @@ def test_team_settings_without_areas_asks_for_explicit_configuration():
 
 def test_descendant_inclusion_unknown_is_reported_instead_of_assumed():
     responses = _default_responses()
-    responses["work_get_team_settings"] = [
+    responses["work:get_team_settings"] = [
         {"teamFieldValues": [{"value": "Plataforma\\Core"}]},
         {},
     ]

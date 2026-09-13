@@ -18,7 +18,63 @@ Não pressupor que o MCP disponível no chat seja automaticamente acessível a u
 
 GPT Actions acessa somente a API de relatórios do produto. O coletor desses relatórios também usa o MCP oficial; o gateway não implementa acesso próprio ao ADO. Autenticação da API de relatórios e autenticação MCP são fronteiras separadas.
 
-## Catálogo verificado e limites
+## Catálogo verificado em conexão real — 13/09/2026
+
+Handshake executado contra `@azure-devops/mcp@2.10.0` por stdio, organização `llopes`,
+autenticação PAT mantida pela configuração de MCP do host. Catálogo com **40 ferramentas**,
+hash `sha256:cf8ab09bf1e2bdd1d53a36db79acb736`. As 11 operações de leitura do produto foram
+resolvidas.
+
+| Operação lógica | Ferramenta : ação (verificada) |
+|---|---|
+| Projetos | `core_list_projects` |
+| Equipes | `core_list_project_teams` |
+| Configuração da equipe | `work` : `get_team_settings` |
+| Iterações | `work` : `list_team_iterations` |
+| Capacidade da equipe | `work` : `get_team_capacity` |
+| Capacidades da iteração | `work` : `get_iteration_capacities` |
+| Itens da iteração | `wit_work_item` : `list_for_iteration` |
+| Hidratação em lote | `wit_work_item` : `get_batch` |
+| Tipo de item | `wit_work_item` : `get_type` |
+| Revisões | `wit_work_item` : `list_revisions` |
+| Consulta salva | `wit_query` : `get_results` |
+
+### Comportamentos do servidor que mudaram a implementação
+
+1. **Ferramentas consolidadas por ação.** A autorização passou a ser por ferramenta **e**
+   ação. `wit_backlog` é mista (`list` e `list_work_items` são leitura, `reorder` é escrita) e
+   por isso nunca é resolvida: a allowlist recusa o par por verbo de escrita.
+2. **Envelope de conteúdo não confiável.** Cada bloco vem entre delimitadores
+   `<<hash>> [UNTRUSTED ...] <<hash>>`. O produto remove o envelope para ler os dados, registra
+   que ele existia e continua tratando todo conteúdo como dado, nunca como instrução.
+3. **Resposta em múltiplos blocos.** O contexto da chamada vem em um bloco de texto e os dados
+   em outro. Interpretar só o primeiro bloco devolvia o eco do contexto; hoje cada bloco é
+   desembrulhado separadamente.
+4. **Resposta sem dados estruturados é erro de coleta.** Um eco de contexto jamais vira
+   contagem zero: a operação falha com `E_MCP_RESPOSTA_NAO_ESTRUTURADA` e a execução fica parcial.
+5. **Hidratação exige `fields`.** Sem a lista explícita, o lote devolve um conjunto mínimo sem
+   trabalho restante. O produto pede os campos de sistema mais os configurados no perfil.
+6. **Identidade da pessoa em dois formatos.** A capacidade traz `id` (GUID), `uniqueName` e
+   `displayName`; o item traz `"Nome <conta>"`. A coleta reconcilia pelo índice construído a
+   partir da capacidade; sem correspondência, o achado é registrado em vez de duplicar a pessoa.
+7. **Revisões exigem `workItemId`.** O parâmetro `id` pertence a outra ação e é recusado.
+8. **Estados e campos vêm do processo.** `get_type` devolve estados com categoria e a lista de
+   campos; o setup usa isso para mapear `state_categories` e os campos de agendamento, em vez
+   de pedir mapeamento manual.
+9. **Configuração da equipe traz escopo e calendário.** `areaPaths`, `workingDays` (0 = domingo,
+   convertido para o padrão do Python) e `bugsBehavior` alimentam escopo, dias úteis e
+   tratamento de bugs.
+10. **Folga de equipe não é exposta.** A capacidade traz folgas pessoais; folgas de equipe não
+    vieram na resposta, então a fonte `team_days_off` fica parcial com motivo.
+
+### Reconciliação da primeira coleta real
+
+Projeto `demo-ado-plugin`, iteração `Sprint 2 Checkout`: 18 itens na iteração, 15 no nível de
+contabilização (3 pais excluídos), 12 abertos, 11 com trabalho restante somando **126 h**,
+1 item sem valor, 1 item impedido pela tag configurada. Uma consulta independente sobre as
+mesmas respostas reproduziu exatamente esses números, e o replay devolveu métricas idênticas.
+
+## Catálogo documentado anteriormente e limites
 
 Referência documental consultada: commit `9a81b90b67623ebc68c25b281d7fbf4f6e791eb0` do repositório oficial. [Catálogo nessa revisão](https://github.com/microsoft/azure-devops-mcp/blob/9a81b90b67623ebc68c25b281d7fbf4f6e791eb0/docs/TOOLSET.md). Isso comprova documentação do código local, não habilitação de ferramentas na organização do usuário nem paridade com o remoto.
 

@@ -6,22 +6,16 @@ from pathlib import Path
 
 from ado_team_compass.cli import main
 from ado_team_compass.config import load_config
+from ado_team_compass.demo.dataset import CATALOG
+from ado_team_compass.demo.dataset import transport as synthetic_transport
 from ado_team_compass.diagnostics import diagnose
 from ado_team_compass.errors import ExitCode
-from ado_team_compass.mcp.session import FixtureTransport, ToolDescriptor
-from ado_team_compass.mcp.session.transport import ToolCallResult, schema_hash
+from ado_team_compass.mcp.session import FixtureTransport
+from ado_team_compass.mcp.session.transport import ToolCallResult
 
 EXAMPLE = Path("examples/config/config.yaml")
 
-FULL_CATALOG = (
-    "core_list_project_teams",
-    "work_list_team_iterations",
-    "work_get_team_capacity",
-    "work_get_iteration_capacities",
-    "wit_list_work_items_for_iteration",
-    "wit_get_work_items_batch",
-    "wit_update_work_item",
-)
+FULL_CATALOG = tuple(CATALOG)
 
 
 def _factory(names=FULL_CATALOG, error: Exception | None = None):
@@ -29,12 +23,7 @@ def _factory(names=FULL_CATALOG, error: Exception | None = None):
     def factory(_connection):
         if error is not None:
             raise error
-        yield FixtureTransport(
-            tools=tuple(
-                ToolDescriptor(name=name, input_schema_hash=schema_hash({"properties": {}}))
-                for name in names
-            )
-        )
+        yield synthetic_transport(tools=tuple(names))
 
     return factory
 
@@ -51,7 +40,9 @@ def test_doctor_reports_environment_configuration_and_catalog():
     assert connection["status"] == "conectado"
     assert connection["endpoint"] == "https://mcp.azuredevops.com/contoso/mcp"
     assert connection["catalog_hash"].startswith("sha256:")
-    assert "wit_update_work_item" in connection["rejected_write_tools"]
+    assert "wit_work_item_write" in connection["rejected_write_tools"]
+    # Ferramenta mista aparece como recusada por causa da ação de escrita.
+    assert "wit_backlog" in connection["rejected_write_tools"]
     assert connection["missing_required_operations"] == []
 
 

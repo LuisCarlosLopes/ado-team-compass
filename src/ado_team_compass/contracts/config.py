@@ -99,9 +99,20 @@ class McpServerConfig(StrictModel):
     expected_version: str | None = None
     expected_catalog_hash: str | None = None
     session_ref: str | None = None
+    env_ref: str | None = Field(
+        default=None,
+        description=(
+            "Referência 'caminho#servidor' a uma configuração de MCP do host, de onde o "
+            "ambiente do processo (incluindo a credencial da sessão) é lido na conexão. "
+            "Apenas a referência é guardada: nenhum segredo entra nesta configuração."
+        ),
+    )
 
     @model_validator(mode="after")
     def _validate_transport(self) -> Self:
+        if self.env_ref is not None and "#" not in self.env_ref:
+            msg = "env_ref usa o formato 'caminho/para/mcp.json#nome-do-servidor'."
+            raise ValueError(msg)
         if self.transport is McpTransport.STDIO and not self.command:
             msg = "Transporte stdio exige o comando do servidor MCP oficial."
             raise ValueError(msg)

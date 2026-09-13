@@ -72,8 +72,15 @@ def _history(*revisions: ItemRevision, usable: bool = True) -> HistorySet:
 
 
 # -- T17: coleta ---------------------------------------------------------------------
-def test_v33_history_is_unavailable_when_the_catalog_lacks_the_tool():
-    client = AdoMcpClient(transport=transport(default_responses(), tools=READ_TOOLS))
+def test_v33_history_is_unavailable_when_the_catalog_lacks_the_action():
+    """A ferramenta de itens existe, mas o catálogo não anuncia a ação de revisões."""
+    client = AdoMcpClient(
+        transport=transport(
+            default_responses(),
+            tools=READ_TOOLS,
+            actions_override={"wit_work_item": ("get", "get_batch", "list_for_iteration")},
+        )
+    )
     client.handshake()
     history = collect_history(client, demo_team(), [101, 102], collected_at=END)
     assert history.revisions == ()
@@ -82,10 +89,10 @@ def test_v33_history_is_unavailable_when_the_catalog_lacks_the_tool():
 
 
 def test_history_collection_normalizes_revisions_and_declares_limits():
-    tools = (*READ_TOOLS, "wit_list_work_item_revisions")
+    tools = READ_TOOLS
     responses = {
         **default_responses(),
-        "wit_list_work_item_revisions": [
+        "wit_work_item:list_revisions": [
             {
                 "value": [
                     {
@@ -118,10 +125,10 @@ def test_history_collection_normalizes_revisions_and_declares_limits():
 
 
 def test_history_without_revisions_for_one_item_is_not_usable():
-    tools = (*READ_TOOLS, "wit_list_work_item_revisions")
+    tools = READ_TOOLS
     responses = {
         **default_responses(),
-        "wit_list_work_item_revisions": [{"value": []}, {"value": []}],
+        "wit_work_item:list_revisions": [{"value": []}, {"value": []}],
     }
     client = AdoMcpClient(transport=transport(responses, tools=tools))
     client.handshake()

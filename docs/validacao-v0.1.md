@@ -46,15 +46,29 @@ executor de referência é o runner do CI (`ubuntu-latest`) e a máquina de dese
 registrada na execução. O tempo do servidor MCP oficial é medido à parte e não entra nesta
 meta.
 
+## Conexão real executada — 13/09/2026
+
+Handshake, descoberta, coleta, histórico, relatório, HTML, evidência e replay foram executados
+contra a organização `llopes`, projeto `demo-ado-plugin`, pelo servidor oficial
+`@azure-devops/mcp@2.10.0` em stdio. O catálogo, os pares ferramenta/ação verificados e os
+comportamentos do servidor que mudaram a implementação estão em
+[contrato de acesso](ado-mcp-contract.md).
+
+Reconciliação da primeira coleta: uma consulta independente sobre as mesmas respostas
+reproduziu exatamente 15 itens contabilizados, 12 abertos, 11 com trabalho restante somando
+126 h e 1 item impedido. O `replay` devolveu `identical: true` e a verificação de hashes não
+apontou divergência. Nenhum PAT, e-mail ou nome apareceu nos artefatos: a identidade gravada é
+o ID opaco da fonte.
+
 ## Pendências que impedem declarar a v0.1 validada
 
-1. Handshake real com o servidor MCP remoto oficial: os nomes de ferramenta usados vêm da
-   documentação consultada e permanecem **não verificados** até a primeira conexão (T03/T04).
+1. Piloto com três equipes de perfis distintos: a conexão real cobriu uma equipe com
+   capacidade em horas; falta equipe sem horas e equipe de fluxo contínuo (T16).
 2. Instalação em perfil limpo nos três hosts, incluindo atualização e remoção (T15/T16).
 3. Piloto com três equipes de perfis distintos, com reconciliação de uma amostra fixa de 20
    itens por equipe (T16).
-4. Formatos reais de resposta do MCP para capacidade, folgas de equipe, iterações e revisões:
-   a normalização é defensiva, mas só a conexão real confirma os campos.
+4. Folgas de equipe: o servidor não as expõe na capacidade, então a fonte `team_days_off`
+   permanece parcial. Confirmar se outra ação do catálogo as fornece.
 5. Modo não interativo do MCP oficial para a coleta agendada (T23) e implantação do gateway
    com provedor OAuth corporativo e teste com GPT Actions (T28).
 6. Calibração do forecast: ele permanece experimental até ter cobertura empírica medida sobre

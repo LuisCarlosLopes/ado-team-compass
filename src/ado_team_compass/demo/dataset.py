@@ -19,17 +19,42 @@ TEAM_ID = "team-demo"
 ITERATION_PATH = "Demo\\Sprint 42"
 ITERATION_ID = "iter-42"
 
-READ_TOOLS = (
-    "core_list_projects",
-    "core_list_project_teams",
-    "work_get_team_settings",
-    "work_list_team_iterations",
-    "work_get_team_capacity",
-    "work_get_iteration_capacities",
-    "wit_list_work_items_for_iteration",
-    "wit_get_work_items_batch",
-    "wit_get_work_item_type",
-)
+#: Catálogo sintético espelhando o servidor oficial 2.10.0: ferramentas consolidadas por
+#: ação, incluindo uma ferramenta mista (leitura e reordenação) e ferramentas de escrita.
+CATALOG: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    # ferramenta: (ações anunciadas, propriedades do schema)
+    "core_list_projects": ((), ("stateFilter", "top", "skip", "continuationToken")),
+    "core_list_project_teams": ((), ("project", "mine", "top", "skip")),
+    "work": (
+        (
+            "list_iterations",
+            "list_team_iterations",
+            "get_team_settings",
+            "get_team_capacity",
+            "get_iteration_capacities",
+        ),
+        ("action", "project", "team", "iterationId", "timeframe", "depth"),
+    ),
+    "wit_work_item": (
+        (
+            "get",
+            "get_batch",
+            "list_comments",
+            "my",
+            "list_revisions",
+            "list_for_iteration",
+            "get_type",
+        ),
+        ("action", "project", "id", "ids", "workItemId", "fields", "team", "iterationId"),
+    ),
+    "wit_query": (("get", "get_results", "wiql"), ("action", "project", "id", "wiql", "top")),
+    # Ferramenta mista: listar é leitura, reordenar é escrita. A allowlist precisa separar.
+    "wit_backlog": (("list", "list_work_items", "reorder"), ("action", "project", "team")),
+    "wit_work_item_write": ((), ("project", "id")),
+    "work_capacity_write": ((), ("project", "team", "iterationId")),
+}
+
+READ_TOOLS = tuple(CATALOG)
 
 PERSON_ANA = "person-ana"
 PERSON_BRUNO = "person-bruno"
@@ -119,37 +144,72 @@ ITERATIONS: dict[str, Any] = {
 }
 
 
+#: Definição de tipo espelhando o formato real: estados com categoria e campos do processo.
+WORK_ITEM_TYPE: dict[str, Any] = {
+    "name": "Task",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Task",
+    "states": [
+        {"name": "New", "category": "Proposed"},
+        {"name": "Committed", "category": "InProgress"},
+        {"name": "Done", "category": "Completed"},
+        {"name": "Removed", "category": "Removed"},
+    ],
+    "fields": [
+        {"referenceName": "Microsoft.VSTS.Scheduling.RemainingWork"},
+        {"referenceName": "Microsoft.VSTS.Scheduling.OriginalEstimate"},
+        {"referenceName": "Microsoft.VSTS.Scheduling.CompletedWork"},
+    ],
+}
+
+
 def default_responses() -> dict[str, Any]:
-    """Respostas completas da organização sintética."""
+    """Respostas completas da organização sintética, chaveadas por ferramenta e ação."""
     return {
         "core_list_projects": {"value": [{"id": PROJECT_ID, "name": "Demo"}]},
         "core_list_project_teams": {"value": [{"id": TEAM_ID, "name": "Core"}]},
-        "work_get_team_settings": {
+        "work:get_team_settings": {
             "teamFieldValues": [{"value": "Demo\\Core", "includeChildren": True}]
         },
-        "work_list_team_iterations": ITERATIONS,
-        "work_get_team_capacity": CAPACITY,
-        "wit_list_work_items_for_iteration": {
+        "work:list_team_iterations": ITERATIONS,
+        "work:get_team_capacity": CAPACITY,
+        "wit_work_item:list_for_iteration": {
             "workItemRelations": [{"target": {"id": item["id"]}} for item in WORK_ITEMS]
         },
-        "wit_get_work_items_batch": {"value": list(WORK_ITEMS)},
+        "wit_work_item:get_batch": {"value": list(WORK_ITEMS)},
+        "wit_work_item:get_type": WORK_ITEM_TYPE,
     }
 
 
 def transport(
-    responses: Mapping[str, Any] | None = None, tools: tuple[str, ...] = READ_TOOLS
+    responses: Mapping[str, Any] | None = None,
+    tools: tuple[str, ...] = READ_TOOLS,
+    actions_override: Mapping[str, tuple[str, ...]] | None = None,
 ) -> FixtureTransport:
-    """Transporte de fixture com o catálogo e as respostas sintéticas."""
-    return FixtureTransport(
-        tools=tuple(
+    """Transporte de fixture com o catálogo e as respostas sintéticas.
+
+    `actions_override` reduz as ações anunciadas por uma ferramenta consolidada, para exercitar
+    catálogo parcial sem remover a ferramenta inteira.
+    """
+    overrides = dict(actions_override or {})
+    descriptors = []
+    for name in tools:
+        actions, properties = CATALOG.get(name, ((), ("project",)))
+        if name in overrides:
+            actions = overrides[name]
+        schema: dict[str, Any] = {"properties": {item: {"type": "string"} for item in properties}}
+        if actions:
+            schema["properties"]["action"] = {"type": "string", "enum": list(actions)}
+        descriptors.append(
             ToolDescriptor(
                 name=name,
-                input_schema_hash=schema_hash({"properties": {"project": {"type": "string"}}}),
-                input_properties=("project",),
+                input_schema_hash=schema_hash(schema),
+                input_properties=tuple(sorted(schema["properties"])),
+                action_parameter="action" if actions else None,
+                actions=actions,
             )
-            for name in tools
-        ),
-        responses=dict(responses or default_responses()),
+        )
+    return FixtureTransport(
+        tools=tuple(descriptors), responses=dict(responses or default_responses())
     )
 
 

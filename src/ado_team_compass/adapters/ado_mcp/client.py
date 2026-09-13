@@ -114,8 +114,13 @@ class AdoMcpClient:
         *,
         expected_schema_hash: str | None = None,
         page: int = 1,
+        expect_structured: bool = True,
     ) -> Any:
-        """Executa uma operação de leitura resolvida no catálogo conectado."""
+        """Executa uma operação de leitura resolvida no catálogo conectado.
+
+        Com `expect_structured`, uma resposta sem dados estruturados é erro de coleta: o
+        servidor pode devolver apenas o eco do contexto, e isso nunca pode virar contagem zero.
+        """
         self._require_online(operation.value)
         arguments = dict(arguments or {})
         spec = self.allowlist.get(operation)
@@ -144,13 +149,35 @@ class AdoMcpClient:
                     "ou CLI do Azure DevOps é usada como alternativa."
                 ),
             )
-        if is_write_like(resolved.tool):
+        if is_write_like(resolved.tool) or (
+            resolved.action is not None and is_write_like(resolved.action)
+        ):
             raise AccessError(
                 "E_MCP_ACAO_NAO_AUTORIZADA",
-                f"A ferramenta {resolved.tool!r} tem semântica de escrita e foi recusada.",
-                detail={"operation": operation.value, "tool": resolved.tool},
+                f"O par {resolved.label!r} tem semântica de escrita e foi recusado.",
+                detail={
+                    "operation": operation.value,
+                    "tool": resolved.tool,
+                    "action": resolved.action,
+                },
                 remediation="Somente leitura é permitida nesta versão.",
             )
+        if resolved.action is not None:
+            parameter = resolved.action_parameter or "action"
+            requested = arguments.get(parameter)
+            if requested is not None and requested != resolved.action:
+                raise AccessError(
+                    "E_MCP_ACAO_NAO_AUTORIZADA",
+                    f"A ação {requested!r} não é a autorizada para {operation.value!r}.",
+                    detail={
+                        "operation": operation.value,
+                        "tool": resolved.tool,
+                        "authorized_action": resolved.action,
+                        "requested_action": requested,
+                    },
+                    remediation="Cada operação usa somente a ação declarada na allowlist.",
+                )
+            arguments[parameter] = resolved.action
         if expected_schema_hash is not None and expected_schema_hash != resolved.input_schema_hash:
             raise SchemaVersionError(
                 "E_MCP_SCHEMA_INCOMPATIVEL",
@@ -163,7 +190,22 @@ class AdoMcpClient:
                 remediation="Revalide o catálogo e atualize o mapeamento antes de coletar.",
             )
 
-        return self._call_with_retry(operation, resolved.tool, arguments, page=page)
+        payload = self._call_with_retry(operation, resolved.tool, arguments, page=page)
+        if expect_structured and isinstance(payload, str):
+            raise CollectError(
+                "E_MCP_RESPOSTA_NAO_ESTRUTURADA",
+                f"A resposta de {operation.value!r} não trouxe dados estruturados.",
+                detail={
+                    "operation": operation.value,
+                    "tool": resolved.label,
+                    "excerpt": payload[:160],
+                },
+                remediation=(
+                    "A coleta fica parcial em vez de contar zero; verifique escopo, permissão "
+                    "e versão do servidor MCP oficial."
+                ),
+            )
+        return payload
 
     def paginate(
         self,

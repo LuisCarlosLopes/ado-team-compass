@@ -52,7 +52,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T03 — Implementar cliente do MCP oficial e sessão
 
-- Status: CONCLUIDA (12/09/2026) — transporte remoto oficial como padrão; handshake real ainda não executado contra organização
+- Status: CONCLUIDA E VERIFICADA (13/09/2026) — handshake real contra `@azure-devops/mcp@2.10.0`, organização `llopes`, 40 ferramentas, catálogo `sha256:cf8ab09b…`; as 11 operações de leitura resolvem
 - Release/Fase: v0.1 / F1
 - Objetivo: conectar ao MCP oficial e coletar somente por ferramentas/ações de leitura autorizadas.
 - Base no IPD: 4.1.1, 4.4 e 5.
@@ -68,7 +68,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T04 — Entregar setup por perfil de equipe
 
-- Status: CONCLUIDA (12/09/2026) — descoberta validada por fixture; cobertura real por confirmar no primeiro handshake
+- Status: CONCLUIDA E VERIFICADA (13/09/2026) — descoberta real de 4 projetos/equipes, com estados, categorias, campos, áreas, dias úteis e tratamento de bug vindos do processo
 - Release/Fase: v0.1 / F1
 - Objetivo: configurar várias equipes sem modificar código.
 - Base no IPD: 4.1.2 e 7.2.
@@ -84,7 +84,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T05 — Coletar e normalizar a situação atual
 
-- Status: CONCLUIDA (12/09/2026) — validada com fixture sintética; formatos reais de resposta a confirmar no primeiro handshake
+- Status: CONCLUIDA E VERIFICADA (13/09/2026) — coleta real em `demo-ado-plugin`; totais reconciliados por consulta independente (126 h, 15 itens no nível contabilizado)
 - Release/Fase: v0.1 / F1
 - Objetivo: produzir fatos completos dentro do escopo selecionado.
 - Base no IPD: 4.1.3, 4.1.4 e 4.2.
@@ -325,7 +325,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T17 — Adicionar coleta histórica consistente
 
-- Status: CONCLUIDA (13/09/2026) — coleta por revisões implementada e gatilhada por capacidade; cobertura real depende do catálogo conectado
+- Status: CONCLUIDA E VERIFICADA (13/09/2026) — revisões reais coletadas por `wit_work_item:list_revisions`; cobertura por item confirmada na organização de teste
 - Release/Fase: v0.2 / F5
 - Objetivo: obter fatos históricos com corte e granularidade explícitos.
 - Base no IPD: 4.1.5 e 4.4.

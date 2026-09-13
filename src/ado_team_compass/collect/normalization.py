@@ -23,6 +23,7 @@ from ado_team_compass.contracts.facts import (
 )
 
 __all__ = [
+    "IdentityIndex",
     "NormalizedCapacity",
     "NormalizedItem",
     "entries",
@@ -40,7 +41,15 @@ def entries(payload: Any, *keys: str) -> list[Mapping[str, Any]]:
     if payload is None:
         return []
     if isinstance(payload, Mapping):
-        for key in (*keys, "value", "items", "workItems", "teamCapacities", "capacities"):
+        for key in (
+            *keys,
+            "value",
+            "items",
+            "workItems",
+            "teamMembers",
+            "teamCapacities",
+            "capacities",
+        ):
             nested = payload.get(key)
             if isinstance(nested, list):
                 return [entry for entry in nested if isinstance(entry, Mapping)]
@@ -102,6 +111,44 @@ def _day(value: Any) -> date | None:
     return moment.date() if moment else None
 
 
+class IdentityIndex:
+    """Resolve a identidade de uma pessoa para o ID estável da fonte.
+
+    O servidor devolve a pessoa como GUID na capacidade e como `"Nome <conta>"` nos itens.
+    Sem reconciliar os dois, a mesma pessoa apareceria duas vezes e a carga ficaria separada
+    da capacidade. O índice é construído a partir da capacidade, que é quem traz o ID.
+    """
+
+    __slots__ = ("_by_alias",)
+
+    def __init__(self) -> None:
+        self._by_alias: dict[str, str] = {}
+
+    def register(self, person_id: str, *aliases: str | None) -> None:
+        for alias in aliases:
+            if alias:
+                self._by_alias.setdefault(alias.strip().lower(), person_id)
+
+    def resolve(self, reference: str | None) -> tuple[str | None, bool]:
+        """Devolve o ID estável e se a identidade foi reconciliada."""
+        if reference is None:
+            return None, True
+        display, unique = split_identity(reference)
+        for candidate in (unique, display, reference):
+            if candidate and candidate.strip().lower() in self._by_alias:
+                return self._by_alias[candidate.strip().lower()], True
+        return reference, False
+
+
+def split_identity(reference: str) -> tuple[str | None, str | None]:
+    """Separa `"Nome <conta>"` em nome de exibição e conta única."""
+    text = reference.strip()
+    if text.endswith(">") and "<" in text:
+        display, _, unique = text.rpartition("<")
+        return display.strip() or None, unique[:-1].strip() or None
+    return text or None, None
+
+
 class NormalizedItem:
     """Item normalizado com os motivos de qualquer campo que não pôde ser usado."""
 
@@ -121,6 +168,7 @@ def normalize_work_item(
     team: TeamConfig,
     organization: str,
     provenance: Provenance,
+    identities: IdentityIndex | None = None,
 ) -> NormalizedItem | None:
     """Converte um item do MCP em fato, preservando ausências e unidades."""
     identifier = None
@@ -146,6 +194,16 @@ def normalize_work_item(
     if team.process.remaining_work_field and remaining is None:
         reasons.append(f"item {item_id}: sem valor em {team.process.remaining_work_field}")
 
+    assigned_reference = _text(entry, "System.AssignedTo", "assignedTo")
+    assigned_to = assigned_reference
+    if identities is not None:
+        assigned_to, reconciled = identities.resolve(assigned_reference)
+        if assigned_reference is not None and not reconciled:
+            reasons.append(
+                f"item {item_id}: responsável {assigned_reference!r} não corresponde a nenhuma "
+                "pessoa com capacidade conhecida"
+            )
+
     parent_raw = _decimal(fields.get("System.Parent") or entry.get("parentId"))
     blocked_tag = _text(entry, "System.Tags", "tags")
     blocked = None
@@ -165,7 +223,7 @@ def normalize_work_item(
         state=state or "desconhecido",
         state_category=category,
         title=_text(entry, "System.Title", "title"),
-        assigned_to=_text(entry, "System.AssignedTo", "assignedTo"),
+        assigned_to=assigned_to,
         area_path=_text(entry, "System.AreaPath", "areaPath"),
         iteration_path=_text(entry, "System.IterationPath", "iterationPath"),
         remaining_work=remaining,
@@ -206,7 +264,7 @@ def _quantity(fields: Mapping[str, Any], field_name: str | None, unit: str) -> Q
 class NormalizedCapacity:
     """Reservas, folgas pessoais e pessoas extraídas da capacidade da equipe."""
 
-    __slots__ = ("days_off", "people", "reasons", "reservations")
+    __slots__ = ("days_off", "identities", "people", "reasons", "reservations")
 
     def __init__(
         self,
@@ -215,11 +273,13 @@ class NormalizedCapacity:
         days_off: tuple[DayOff, ...],
         people: tuple[Person, ...],
         reasons: tuple[str, ...],
+        identities: IdentityIndex | None = None,
     ) -> None:
         self.reservations = reservations
         self.days_off = days_off
         self.people = people
         self.reasons = reasons
+        self.identities = identities or IdentityIndex()
 
 
 def normalize_capacity(payload: Any, *, team: TeamConfig) -> NormalizedCapacity:
@@ -229,19 +289,23 @@ def normalize_capacity(payload: Any, *, team: TeamConfig) -> NormalizedCapacity:
     people: list[Person] = []
     reasons: list[str] = []
     unit = team.allocation.unit
+    identities = IdentityIndex()
 
-    for entry in entries(payload, "teamCapacities", "capacities"):
+    for entry in entries(payload, "teamMembers", "teamCapacities", "capacities"):
         person_id = _person_id(entry)
         if person_id is None:
             reasons.append("uma capacidade veio sem identificação de pessoa e foi ignorada")
             continue
-        people.append(
-            Person(
-                id=person_id,
-                display_name=_person_name(entry),
-                teams=(team.team_id,),
-            )
+        member = entry.get("teamMember")
+        unique_name = member.get("uniqueName") if isinstance(member, Mapping) else None
+        display_name = _person_name(entry)
+        identities.register(
+            person_id,
+            unique_name if isinstance(unique_name, str) else None,
+            display_name,
+            f"{display_name} <{unique_name}>" if display_name and unique_name else None,
         )
+        people.append(Person(id=person_id, display_name=display_name, teams=(team.team_id,)))
         activities = entry.get("activities")
         activity_entries = activities if isinstance(activities, list) else []
         if not activity_entries:
@@ -266,6 +330,7 @@ def normalize_capacity(payload: Any, *, team: TeamConfig) -> NormalizedCapacity:
         days_off=tuple(days_off),
         people=tuple(people),
         reasons=tuple(dict.fromkeys(reasons)),
+        identities=identities,
     )
 
 
