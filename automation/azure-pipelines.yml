@@ -1,0 +1,55 @@
+# Template de pipeline para a coleta agendada do ADO Team Compass.
+# Estado: template entregável. Ativação, agendamento real e canal de notificação são
+# decisões de implantação; este arquivo não publica nada sozinho.
+#
+# Pré-condição: o agente precisa de uma sessão própria do servidor MCP oficial da Microsoft.
+# O produto não recebe PAT nem token do Azure DevOps: sem essa sessão, a coleta não roda.
+
+schedules:
+  - cron: "0 11 * * 1-5"      # 08:00 em America/Sao_Paulo
+    displayName: Coleta diária da situação atual
+    branches:
+      include: [main]
+    always: false
+
+trigger: none
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  ADO_TEAM_COMPASS_CONFIG: $(Build.SourcesDirectory)/.ado-team-compass/config.yaml
+  COMPASS_TEAM: ""            # alias da equipe; obrigatório quando há mais de uma
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: "3.12"
+
+  - script: |
+      set -euo pipefail
+      python -m pip install --upgrade pip
+      python -m pip install "ado-team-compass==$(COMPASS_VERSION)"
+    displayName: Instalar o motor com versão fixada
+
+  - script: |
+      set -euo pipefail
+      ado-team-compass doctor --non-interactive
+    displayName: Diagnóstico (falha aqui não gera relatório vazio)
+
+  - script: |
+      set -euo pipefail
+      ado-team-compass run-scheduled --team "$(COMPASS_TEAM)" --non-interactive
+    displayName: Coleta agendada idempotente
+    # A entrada é idempotente por chave: reexecutar o pipeline no mesmo dia não duplica
+    # resultado, e uma falha não substitui o último relatório válido.
+
+  - task: PublishPipelineArtifact@1
+    condition: succeededOrFailed()
+    inputs:
+      targetPath: .ado-team-compass/runs
+      artifact: ado-team-compass-runs
+    displayName: Publicar execuções como artefato privado do pipeline
+    # Artefato privado do pipeline. Não há URL pública estável nem publicação automática
+    # em serviço externo.

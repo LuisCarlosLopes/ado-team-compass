@@ -405,7 +405,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T23 — Implementar executor agendável via MCP oficial
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — idempotência, lock e templates prontos; modo não interativo do MCP oficial ainda não validado em ambiente real
 - Release/Fase: v0.3 / F6
 - Objetivo: executar coleta e relatório sem sessão interativa do assistente.
 - Base no IPD: 4.1.6 e 4.4.
@@ -413,15 +413,15 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T21; integração visual final depende de T22.
 - Entregável esperado: cliente MCP não interativo oficialmente suportado, chave de idempotência, lock e template de pipeline.
 - Check de conclusão:
-  - [ ] Modo não interativo do MCP oficial tem leitura validada no ambiente; se não suportado, coleta agendada é indisponível sem fallback direto (V33).
-  - [ ] V22 evita duplicação e preserva sucesso anterior quando nova execução falha.
-  - [ ] Artefato e logs ficam em destino privado configurado.
-  - [ ] Falta de credencial/configuração encerra com código estável, sem esperar diálogo.
+  - [~] A entrada agendada usa o mesmo cliente MCP oficial e falha com código estável quando a sessão não está disponível; validação do modo não interativo no ambiente real continua pendente (V33 coberto para ausência de fallback).
+  - [x] V22 evita duplicação e preserva sucesso anterior quando nova execução falha (`tests/integration/test_scheduled.py`).
+  - [x] Artefato e logs ficam em destino privado configurado (templates publicam artefato privado de pipeline; sem URL pública).
+  - [x] Falta de credencial/configuração encerra com código estável, sem esperar diálogo (3 para acesso, 2 para configuração).
 - Riscos ou atenções: implementação do template não ativa agenda nem publica relatório por conta própria.
 
 ### T24 — Validar operação, retenção e avisos
 
-- Status: PENDENTE
+- Status: PARCIAL (13/09/2026) — runbook e hook entregues; evidência de execução agendada real pendente
 - Release/Fase: v0.3 / F6
 - Objetivo: tornar a execução repetida previsível e recuperável.
 - Base no IPD: 3.2, 4.1.6 e 9.
@@ -429,10 +429,10 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 - Dependências: T22, T23.
 - Entregável esperado: runbook de operação, aviso local opcional e evidência de execução agendada.
 - Check de conclusão:
-  - [ ] DOD14 atendido e V22 exercitado em integração.
-  - [ ] Hook consulta apenas metadados locais e não dispara autenticação/rede.
-  - [ ] Runbook cobre expiração de credencial, retry, retenção, rollback e artefato parcial.
-  - [ ] Canal de notificação só é ativado com configuração e autorização, sem mensagens repetidas quando nada mudou.
+  - [x] V22 exercitado em integração; DOD14 atendido no que é verificável sem ambiente agendado real.
+  - [x] Hook consulta apenas metadados locais e não dispara autenticação/rede (lê o manifesto mais recente e imprime um aviso).
+  - [x] Runbook cobre expiração de credencial, retry, lock preso, retenção, rollback e artefato parcial (docs/runbook-operacao.md).
+  - [x] Canal de notificação só é ativado com configuração e autorização, sem mensagens repetidas quando nada mudou (a execução devolve template apenas em mudança de estado ou falha acionável; nada é enviado).
 - Riscos ou atenções: não confundir cronologia da agenda com calendário de trabalho ou fuso do time.
 
 ### T25 — Entregar forecast experimental com backtesting

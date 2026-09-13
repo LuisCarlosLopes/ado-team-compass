@@ -395,6 +395,60 @@ def _handle_evidence(args: argparse.Namespace) -> ExitCode:
     return ExitCode.OK
 
 
+def _handle_run_scheduled(args: argparse.Namespace) -> ExitCode:
+    """Execução agendada: idempotente por chave, com lock e sem interação."""
+    from ado_team_compass.adapters.ado_mcp import AdoMcpClient
+    from ado_team_compass.mcp.session.official import official_transport
+    from ado_team_compass.scheduled import run_scheduled
+
+    resolved = _require_config(args)
+    team = _select_team(resolved, args)
+    connection = next(
+        connection
+        for connection in resolved.config.connections
+        if connection.alias == team.connection
+    )
+    if args.offline:
+        raise ConfigError(
+            "E_AGENDAMENTO_OFFLINE",
+            "A execução agendada exige o servidor MCP oficial conectado.",
+            remediation="Remova --offline ou use 'render' sobre uma execução já coletada.",
+        )
+    factory = getattr(args, "_transport_factory", None) or official_transport
+    as_of = _resolve_as_of(args)
+    store = _store_for(resolved)
+    state_root = Path(resolved.config.output.directory).parent / "schedule"
+
+    with factory(connection) as transport:
+        client = AdoMcpClient(transport=transport)
+        client.handshake()
+        result = run_scheduled(
+            client,
+            team,
+            organization=connection.organization,
+            as_of=as_of,
+            store=store,
+            resolved=resolved,
+            state_root=state_root,
+            window=getattr(args, "period", None),
+            force=bool(getattr(args, "force", False)),
+            include_history=bool(getattr(args, "with_history", False)),
+        )
+
+    _emit(
+        {
+            "key": result.key.digest(),
+            "status": result.status,
+            "run_id": result.run_id,
+            "previous_run_id": result.previous_run_id,
+            "notification": result.notification,
+            "error": result.error.as_dict() if result.error else None,
+        },
+        args,
+    )
+    return result.exit_code
+
+
 def _handle_render(args: argparse.Namespace) -> ExitCode:
     """Gera o HTML operacional de uma execução persistida, sem nova leitura do MCP."""
     resolved = _require_config(args)
@@ -617,7 +671,7 @@ COMMANDS: tuple[_Command, ...] = (
     _Command("decisions", "Exporta e importa decisões humanas", "v0.1", _handle_decisions),
     _Command("history", "Métricas históricas de compromisso e fluxo", "v0.2", _handle_history),
     _Command("planning", "Achados de regras de planejamento", "v0.2", _handle_planning),
-    _Command("run-scheduled", "Execução agendada não interativa", "v0.3", None),
+    _Command("run-scheduled", "Execução agendada não interativa", "v0.3", _handle_run_scheduled),
     _Command("forecast", "Projeção experimental com premissas", "v0.4", None),
 )
 
@@ -629,6 +683,12 @@ def _add_common_options(parser: argparse.ArgumentParser) -> None:
         "--force", action="store_true", help="Autoriza sobrescrever a configuração existente"
     )
     parser.add_argument("--run", help="ID de uma execução persistida")
+    parser.add_argument(
+        "--with-history",
+        dest="with_history",
+        action="store_true",
+        help="Inclui coleta histórica quando o catálogo conectado suportar",
+    )
     parser.add_argument("--reference", help="Referência de evidência dentro da execução")
     parser.add_argument(
         "--import-file",

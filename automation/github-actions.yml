@@ -1,0 +1,43 @@
+# Template de workflow para a coleta agendada do ADO Team Compass.
+# Estado: template entregável; a ativação é decisão de implantação.
+#
+# O runner precisa de uma sessão própria do servidor MCP oficial da Microsoft. O produto não
+# recebe PAT nem token do Azure DevOps e não tem canal alternativo de acesso.
+
+name: Coleta agendada do ADO Team Compass
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 11 * * 1-5"    # 08:00 em America/Sao_Paulo
+
+permissions:
+  contents: read
+
+jobs:
+  coleta:
+    runs-on: ubuntu-latest
+    env:
+      ADO_TEAM_COMPASS_CONFIG: ${{ github.workspace }}/.ado-team-compass/config.yaml
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar o motor com versão fixada
+        run: python -m pip install "ado-team-compass==${{ vars.COMPASS_VERSION }}"
+
+      - name: Diagnóstico
+        run: ado-team-compass doctor --non-interactive
+
+      - name: Coleta agendada idempotente
+        run: ado-team-compass run-scheduled --team "${{ vars.COMPASS_TEAM }}" --non-interactive
+
+      - name: Publicar execuções como artefato privado
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ado-team-compass-runs
+          path: .ado-team-compass/runs
+          retention-days: 30

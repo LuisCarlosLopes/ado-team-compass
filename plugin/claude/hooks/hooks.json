@@ -1,0 +1,16 @@
+{
+  "description": "Aviso local opcional do ADO Team Compass. Somente leitura de metadados locais: não coleta, não autentica e não acessa o Azure DevOps.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/session_notice.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
