@@ -410,11 +410,11 @@ A primeira tarefa executável é T01. O plano autoriza a sequência técnica com
 | Confiança da classificação | Alta; escopo textual e estrutura nova conhecidos |
 | Rubrica de completude do planejamento | 90/100: escopo 20, arquitetura 15, alvos novos mapeados e ausência verificada 20, contratos 15, padrão de testes preexistente 0, decisões de construção 20 |
 | Limite da rubrica | Não mede probabilidade de sucesso nem validação do ADO real; aplicação adaptada a projeto novo |
-| Infraestrutura de testes | Ausente; criação explícita em T01 |
+| Infraestrutura de testes | Criada em T01; 434 testes determinísticos sem rede e sem credencial |
 | Áreas de criação propostas | 24; quantidade final de arquivos será definida dentro dessas áreas |
-| Tarefas | 28, todas pendentes; 19 compõem v0.1 (T01–T16, T22, T26–T27) |
+| Tarefas | 28: 21 concluídas, 6 parciais e 1 bloqueada (T16, piloto real) |
 | Migração de banco | Não; migrações futuras são de configuração/schema |
-| Estado de execução | Planejado, não implementado |
+| Estado de execução | Implementado e verificado localmente em 13/09/2026; sem conexão real ao Azure DevOps, sem instalação nos hosts e sem piloto (T16 bloqueada) |
 
 ## 11. Fontes técnicas e uso
 

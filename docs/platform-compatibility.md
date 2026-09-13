@@ -56,3 +56,20 @@ Usar fixture idêntica nos três hosts locais e na API. Comparar JSON de métric
 O suporte só passa a “testado” após evidência no host real. A publicação atual deste documento no GitHub não implementa nem certifica compatibilidade.
 
 A API HTTPS entre GPT e gateway consulta relatórios existentes e não é um canal alternativo para o ADO. Qualquer nova coleta, em qualquer host, exige o MCP oficial; nenhuma limitação de Actions autoriza conexão ADO direta.
+
+## Estado da implementação — 13/09/2026
+
+Os três bundles locais são gerados de uma fonte comum (`integrations/shared/`) e empacotados
+com o wheel do motor e o lock da release. O gateway para GPT personalizado existe como código,
+OpenAPI e instruções.
+
+| Ambiente | Implementado | Verificado em host real |
+|---|---|---|
+| Claude Code | Manifesto, skills e hook opcional | Não |
+| Google Antigravity | Manifesto na raiz e skills | Não |
+| Codex | Manifesto `.codex-plugin` e skills | Não |
+| GPT personalizado | API autenticada, OpenAPI e instruções | Não |
+
+Paridade de métricas entre hosts é garantida por construção: as skills compartilham o corpo
+das instruções e todos os números vêm do mesmo motor Python. Isso não substitui a instalação e
+a execução reais, que continuam pendentes.

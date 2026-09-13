@@ -14,7 +14,15 @@ O plugin não acessará diretamente APIs REST, Analytics/OData, SDKs ou CLI do A
 
 ## Estado do projeto
 
-Em implementação. Concluídos: pacote e infraestrutura de qualidade (T01), contratos e configuração por perfil (T02) e o núcleo numérico auditável — qualidade por métrica, calendário/capacidade, carga e consolidação entre equipes (T07–T10). Pendentes: acesso e coleta pelo MCP oficial (T03–T06), relatórios e bundles (T11–T13, T22, T26–T27) e distribuição/piloto (T14–T16).
+Implementado e verificado localmente: as 28 tarefas do plano têm código, testes e documentação. O que **não** foi feito: conexão real com uma organização do Azure DevOps, instalação nos hosts em perfil limpo, piloto com equipes reais (T16) e implantação do gateway remoto (T28). Enquanto isso não acontecer, nomes de ferramenta do catálogo MCP, formatos de resposta e compatibilidade por host continuam **não verificados**.
+
+| Release | Estado |
+|---|---|
+| v0.1 — situação atual, relatório e bundles | Código completo; falta handshake real, instalação em perfil limpo e piloto |
+| v0.2 — histórico, compromisso, fluxo e planejamento | Código completo; falta reconciliação com equipe real |
+| v0.3 — execução agendada | Código e templates completos; falta validar o modo não interativo em ambiente real |
+| v0.3.1 — API para GPT personalizado | Código, OpenAPI e instruções completos; falta implantar e testar com Actions |
+| v0.4 — forecast experimental | Código completo e rotulado experimental; falta calibração com dados reais |
 
 ```bash
 uv sync --group dev && uv run pytest && uv run ado-team-compass version
@@ -63,6 +71,16 @@ A primeira versão prevê entrega atual, planejamento de capacidade, carga resta
 - Visão de carga sem ranking de produtividade individual.
 - Integração de leitura exclusivamente pelo MCP oficial do Azure DevOps.
 
+## Uso local
+
+```bash
+uv sync --group dev --extra api
+uv run pytest
+uv run ado-team-compass demo --format markdown
+```
+
+`demo` roda sem credencial e sem rede. Para dados reais: `setup`, `doctor` e `status`, com a sessão do MCP oficial já autenticada.
+
 ## Próximo passo
 
-Tarefa T03 do checklist: cliente do MCP oficial, sessão e allowlist por ferramenta e ação.
+Tarefa T16: conectar o servidor MCP remoto oficial a uma organização real, registrar o catálogo efetivo e rodar o piloto descrito em [docs/piloto-v0.1.md](docs/piloto-v0.1.md).

@@ -24,10 +24,17 @@ Versionamento semântico do motor; os contratos têm versão de schema própria 
 - Validação transversal de desempenho, segredos, retenção e schema; empacotamento da release
   candidata com motor embutido (T14, T15).
 
+- Histórico por revisões do MCP, compromisso, mudança de escopo, carry-over, throughput,
+  cycle/lead time, aging e percentis; regras de planejamento por perfil (T17 a T21).
+- Execução agendada idempotente com lock, runbook e templates de pipeline (T23, T24).
+- Gateway HTTPS autenticado de leitura com OpenAPI e instruções para GPT Actions (T28).
+- Forecast experimental com premissas, semente e backtesting publicado (T25).
+
 ### Limites desta versão
 
 - Somente leitura do Azure DevOps, exclusivamente pelo MCP oficial da Microsoft.
-- Histórico, baseline, fluxo, planejamento, execução agendada, API para GPT e forecast não
-  entram na v0.1.
-- Compatibilidade com cada host e cobertura real do catálogo MCP continuam a validar em
-  instalação e organização reais (T16).
+- Nenhuma conexão real com o Azure DevOps foi executada: os nomes de ferramenta do catálogo
+  MCP e os formatos de resposta permanecem não verificados até o primeiro handshake.
+- Instalação nos hosts em perfil limpo, piloto com equipes reais e implantação do gateway
+  continuam pendentes.
+- O forecast permanece experimental até ser calibrado com histórico real.
