@@ -214,3 +214,86 @@ def test_batch_hydration_requests_explicit_fields():
     assert "Microsoft.VSTS.Scheduling.RemainingWork" in fields
     assert "System.Parent" in fields
     assert "System.Tags" in fields
+
+
+# -- coleta parcial nunca vira número completo (observado na equipe sem capacidade) ------
+def test_partial_source_never_yields_an_available_metric():
+    """Fonte parcial não pode produzir contagem apresentada como completa."""
+    from datetime import UTC, datetime
+
+    from ado_team_compass.contracts.facts import FactSet
+    from ado_team_compass.metrics.engine import build_team_report
+
+    as_of = datetime(2026, 9, 13, 12, tzinfo=UTC)
+    facts = FactSet(
+        as_of=as_of,
+        items=(),
+        partial_sources=("work_items", "iterations"),
+        reasons=("sem iteração resolvida, os itens da sprint não foram coletados",),
+    )
+    report = build_team_report(facts, demo_team(), run_id="r", as_of=as_of, window=None)
+    metric = report.metric("open_items_count")
+    assert metric is not None
+    assert metric.status.value == "unavailable"
+    assert "coleta parcial da fonte work_items" in (metric.unavailable_reason or "")
+    assert metric.quantity is None
+
+
+def test_complete_source_still_reports_a_legitimate_zero():
+    """Zero conhecido continua sendo zero: a regra vale só para fonte parcial."""
+    from datetime import UTC, datetime
+
+    from ado_team_compass.contracts.facts import FactSet
+    from ado_team_compass.metrics.engine import build_team_report
+
+    as_of = datetime(2026, 9, 13, 12, tzinfo=UTC)
+    report = build_team_report(
+        FactSet(as_of=as_of, items=()), demo_team(), run_id="r", as_of=as_of, window=None
+    )
+    metric = report.metric("open_items_count")
+    assert metric is not None and metric.status.value == "available"
+    assert metric.quantity is not None and metric.quantity.value == 0
+
+
+def test_team_without_allocation_is_not_blamed_for_missing_hours():
+    """Equipe sem horas não recebe achado de higiene por campo que não usa (V10 real)."""
+    from datetime import UTC, datetime
+
+    from ado_team_compass.collect.normalization import normalize_work_item
+    from ado_team_compass.contracts.common import Capability, Provenance
+
+    team = demo_team()
+    without_allocation = team.model_copy(update={"capabilities": (Capability.CURRENT_STATUS,)})
+    entry = {"id": 131, "fields": {"System.State": "New", "System.WorkItemType": "Task"}}
+    provenance = Provenance(source="mcp", collected_at=datetime(2026, 9, 13, tzinfo=UTC))
+
+    silent = normalize_work_item(
+        entry, team=without_allocation, organization="org", provenance=provenance
+    )
+    assert silent is not None and silent.reasons == ()
+
+    tracked = normalize_work_item(entry, team=team, organization="org", provenance=provenance)
+    assert tracked is not None
+    assert any("RemainingWork" in reason for reason in tracked.reasons)
+
+
+def test_missing_team_capacity_is_a_configuration_gap_not_a_transport_failure():
+    """O servidor responde com erro quando a equipe não tem capacidade atribuída."""
+    from ado_team_compass.demo.dataset import default_responses, transport
+
+    responses = {
+        **default_responses(),
+        "work:get_team_capacity": ToolCallResult(
+            tool="work",
+            is_error=True,
+            error_text="No team capacity assigned to the team",
+        ),
+    }
+    client = AdoMcpClient(transport=transport(responses))
+    client.handshake()
+    with pytest.raises(CollectError) as error:
+        client.call(Operation.GET_TEAM_CAPACITY, {"project": "p", "iterationId": "i"})
+    assert error.value.code == "E_MCP_FONTE_NAO_CONFIGURADA"
+    assert "No team capacity" in error.value.detail["server_message"]
+    # Não é retentável: a configuração não muda por tentar de novo.
+    assert len(transport(responses).calls) == 0

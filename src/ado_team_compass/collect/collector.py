@@ -360,7 +360,11 @@ def _collect_capacity(
         return empty
     except CollectError as error:
         partial.append("capacity")
-        reasons.append(f"capacidade não coletada: {error.message}")
+        explanation = error.detail.get("server_message") or error.detail.get("reason")
+        reasons.append(
+            f"capacidade não coletada: {error.message}"
+            + (f" Servidor: {explanation}" if explanation else "")
+        )
         return empty
 
     capacity = normalize_capacity(payload, team=team)

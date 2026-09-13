@@ -46,6 +46,9 @@ MAX_CONCURRENCY = 4
 _AUTH_HINTS = ("401", "unauthorized", "invalid_token", "authentication", "consent")
 _PERMISSION_HINTS = ("403", "forbidden", "access denied", "not authorized")
 _THROTTLE_HINTS = ("429", "rate limit", "too many requests", "throttl")
+#: O servidor responde com erro quando a equipe não tem capacidade atribuída. Isso é uma
+#: configuração ausente da equipe, não uma falha de transporte, e não deve ser retentado.
+_NOT_CONFIGURED_HINTS = ("no team capacity", "not assigned to the team", "no capacity assigned")
 _TIMEOUT_HINTS = ("timeout", "timed out", "deadline")
 _RETRY_AFTER = re.compile(r"retry[-_ ]?after[\"':= ]+(\d+)", re.IGNORECASE)
 
@@ -429,6 +432,16 @@ def _classify(text: str, operation: Operation, tool: str) -> CompassError:
             "O servidor MCP aplicou limite de taxa à coleta.",
             detail=detail,
             remediation="A coleta aguarda o intervalo indicado e tenta novamente.",
+        )
+    if any(hint in lowered for hint in _NOT_CONFIGURED_HINTS):
+        return CollectError(
+            "E_MCP_FONTE_NAO_CONFIGURADA",
+            f"A fonte de {operation.value!r} não está configurada nesta equipe.",
+            detail={**detail, "server_message": text[:200]},
+            remediation=(
+                "A métrica dependente fica indisponível com motivo; configure a fonte no Azure "
+                "DevOps ou desabilite a capacidade para esta equipe."
+            ),
         )
     if any(hint in lowered for hint in _TIMEOUT_HINTS):
         return CollectError(

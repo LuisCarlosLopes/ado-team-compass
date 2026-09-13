@@ -71,20 +71,23 @@ def build_team_report(
     capacity, capacity_counters = _team_capacity(facts, team, day_factors, notes=notes)
     has_reservations = bool(facts.reservations)
 
+    partial_sources = facts.partial_sources
     metrics: list[Metric] = [
         assess_metric(
             "open_items_count",
             team,
             counters=QualityCounters(eligible=len(accountable), known=len(accountable)),
             quantity=Quantity(value=Decimal(len(open_items)), unit=_ITEMS),
+            partial_sources=partial_sources,
         ),
-        _blocked_metric(team, accountable),
+        _blocked_metric(team, accountable, partial_sources=partial_sources),
         assess_metric(
             "known_remaining_work",
             team,
             counters=load.counters,
             quantity=load.quantity,
             has_reservations=has_reservations,
+            partial_sources=partial_sources,
         ),
         assess_metric(
             "reserved_remaining_capacity",
@@ -92,6 +95,7 @@ def build_team_report(
             counters=capacity_counters,
             quantity=capacity,
             has_reservations=has_reservations,
+            partial_sources=partial_sources,
         ),
     ]
 
@@ -104,6 +108,7 @@ def build_team_report(
         team,
         counters=load.counters,
         has_reservations=has_reservations,
+        partial_sources=partial_sources,
     )
     if utilization.status is not MetricStatus.NOT_APPLICABLE:
         utilization = utilization.model_copy(
@@ -141,7 +146,9 @@ def build_team_report(
     )
 
 
-def _blocked_metric(team: TeamConfig, items: Sequence[WorkItemFact]) -> Metric:
+def _blocked_metric(
+    team: TeamConfig, items: Sequence[WorkItemFact], *, partial_sources: Sequence[str] = ()
+) -> Metric:
     known = [item for item in items if item.blocked is not None]
     blocked = [item for item in known if item.blocked]
     return assess_metric(
@@ -154,6 +161,7 @@ def _blocked_metric(team: TeamConfig, items: Sequence[WorkItemFact]) -> Metric:
             reasons=("itens sem informação de impedimento",) if len(known) < len(items) else (),
         ),
         quantity=Quantity(value=Decimal(len(blocked)), unit=_ITEMS),
+        partial_sources=partial_sources,
     )
 
 

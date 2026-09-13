@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from ado_team_compass.contracts.common import Provenance, Quantity
+from ado_team_compass.contracts.common import Capability, Provenance, Quantity
 from ado_team_compass.contracts.config import TeamConfig
 from ado_team_compass.contracts.facts import (
     CapacityReservation,
@@ -191,7 +191,10 @@ def normalize_work_item(
     remaining = _quantity(fields, team.process.remaining_work_field, unit)
     original = _quantity(fields, team.process.original_estimate_field, unit)
     completed = _quantity(fields, team.process.completed_work_field, unit)
-    if team.process.remaining_work_field and remaining is None:
+    # Campo de horas só é cobrado de equipe que habilitou a capacidade de carga: uma equipe
+    # sem horas não recebe "falha de higiene" por campo que não usa.
+    tracks_allocation = Capability.ALLOCATION in team.capabilities
+    if tracks_allocation and team.process.remaining_work_field and remaining is None:
         reasons.append(f"item {item_id}: sem valor em {team.process.remaining_work_field}")
 
     assigned_reference = _text(entry, "System.AssignedTo", "assignedTo")

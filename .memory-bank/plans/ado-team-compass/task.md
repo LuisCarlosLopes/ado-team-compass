@@ -309,7 +309,7 @@ Cada tarefa deve produzir uma entrega revisável. Os IDs M remetem ao mapa de al
 
 ### T16 — Validar piloto e preparar liberação da v0.1
 
-- Status: BLOQUEADA (13/09/2026) — depende de acesso real a uma organização e de equipes piloto; roteiro preparado em docs/piloto-v0.1.md
+- Status: PARCIAL (13/09/2026) — dois perfis validados com dados reais (`demo-ado-plugin-team` com capacidade em horas e `vizinon-team` sem horas), com reconciliação independente; falta perfil de fluxo contínuo e revisão de amostra com responsável por equipe
 - Release/Fase: v0.1 / F4
 - Objetivo: validar utilidade e correção em práticas reais diferentes.
 - Base no IPD: 1.2, 3.1 e 9.

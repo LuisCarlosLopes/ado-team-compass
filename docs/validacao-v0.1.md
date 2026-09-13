@@ -60,10 +60,31 @@ reproduziu exatamente 15 itens contabilizados, 12 abertos, 11 com trabalho resta
 apontou divergência. Nenhum PAT, e-mail ou nome apareceu nos artefatos: a identidade gravada é
 o ID opaco da fonte.
 
+### Perfis validados com dados reais
+
+| Perfil | Equipe | O que a execução comprovou |
+|---|---|---|
+| Sprint com capacidade em horas | `demo-ado-plugin-team` | 15 itens contabilizados, 12 abertos, 126 h de carga conhecida contra 24 h de capacidade restante, 1 impedimento; totais reconciliados por consulta independente |
+| Sprint sem horas | `vizinon-team` | Sprint resolvida, 4 itens abertos, todas as métricas de carga `not_applicable` com motivo, capacidade ausente reportada com a explicação do servidor, nenhuma cobrança de campo de horas |
+| Fluxo contínuo sem sprint | — | **Não validado**: nenhuma equipe da organização de teste opera sem iterações configuradas |
+
+Dois defeitos foram encontrados **pela execução real** e corrigidos com teste de regressão:
+
+1. `open_items_count` aparecia como `available` com valor zero enquanto a fonte `work_items`
+   estava parcial — um zero silencioso. Agora uma métrica cujo insumo está parcial nunca é
+   `available`, e o motivo nomeia a fonte incompleta.
+2. Uma equipe sem a capacidade de carga habilitada recebia achado por campo de horas ausente.
+   Isso é exatamente a "falha de higiene por campo não aplicável" que o plano proíbe; o campo
+   só é cobrado de quem habilitou a capacidade.
+
+Também passou a ser distinguida a configuração ausente da falha de transporte: o servidor
+responde "No team capacity assigned to the team" e o produto reporta
+`E_MCP_FONTE_NAO_CONFIGURADA`, sem retentativa inútil e repassando a explicação do servidor.
+
 ## Pendências que impedem declarar a v0.1 validada
 
-1. Piloto com três equipes de perfis distintos: a conexão real cobriu uma equipe com
-   capacidade em horas; falta equipe sem horas e equipe de fluxo contínuo (T16).
+1. Piloto com três práticas distintas: faltam equipe de fluxo contínuo sem sprint e a revisão
+   de uma amostra fixa de 20 itens com a pessoa responsável por cada equipe (T16).
 2. Instalação em perfil limpo nos três hosts, incluindo atualização e remoção (T15/T16).
 3. Piloto com três equipes de perfis distintos, com reconciliação de uma amostra fixa de 20
    itens por equipe (T16).
