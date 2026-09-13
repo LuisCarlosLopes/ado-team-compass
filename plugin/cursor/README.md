@@ -9,7 +9,7 @@ instruções compartilhadas vivem na fonte comum e os bundles são regenerados p
 1. Instale o motor no ambiente do usuário:
 
    ```
-   pip install ado-team-compass==0.1.0
+   pip install ado-team-compass==0.2.0
    ```
 
 2. Configure o servidor MCP oficial do Azure DevOps no Cursor (em `.cursor/mcp.json` ou nas configurações de MCP), apontando para o servidor remoto oficial da organização. Opcionalmente use `ado-team-compass setup --from-mcp-config .cursor/mcp.json`.
