@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SHARED = ROOT / "integrations" / "shared"
 SKILLS = SHARED / "skills"
 COMMON = SKILLS / "common.md"
+LAUNCHER = SHARED / "launcher" / "atc-mcp.py"
 
 #: Marcadores que jamais podem vazar de um host para outro.
 FOREIGN_MARKERS = {
@@ -56,9 +57,28 @@ def _version() -> str:
     raise SystemExit("versão do motor não encontrada")
 
 
+def _document() -> Mapping[str, Any]:
+    parsed = yaml.safe_load((SHARED / "hosts.yaml").read_text(encoding="utf-8"))
+    return dict(parsed)
+
+
 def _hosts() -> Mapping[str, Any]:
-    document = yaml.safe_load((SHARED / "hosts.yaml").read_text(encoding="utf-8"))
-    return dict(document["hosts"])
+    return dict(_document()["hosts"])
+
+
+def mcp_server_entry(host: Mapping[str, Any], document: Mapping[str, Any]) -> dict[str, Any]:
+    """Declaração do servidor MCP do motor para este host.
+
+    O caminho usa a variável de raiz do plugin quando o host oferece uma; sem ela, a
+    declaração não é gerada e o bundle documenta o registro manual.
+    """
+    launcher = str(document["launcher_path"])
+    root = host.get("plugin_root")
+    location = f"{root}/{launcher}" if root else launcher
+    return {
+        "command": "python3",
+        "args": [location],
+    }
 
 
 def _skill_sources() -> list[Path]:
@@ -77,7 +97,9 @@ def render_skill(source: Path, host: Mapping[str, Any]) -> str:
     return f"{body}\n\n{common}\n\n{footer}"
 
 
-def manifest(host_key: str, host: Mapping[str, Any], version: str) -> dict[str, Any]:
+def manifest(
+    host_key: str, host: Mapping[str, Any], version: str, document: Mapping[str, Any]
+) -> dict[str, Any]:
     # Manifesto mínimo CLI-safe (DECISÃO-002): schema estrito aceita apenas name e description.
     if host_key == "antigravity":
         return {
@@ -99,19 +121,30 @@ def manifest(host_key: str, host: Mapping[str, Any], version: str) -> dict[str, 
         "author": {"name": "ADO Team Compass"},
         "keywords": ["azure-devops", "mcp", "sprint", "capacidade"],
         "skills": [f"./skills/{name}" for name in skills],
-        "requirements": {
-            "engine": "ado-team-compass",
-            "engine_version": version,
-            "mcp_server": "azure-devops (oficial Microsoft)",
-        },
     }
+    # Só declara o servidor quem oferece uma variável com a raiz do plugin: caminho relativo
+    # dependeria do diretório de trabalho do host, que não é contrato de nenhum deles.
+    if host.get("manifest_declares_mcp"):
+        base["mcpServers"] = {
+            str(document["server_name"]): mcp_server_entry(host, document),
+        }
     if host_key == "claude":
         base["homepage"] = "https://github.com/LuisCarlosLopes/ado-team-compass"
     return base
 
 
+def mcp_server_example(host: Mapping[str, Any], document: Mapping[str, Any]) -> str:
+    """Entrada pronta para copiar na configuração de MCP de hosts sem raiz de plugin."""
+    entry = mcp_server_entry(host, document)
+    entry["args"] = [f"/caminho/absoluto/do/bundle/{document['launcher_path']}"]
+    payload = {"mcpServers": {str(document["server_name"]): entry}}
+    return json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
 def build(*, check: bool) -> int:
     version = _version()
+    document = _document()
+    launcher = LAUNCHER.read_text(encoding="utf-8")
     divergent: list[str] = []
     valid_skill_stems = {source.stem for source in _skill_sources()}
     for host_key, host in _hosts().items():
@@ -128,7 +161,10 @@ def build(*, check: bool) -> int:
 
         files: dict[Path, str] = {
             bundle / str(host["manifest_path"]): json.dumps(
-                manifest(host_key, host, version), ensure_ascii=False, indent=2, sort_keys=True
+                manifest(host_key, host, version, document),
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
             )
             + "\n"
         }
@@ -136,6 +172,10 @@ def build(*, check: bool) -> int:
             destination = bundle / str(host["skills_dir"]) / source.stem / str(host["skill_file"])
             files[destination] = render_skill(source, host)
         files[bundle / "README.md"] = _bundle_readme(host, version)
+        # O launcher acompanha todo bundle: é ele que o host sobe para falar com o motor.
+        files[bundle / str(document["launcher_path"])] = launcher
+        if not host.get("manifest_declares_mcp"):
+            files[bundle / "mcp-server.json"] = mcp_server_example(host, document)
 
         for destination, content in files.items():
             for marker in FOREIGN_MARKERS[host_key]:
@@ -148,6 +188,8 @@ def build(*, check: bool) -> int:
                 continue
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_text(content, encoding="utf-8")
+            if destination.suffix == ".py":
+                destination.chmod(0o755)
 
     if check and divergent:
         sys.stderr.write(
@@ -166,23 +208,31 @@ Bundle gerado a partir de `integrations/shared/`. Não edite os arquivos deste d
 instruções compartilhadas vivem na fonte comum e os bundles são regenerados por
 `python packaging/build_bundles.py`.
 
+Versão do motor: {version}
+
 ## Instalação
 
-1. Instale o motor no ambiente do usuário:
+1. Instale este bundle conforme o procedimento do {host["display_name"]}.
+2. {str(host["registration_note"]).strip()}
+3. {str(host["mcp_note"]).strip()}
+4. Valide chamando a ferramenta `atc_doctor` e, sem credencial, `atc_demo`.
 
-   ```
-   pip install ado-team-compass=={version}
-   ```
+Não é preciso instalar a CLI antes. O motor acompanha o pacote de release em `engine/` e
+`bin/atc-mcp.py` o prepara sozinho na primeira execução, em um ambiente isolado sob
+`~/.ado-team-compass/runtime`. Quando o pacote `ado-team-compass` já estiver instalado na
+máquina, é essa instalação que o launcher usa.
 
-2. {str(host["mcp_note"]).strip()}
-3. Instale este bundle conforme o procedimento do {host["display_name"]}.
-4. Valide com `ado-team-compass doctor` e, sem credencial, com `ado-team-compass demo`.
+Requisito: Python 3.12 ou superior acessível como `python3`. Se o interpretador tiver outro
+nome ou você quiser fixar um ambiente específico, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para
+o interpretador desejado. Para proibir a preparação automática, defina
+`ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.
 
 ## Limites
 
 Somente leitura: nenhuma alteração é feita no Azure DevOps. Sem servidor MCP oficial
-conectado, apenas `demo`, `replay`, `report`, `render` e `evidence` funcionam. Compatibilidade
-com esta versão do host precisa ser verificada em instalação real antes de ser declarada.
+conectado, apenas `atc_demo`, `atc_replay`, `atc_report`, `atc_render` e `atc_evidence`
+funcionam. Compatibilidade com esta versão do host precisa ser verificada em instalação real
+antes de ser declarada.
 """
 
 

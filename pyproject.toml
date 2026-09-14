@@ -33,6 +33,8 @@ api = [
 
 [project.scripts]
 ado-team-compass = "ado_team_compass.cli:main"
+# Servidor MCP do motor: é este o processo que o host de IA sobe.
+ado-team-compass-mcp = "ado_team_compass.server.__main__:main"
 
 [dependency-groups]
 dev = [

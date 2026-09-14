@@ -15,7 +15,7 @@ O assistente de IA não calcula métricas nem acessa o Azure DevOps por conta pr
 ```mermaid
 flowchart TD
     User([Usuário / Líder Técnico]) -->|Pergunta em linguagem natural| Assistant[Assistente de IA\nAntigravity / Claude / Codex / Cursor]
-    Assistant -->|Invoca skill e executa comando local| Engine[Motor Python CLI\nado-team-compass]
+    Assistant -->|Chama ferramenta atc_*| Engine[Motor local\nservidor MCP do Compass]
     Engine -->|Consulta somente leitura via protocolo MCP| McpServer[Servidor MCP Oficial Microsoft\nazure-devops-mcp]
     McpServer -->|Autenticação & Coleta| ADO[(Azure DevOps\nBoards & Capacidades)]
     ADO -->|Fatos brutos| McpServer
@@ -35,109 +35,107 @@ flowchart TD
 
 ## 2. Pré-requisitos de Instalação
 
-Antes de instalar o plugin no seu assistente de IA, garanta os seguintes componentes no seu sistema operacional (macOS, Linux ou Windows):
-
-1. **Python 3.12 ou superior** instalado e acessível no terminal:
+1. **Python 3.12 ou superior** no sistema (macOS, Linux ou Windows):
    ```bash
    python3 --version
    ```
+   O motor é Python e uma de suas dependências tem código compilado, então não há como
+   dispensar o interpretador. Se o `python3` do seu sistema for anterior a 3.12 — no macOS
+   ainda é 3.9 — o launcher procura sozinho um `python3.12`, `python3.13` ou `python3.14` no
+   PATH. Para fixar um interpretador específico, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON`
+   para ele.
 
-2. **Motor Python do Compass (`ado-team-compass`) instalado no PATH:**
-   - A partir de um pacote `.whl` da [página de Releases](https://github.com/LuisCarlosLopes/ado-team-compass/releases):
-     ```bash
-     pip install ado_team_compass-*.whl
-     ```
-   - Ou em ambiente de desenvolvimento clonado:
-     ```bash
-     uv sync --group dev --extra api --frozen
-     ```
-   - Verifique a instalação:
-     ```bash
-     ado-team-compass version
-     ```
+2. **Servidor MCP Oficial do Azure DevOps ativo no host de IA:** siga as orientações do
+   repositório oficial [microsoft/azure-devops-mcp](https://github.com/microsoft/azure-devops-mcp)
+   para autenticar a sua organização no host correspondente.
 
-3. **Servidor MCP Oficial do Azure DevOps ativo no host de IA:**
-   - Siga as orientações do repositório oficial [microsoft/azure-devops-mcp](https://github.com/microsoft/azure-devops-mcp) para configurar a autenticação da sua organização no host de IA correspondente.
+Não é preciso instalar a CLI antes. O bundle de release traz o motor em `engine/` e o prepara
+na primeira execução, em um ambiente isolado sob `~/.ado-team-compass/runtime`. Se o pacote
+`ado-team-compass` já estiver instalado na máquina, é essa instalação que o bundle reaproveita.
+
+Para desabilitar a preparação automática — em ambiente sem rede ou com instalação controlada —
+defina `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1` e instale o motor você mesmo:
+
+```bash
+python3 -m pip install engine/ado_team_compass-<versao>-py3-none-any.whl
+```
 
 ---
 
 ## 3. Instalação do Plugin por Assistente de IA
 
-O repositório gera pacotes especializados e autocontidos para cada assistente suportado na pasta `plugin/<host>/` (ou nos zips de release correspondentes).
+O repositório gera pacotes especializados e autocontidos para cada assistente suportado na
+pasta `plugin/<host>/` (ou nos zips de release correspondentes). Todo bundle traz
+`bin/atc-mcp.py`, o launcher que sobe o servidor MCP do motor.
 
-### 3.1. Google Antigravity
-O Google Antigravity utiliza o manifesto raiz `plugin.json` no padrão estrito e CLI-safe (DECISÃO-002).
+### 3.1. Claude Code
+O manifesto `.claude-plugin/plugin.json` declara o servidor, então não há registro manual:
 
-1. Extraia ou aponte o diretório do plugin `plugin/antigravity/` para a pasta de plugins ou extensões do Antigravity (`~/.gemini/antigravity-cli/plugins/ado-team-compass` ou conforme diretrizes de workspace).
-2. Configure o servidor MCP oficial do Azure DevOps nas configurações de MCP do Antigravity, apontando para a sua organização.
-3. Certifique-se de que o executável `ado-team-compass` está acessível no PATH do ambiente onde o Antigravity é executado.
+```bash
+claude plugin add ./plugin/claude
+```
 
-### 3.2. Claude Code
-O Claude Code descobre plugins via manifesto `.claude-plugin/plugin.json` e o catálogo `.claude-plugin/marketplace.json`.
+O Claude Code sobe `ado-team-compass` junto com o plugin, usando `${CLAUDE_PLUGIN_ROOT}` para
+achar o launcher. Configure à parte o servidor MCP oficial da Microsoft:
 
-1. Para carregar o plugin localmente no Claude Code:
-   ```bash
-   claude mcp add azure-devops <comando-ou-url-do-servidor-oficial>
-   ```
-2. Adicione o plugin do Compass através do caminho local do repositório:
-   ```bash
-   claude plugin add ./plugin/claude
-   ```
-3. O hook opcional de sessão em `plugin/claude/hooks/session_notice.py` pode alertar caso seu último relatório persistido esteja desatualizado (sem executar nenhuma chamada de rede).
+```bash
+claude mcp add azure-devops <comando-ou-url-do-servidor-oficial>
+```
 
-### 3.3. OpenAI Codex
-O Codex suporta plugins locais com manifesto em `.codex-plugin/plugin.json`.
+O hook opcional em `plugin/claude/hooks/session_notice.py` avisa quando o último relatório
+persistido está desatualizado, sem executar nenhuma chamada de rede.
 
-1. Instale o bundle `plugin/codex/` no ambiente do Codex.
-2. Certifique-se de que o servidor MCP oficial do Azure DevOps esteja configurado no cliente Codex.
-3. Não é necessária nenhuma chave de API adicional para que o motor Python calcule ou gere relatórios locais.
+### 3.2. Google Antigravity, OpenAI Codex e Cursor
+Estes hosts não expõem uma variável com a raiz do bundle, então a declaração do servidor não é
+gerada — o caminho precisa ser absoluto e só você o conhece. Cada bundle traz um
+`mcp-server.json` pronto para copiar:
 
-### 3.4. Cursor
-O Cursor suporta plugins no formato Cursor Plugin (`.cursor-plugin/plugin.json`).
+```json
+{
+  "mcpServers": {
+    "ado-team-compass": {
+      "args": ["/caminho/absoluto/do/bundle/bin/atc-mcp.py"],
+      "command": "python3"
+    }
+  }
+}
+```
 
-1. Copie a pasta `plugin/cursor/` para a configuração de plugins do Cursor ou instale o pacote `ado-team-compass-cursor-<versao>.zip`.
-2. Configure a conexão MCP do Azure DevOps no arquivo `.cursor/mcp.json` do seu projeto.
-3. Ao executar a configuração inicial, você pode reaproveitar essa sessão sem redigitar URLs:
-   ```bash
-   ado-team-compass setup --from-mcp-config .cursor/mcp.json
-   ```
+1. Instale o bundle do seu host (`plugin/antigravity/`, `plugin/codex/` ou `plugin/cursor/`)
+   conforme o procedimento dele.
+2. Copie a entrada acima para a configuração de MCP do host, trocando o caminho pelo diretório
+   real do bundle instalado. No Cursor, esse arquivo é o `.cursor/mcp.json` do projeto.
+3. Configure também o servidor MCP oficial do Azure DevOps no mesmo host.
+
+No Cursor, você pode reaproveitar a sessão oficial já configurada informando `from_mcp_config`
+ao chamar `atc_setup`, em vez de digitar a organização de novo.
 
 ---
 
 ## 4. Primeiros Passos e Verificação Inicial (Smoke Test)
 
-Após configurar o motor e o plugin, você pode validar o funcionamento do ambiente em três etapas rápidas:
+Depois de instalar o bundle, valide o ambiente em três passos, conversando com o assistente.
+A primeira chamada pode demorar alguns segundos: é o motor sendo preparado uma única vez.
 
-### Etapa 1: Teste Offline sem Credenciais (Modo Demo)
-Execute uma demonstração com dados sintéticos reproduzíveis, sem necessidade de rede ou conexão com o Azure DevOps:
-- **No terminal:**
-  ```bash
-  ado-team-compass demo --format markdown
-  ```
-  *(Para gerar um arquivo HTML navegável: `ado-team-compass demo --format html --output /tmp/demo.html`)*
-- **No chat com o assistente:**
-  > *"Faça uma demonstração do relatório do Compass para eu ver o formato."*
+### Etapa 1: Teste Offline sem Credenciais (`atc_demo`)
+> *"Faça uma demonstração do relatório do Compass para eu ver o formato."*
 
-### Etapa 2: Diagnóstico do Ambiente e Conexão (`doctor`)
-Valide se o executável, a configuração local e a sessão MCP estão saudáveis:
-- **No terminal:**
-  ```bash
-  ado-team-compass doctor
-  ```
-- **No chat com o assistente:**
-  > *"O Compass está conectado e configurado corretamente?"*
+O assistente chama `atc_demo` e devolve o relatório completo com dados sintéticos, sem rede e
+sem credencial. Para o HTML navegável, peça o relatório em HTML: o assistente chama
+`atc_render` e informa o caminho do arquivo gravado.
 
-Se a saída indicar `ExitCode 3`, renove a autenticação no servidor MCP oficial da Microsoft no seu host.
+### Etapa 2: Diagnóstico do Ambiente e Conexão (`atc_doctor`)
+> *"O Compass está conectado e configurado corretamente?"*
 
-### Etapa 3: Descoberta e Configuração Inicial da Organização (`setup`)
-Descubra seus projetos e equipes e gere o arquivo de configuração local `.ado-team-compass/config.yaml`:
-- **No terminal:**
-  ```bash
-  ado-team-compass setup --organization sua-organizacao
-  ```
-  *(Ou com `--from-mcp-config <caminho>` se o assistente já tiver o MCP configurado)*
-- **No chat com o assistente:**
-  > *"Configure o ADO Team Compass para a organização 'minha-empresa'."*
+O assistente chama `atc_doctor` e relata versão do motor, validade da configuração, canal e
+versão do servidor MCP, hash do catálogo e operações indisponíveis. Se a resposta trouxer
+`exit_code: 3`, renove a autenticação no servidor MCP oficial da Microsoft no seu host.
+
+### Etapa 3: Descoberta e Configuração da Organização (`atc_setup`)
+> *"Configure o ADO Team Compass para a organização 'minha-empresa'."*
+
+O assistente chama `atc_setup` e grava `.ado-team-compass/config.yaml` no diretório de
+trabalho, sem nenhuma credencial.
 
 Após o setup, abra `.ado-team-compass/config.yaml` para ajustar o perfil de cada equipe descoberta:
 - `sprint_with_capacity`: Times Scrum que usam estimativas de horas restantes e capacidade de membros.
@@ -158,14 +156,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-setup` |
 | **Finalidade** | Descobre projetos e equipes disponíveis na organização através do MCP oficial e gera a configuração inicial local. |
-| **Comando CLI** | `ado-team-compass setup --organization <organizacao>` |
+| **Ferramenta MCP** | `atc_setup` com `organization` |
 | **Quando usar** | Ao iniciar o uso do produto em uma nova organização ou após mudanças estruturais de equipes no Azure DevOps. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Por favor, configure o Compass para a organização 'contoso-corp'."*
 - **Ação do Assistente:**
-  Executa `ado-team-compass setup --organization contoso-corp`.
+  Chama `atc_setup` com `organization: contoso-corp`.
 - **Interpretação da Resposta:**
   O assistente apresenta a lista de equipes encontradas com seus identificadores e avisa que o arquivo `.ado-team-compass/config.yaml` foi gerado. Ele lembra você de revisar os perfis de trabalho (sprint com horas vs sem horas) e rodar o `doctor`.
 
@@ -181,14 +179,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-doctor` |
 | **Finalidade** | Diagnostica a integridade do ambiente, validade do YAML, conectividade MCP e ferramentas disponíveis no catálogo. |
-| **Comando CLI** | `ado-team-compass doctor` (ou `ado-team-compass doctor --offline`) |
+| **Ferramenta MCP** | `atc_doctor` (com `offline: true` para validar só o ambiente) |
 | **Quando usar** | Sempre que uma consulta falhar, antes da daily ou para confirmar se a autenticação MCP continua ativa. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Verifique se a conexão do Compass com o Azure DevOps está funcionando."*
 - **Ação do Assistente:**
-  Executa `ado-team-compass doctor`.
+  Chama `atc_doctor`.
 - **Interpretação da Resposta:**
   ```text
   Versão do motor: 0.2.0
@@ -210,14 +208,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-demo` |
 | **Finalidade** | Executa uma rodada sintética 100% offline, gerando todos os artefatos de uma análise real para demonstração ou homologação. |
-| **Comando CLI** | `ado-team-compass demo --format markdown` |
+| **Ferramenta MCP** | `atc_demo` com `format: markdown` |
 | **Quando usar** | Para apresentar a ferramenta a colegas, validar uma instalação recente ou entender a estrutura do relatório. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Como é a cara do relatório de sprint do Compass? Mostre uma demonstração."*
 - **Ação do Assistente:**
-  Executa `ado-team-compass demo --format markdown`.
+  Chama `atc_demo` com `format: markdown`.
 - **Interpretação da Resposta:**
   O assistente gera a tabela demonstrativa completa: trabalho restante conhecido, reserva de capacidade, impedimentos simulados e pontos de atenção. Ele ressalta explicitamente que os números são fictícios e auditáveis.
 
@@ -229,14 +227,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-status` |
 | **Finalidade** | Coleta os dados mais recentes do board da equipe e apresenta a situação da sprint: itens abertos, carga conhecida, capacidade restante, gap e impedimentos. |
-| **Comando CLI** | `ado-team-compass status --team <alias> --format markdown` |
+| **Ferramenta MCP** | `atc_status` com `team` e `format` |
 | **Quando usar** | Preparação da Daily Scrum, alinhamento de início do dia ou quando perguntarem "como está a sprint?". |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Como está a sprint da equipe plataforma hoje? O que precisamos priorizar na daily?"*
 - **Ação do Assistente:**
-  Executa `ado-team-compass status --team plataforma --format markdown`.
+  Chama `atc_status` com `team: plataforma` e `format: markdown`.
 - **Interpretação da Resposta:**
   O assistente destaca três blocos prioritários:
   1. **Veredito de Capacidade:** Ex.: 62 h de trabalho restante conhecido contra 50 h de capacidade reservada (sobrecarga conhecida de 12 h).
@@ -256,14 +254,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-allocation` |
 | **Finalidade** | Detalha a carga conhecida e a capacidade restante reservada por pessoa da equipe na execução atual. |
-| **Comando CLI** | `ado-team-compass allocation --team <alias>` |
+| **Ferramenta MCP** | `atc_allocation` com `team` |
 | **Quando usar** | Para checar balanceamento de trabalho, verificar quem pode apoiar tarefas críticas ou planejar redistribuições de esforço. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"A equipe mobile está com trabalho bem distribuído ou tem alguém sobrecarregado?"*
 - **Ação do Assistente:**
-  Executa `ado-team-compass allocation --team mobile`.
+  Chama `atc_allocation` com `team: mobile`.
 - **Interpretação da Resposta:**
   Apresenta a tabela por membro:
   | Pessoa | Carga Conhecida | Capacidade Restante | Utilização | Classe | Itens sem Estimativa |
@@ -285,14 +283,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-planning` |
 | **Finalidade** | Executa a verificação das regras de planejamento ativadas no perfil da equipe, apontando inconsistências e higiene de backlog. |
-| **Comando CLI** | `ado-team-compass planning --team <alias>` |
+| **Ferramenta MCP** | `atc_planning` com `team` |
 | **Quando usar** | Durante sessões de refinamento, pré-planning ou revisão semanal de higiene do board. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Temos itens inconsistentes ou problemas de higiene no backlog da equipe backend?"*
 - **Ação do Assistente:**
-  Executa `ado-team-compass planning --team backend`.
+  Chama `atc_planning` com `team: backend`.
 - **Interpretação da Resposta:**
   O assistente lista os achados encontrados conforme as políticas habilitadas:
   - **Histórias sem Tarefas:** User Story #402 não possui tarefas filhas registradas.
@@ -311,14 +309,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-evidence` |
 | **Finalidade** | Recupera a evidência local e imutável de uma execução anterior para auditar números ou reexecutar cálculos com dados congelados (`replay`). |
-| **Comando CLI** | `ado-team-compass evidence --team <alias> --reference <id>` e `ado-team-compass replay --team <alias>` |
+| **Ferramenta MCP** | `atc_evidence` com `team` e `reference`; `atc_replay` com `team` |
 | **Quando usar** | Quando alguém questionar a origem de um número ("de onde vieram essas 34 horas?") ou para auditar uma sprint passada. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"De onde saíram as 16 horas calculadas para a tarefa 204 no relatório de ontem?"*
 - **Ação do Assistente:**
-  Executa `ado-team-compass evidence --team plataforma --reference 204`.
+  Chama `atc_evidence` com `team: plataforma` e `reference: 204`.
 - **Interpretação da Resposta:**
   O assistente traz o excerto imutável gravado localmente naquela execução:
   - ID: 204
@@ -341,14 +339,14 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
 |---|---|
 | **Identificador** | `atc-history` |
 | **Finalidade** | Apresenta métricas de compromisso (say/do), carry-over, mudanças de escopo (entradas e saídas) e métricas de fluxo (throughput e cycle time). |
-| **Comando CLI** | `ado-team-compass history --team <alias> --format markdown` |
+| **Ferramenta MCP** | `atc_history` com `team` e `format` |
 | **Quando usar** | Preparação de Retrospectivas, Sprint Reviews e análise de previsibilidade da equipe. |
 
 #### Exemplo de Interação
 - **Usuário:**
   > *"Quanto do que planejamos na sprint passada foi realmente entregue? O escopo mudou muito?"*
 - **Ação do Assistente:**
-  Executa `ado-team-compass history --team plataforma --format markdown`.
+  Chama `atc_history` com `team: plataforma` e `format: markdown`.
 - **Interpretação da Resposta:**
   O assistente decompõe os números com rigor:
   - **Taxa Say/Do:** 75% (3 de 4 itens comprometidos na baseline foram concluídos).
@@ -415,4 +413,4 @@ O ADO Team Compass opera com códigos de saída padronizados (`ExitCode`). Conhe
 R: O Compass tem o compromisso de nunca preencher lacunas com números artificiais. Se alguém criou uma tarefa no Azure DevOps sem preencher o campo *Remaining Work*, ou se o calendário da equipe não tem dias úteis cadastrados, o Compass emite `PARTIAL_CAPABILITY` e lista a razão exata no relatório. O relatório continua válido e utilizável.
 
 **P: Como abro o relatório visual completo para a diretoria ou stakeholders?**  
-R: Você pode pedir ao assistente: *"Gere o relatório em HTML"*. O motor executa `ado-team-compass render` e gera um arquivo HTML autocontido, moderno, sem dependências externas de CDN e pronto para abrir em qualquer navegador offline.
+R: Você pode pedir ao assistente: *"Gere o relatório em HTML"*. O assistente chama `atc_render` e o motor gera um arquivo HTML autocontido, moderno, sem dependências externas de CDN e pronto para abrir em qualquer navegador offline.

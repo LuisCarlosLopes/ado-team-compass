@@ -3,6 +3,21 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento semântico do motor; os contratos têm versão de schema própria (`schema_version`).
 
+## [Não lançado]
+
+### Alterado
+
+- O motor passa a ser servido ao assistente como **servidor MCP local** (`ado-team-compass-mcp`):
+  as skills chamam ferramentas `atc_*` em vez de comandos de shell. Cada ferramenta é um
+  envelope sobre a mesma entrada da CLI, com os mesmos cálculos e os mesmos códigos de saída.
+- Instalar o plugin deixou de exigir instalar a CLI antes. Todo bundle traz `bin/atc-mcp.py`,
+  um launcher só com biblioteca padrão que reaproveita um motor já instalado ou prepara o
+  wheel embutido em um ambiente isolado sob `~/.ado-team-compass/runtime`, uma única vez.
+- O manifesto do Claude Code declara o servidor e o sobe junto com o plugin. Antigravity,
+  Codex e Cursor não expõem a raiz do bundle, então recebem um `mcp-server.json` pronto para
+  registrar à mão.
+- O campo `requirements` saiu dos manifestos: o motor não é mais pré-requisito externo.
+
 ## [Não lançado] — v0.1 em construção
 
 ### Adicionado

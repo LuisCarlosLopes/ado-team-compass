@@ -43,21 +43,20 @@ Fonte única: [`integrations/shared/`](../integrations/shared/) (skills +
 (`atc-setup`, `atc-doctor`, `atc-demo`, `atc-status`, `atc-allocation`, `atc-evidence`, `atc-history`,
 `atc-planning`) para cada host, com rodapé de ambiente.
 
-Padrão de invocação (skills locais):
-
-```bash
-ado-team-compass status --team <alias> --format markdown
-```
+Padrão de invocação (skills locais): a skill chama uma ferramenta do servidor MCP do motor,
+que acompanha o bundle — por exemplo `atc_status` com `team` e `format`. Não há comando de
+shell na instrução.
 
 Pré-requisitos em qualquer IDE local:
 
-1. Python 3.12+ e `pip install ado-team-compass` no PATH do usuário.
+1. Python 3.12+ no sistema. O motor acompanha o bundle e é preparado na primeira execução por
+   `bin/atc-mcp.py`; uma instalação existente de `ado-team-compass` é reaproveitada.
 2. Servidor MCP oficial autenticado **no host** (não dentro do Compass).
-3. Config local `.ado-team-compass/config.yaml`, gerada por `setup` (pode reutilizar MCP
-   do host com `--from-mcp-config`).
+3. Config local `.ado-team-compass/config.yaml`, gerada por `atc_setup` (pode reutilizar MCP
+   do host com `from_mcp_config`).
 
-Sem o item 2, só funcionam `demo`, `replay`, `report`, `render` e `evidence` sobre
-execuções já coletadas.
+Sem o item 2, só funcionam `atc_demo`, `atc_replay`, `atc_report`, `atc_render` e
+`atc_evidence` sobre execuções já coletadas.
 
 ## Claude Code — compatível
 
@@ -173,8 +172,14 @@ substitui a instalação do pacote Python.
 
 - **Nada foi testado no host real.** Status permitido na matriz de validação: planejado,
   testado, falhou ou não suportado. Hoje tudo permanece “implementado / não verificado”.
-- O plugin **não instala o motor**. Sem `ado-team-compass` no PATH, a skill descreve o
-  comando e a execução falha.
+- O bundle carrega o motor e o prepara sozinho, mas **depende de Python 3.12+ no sistema**:
+  uma dependência do motor tem código compilado. Onde o `python3` do sistema é anterior a
+  3.12, o launcher procura um interpretador compatível no PATH e falha com mensagem acionável
+  se não houver nenhum.
+- A preparação automática **exige rede na primeira execução** para resolver as dependências do
+  wheel. Em ambiente fechado, instale o motor antes e use `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.
+- Só o Claude Code sobe o servidor sem registro manual; nos demais hosts a entrada de
+  `mcp-server.json` precisa ser copiada com o caminho absoluto do bundle.
 - Licença privada + repositório privado limitam publicação em marketplace (Cursor, Claude
   community, OpenAI plugin store).
 - Arquivos `mcp.json` locais estão no `.gitignore` — correto, porque costumam carregar PAT.

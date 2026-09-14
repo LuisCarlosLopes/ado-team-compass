@@ -64,8 +64,10 @@ def test_each_host_has_its_own_manifest_format(host_key):
         assert "author" not in manifest
         assert "keywords" not in manifest
     else:
-        assert manifest["requirements"]["mcp_server"].startswith("azure-devops")
         assert sorted(entry.split("/")[-1] for entry in manifest["skills"]) == SKILL_NAMES
+        # O motor deixou de ser pré-requisito manual: ou o manifesto declara o servidor, ou o
+        # bundle traz a entrada pronta para registrar à mão.
+        assert "requirements" not in manifest
 
 
 def test_antigravity_manifest_is_cli_safe_minimal():
@@ -140,21 +142,23 @@ def test_skills_declare_name_and_description_front_matter():
             assert len(metadata["description"]) > 40
 
 
-def test_skills_use_the_installed_engine_not_the_development_tree():
+def test_skills_invoke_tools_instead_of_a_shell_command():
+    """A skill não sabe onde o motor está instalado: ela chama a ferramenta do servidor MCP."""
     for host_key in HOSTS:
         for name in SKILL_NAMES:
             content = _skill(host_key, name)
             assert "python -m ado_team_compass" not in content
             assert "uv run" not in content
-            for command in re.findall(r"^ado-team-compass .*$", content, re.MULTILINE):
-                assert "src/" not in command
+            assert not re.findall(r"^ado-team-compass .*$", content, re.MULTILINE)
+            assert "ferramenta" in content
 
 
 def test_collection_requires_mcp_and_offline_entries_are_declared():
     content = " ".join(_skill("claude", "atc-status").split())
     assert "Sem MCP oficial conectado, funcionam apenas" in content
-    for entrada in ("`demo`", "`replay`", "`report`", "`render`", "`evidence`"):
-        assert entrada in content
+    ferramentas = ("`atc_demo`", "`atc_replay`", "`atc_report`", "`atc_render`", "`atc_evidence`")
+    for ferramenta in ferramentas:
+        assert ferramenta in content
 
 
 def test_host_notes_are_specific_to_each_host():
@@ -169,6 +173,7 @@ def test_host_notes_are_specific_to_each_host():
 def test_bundle_readme_documents_installation_and_limits():
     for host_key in HOSTS:
         readme = (_bundle(host_key) / "README.md").read_text(encoding="utf-8")
-        assert "pip install ado-team-compass==" in readme
+        assert "Não é preciso instalar a CLI antes" in readme
+        assert "Python 3.12" in readme
         assert "Somente leitura" in readme
         assert "precisa ser verificada em instalação real" in readme

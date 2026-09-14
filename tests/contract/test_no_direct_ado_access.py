@@ -69,14 +69,35 @@ def test_only_the_official_mcp_remote_url_template_is_used():
 
 
 def test_every_transport_call_goes_through_the_mcp_session_package():
-    """Somente o pacote de sessão importa o SDK cliente MCP."""
+    """Somente o pacote de sessão importa o SDK **cliente** MCP.
+
+    O motor também é servidor MCP para o host de IA, e esse é outro papel: o SDK de servidor
+    pertence a `server/` e nunca abre canal para o Azure DevOps.
+    """
+    client_import = re.compile(
+        r"^\s*from\s+mcp\.client[\s.]|^\s*import\s+mcp\.client\b", re.MULTILINE
+    )
     importers = [
-        path
-        for path in _product_files()
-        if re.search(
-            r"^\s*from\s+mcp[\s.]|^\s*import\s+mcp\b",
-            path.read_text(encoding="utf-8"),
-            re.MULTILINE,
-        )
+        path for path in _product_files() if client_import.search(path.read_text(encoding="utf-8"))
     ]
+    assert importers, "o cliente MCP precisa ser importado em algum lugar"
     assert {path.parent.name for path in importers} <= {"session"}
+
+
+def test_the_mcp_server_package_never_opens_a_client_session():
+    """O servidor exposto ao host não fala com o Azure DevOps: ele executa o motor local."""
+    server_files = sorted((SOURCE / "server").rglob("*.py"))
+    assert server_files, "o pacote do servidor MCP precisa existir"
+    for path in server_files:
+        text = path.read_text(encoding="utf-8")
+        assert "mcp.client" not in text, f"{path} importa o SDK cliente"
+        assert "ClientSession" not in text, f"{path} abre sessão de cliente"
+
+
+def test_only_the_session_and_server_packages_touch_the_mcp_sdk():
+    """Qualquer uso do SDK MCP fica confinado aos dois pacotes de fronteira."""
+    any_import = re.compile(r"^\s*from\s+mcp[\s.]|^\s*import\s+mcp\b", re.MULTILINE)
+    importers = [
+        path for path in _product_files() if any_import.search(path.read_text(encoding="utf-8"))
+    ]
+    assert {path.parent.name for path in importers} <= {"session", "server"}

@@ -5,9 +5,8 @@ description: Coleta e apresenta a situação atual de uma equipe no Azure DevOps
 
 # Situação atual da equipe
 
-```
-ado-team-compass status --team <alias> --format markdown
-```
+Chame a ferramenta `atc_status` com `team` (alias da equipe) e `format`
+(`markdown` para leitura, `json` para inspecionar campo a campo).
 
 Sem equipe informada e com mais de uma configurada, a execução falha com saída 2: pergunte
 qual equipe em vez de escolher a primeira.
@@ -23,4 +22,5 @@ abertos sem estimativa e até três ações candidatas com o que precisa ser con
 decidir. Utilização parcial não sustenta afirmação de carga baixa; sobrecarga demonstrada pela
 carga conhecida pode ser citada como limite inferior.
 
-Para gerar o relatório navegável offline: `ado-team-compass render`.
+Para gerar o relatório navegável offline, chame `atc_render`: ela devolve o caminho
+do HTML autocontido gravado localmente.

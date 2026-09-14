@@ -7,9 +7,9 @@ description: Configura o ADO Team Compass para uma organização do Azure DevOps
 
 Peça a organização do Azure DevOps se ela não foi informada. Em seguida execute:
 
-```
-ado-team-compass setup --organization <organizacao>
-```
+Chame a ferramenta `atc_setup` com `organization`. Quando o host já tiver o servidor
+MCP oficial configurado, informe `from_mcp_config` com o caminho dessa configuração
+em vez de pedir a organização de novo.
 
 A descoberta grava `.ado-team-compass/config.yaml` sem nenhuma credencial: a sessão do Azure
 DevOps pertence ao servidor MCP oficial. Depois do setup:
@@ -18,6 +18,6 @@ DevOps pertence ao servidor MCP oficial. Depois do setup:
    `continuous_flow`). O processo técnico descoberto não define a prática de gestão.
 2. Preencha o que o MCP não expôs — áreas, inclusão de descendentes, mapeamento de estados —
    em vez de assumir valores.
-3. Rode `ado-team-compass doctor` e mostre as operações indisponíveis com o motivo.
+3. Chame `atc_doctor` e mostre as operações indisponíveis com o motivo.
 
-Se o setup terminar com saída 5, a configuração foi gravada mas há limitações: liste-as.
+Se o setup terminar com `exit_code` 5, a configuração foi gravada mas há limitações: liste-as.

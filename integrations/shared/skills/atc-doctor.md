@@ -5,9 +5,7 @@ description: Diagnostica ambiente, configuração, sessão MCP e operações dis
 
 # Diagnosticar o ADO Team Compass
 
-```
-ado-team-compass doctor
-```
+Chame a ferramenta `atc_doctor`.
 
 Reporte, nesta ordem: versão do motor, validade da configuração, canal e versão do servidor
 MCP, hash do catálogo, operações resolvidas e operações indisponíveis com o motivo.
@@ -16,4 +14,5 @@ MCP, hash do catálogo, operações resolvidas e operações indisponíveis com 
   oficial conforme a orientação da Microsoft. Não sugira PAT no produto nem outro canal.
 - Saída 5 significa que faltam operações no catálogo conectado: diga quais análises ficam
   indisponíveis em vez de prometer o relatório completo.
-- Com `--offline`, o diagnóstico valida ambiente e configuração e declara a coleta indisponível.
+- Com `offline: true`, o diagnóstico valida ambiente e configuração e declara a coleta
+indisponível.

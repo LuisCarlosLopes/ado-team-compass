@@ -1,5 +1,12 @@
 # Hosts suportados e o que muda entre eles. Fórmulas, contratos e limites ficam no núcleo:
 # aqui só entram invocação, manifesto e formato de pacote.
+#
+# O motor é servido ao host como servidor MCP local (`bin/atc-mcp.py` dentro do bundle). Onde o
+# manifesto do host declara servidores, a declaração é gerada; onde não declara, o bundle traz a
+# instrução de registro. O servidor MCP oficial da Microsoft continua sendo outro canal, de
+# responsabilidade do host, e é por ele que todo acesso ao Azure DevOps acontece.
+server_name: ado-team-compass
+launcher_path: bin/atc-mcp.py
 hosts:
   claude:
     display_name: Claude Code
@@ -7,9 +14,15 @@ hosts:
     manifest_path: .claude-plugin/plugin.json
     skills_dir: skills
     skill_file: SKILL.md
+    manifest_declares_mcp: true
+    plugin_root: ${CLAUDE_PLUGIN_ROOT}
     engine_note: >-
-      O motor é o pacote Python `ado-team-compass`, instalado no ambiente do usuário.
-      Use o executável disponível no PATH; não dependa da pasta de desenvolvimento.
+      O motor é servido pelo servidor MCP declarado no manifesto deste plugin: chame as
+      ferramentas `atc_*`. Não há comando de shell a executar e nada precisa ser instalado
+      antes do plugin.
+    registration_note: >-
+      O manifesto deste bundle já declara o servidor `ado-team-compass`; o Claude Code o sobe
+      junto com o plugin.
     mcp_note: >-
       Configure o servidor MCP oficial do Azure DevOps no próprio Claude Code
       (`claude mcp add`), apontando para o servidor remoto oficial da organização.
@@ -19,9 +32,15 @@ hosts:
     manifest_path: plugin.json
     skills_dir: skills
     skill_file: SKILL.md
+    manifest_declares_mcp: false
     engine_note: >-
-      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
-      Chame o executável pelo PATH; o IDE não injeta caminho do plugin nas instruções.
+      O motor é servido por um servidor MCP local que acompanha este bundle: chame as
+      ferramentas `atc_*`. Não há comando de shell a executar.
+    registration_note: >-
+      O manifesto deste host é mínimo por decisão de compatibilidade: registre o servidor na
+      configuração de MCP do Antigravity, com o comando `python3` e o caminho absoluto de
+      `bin/atc-mcp.py` dentro do bundle instalado. O arquivo `mcp-server.json` do bundle traz a
+      entrada pronta para copiar.
     mcp_note: >-
       Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do
       Antigravity, apontando para o servidor remoto oficial da organização.
@@ -31,9 +50,16 @@ hosts:
     manifest_path: .codex-plugin/plugin.json
     skills_dir: skills
     skill_file: SKILL.md
+    manifest_declares_mcp: false
     engine_note: >-
-      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
-      Nenhuma chave de API adicional é necessária para calcular ou renderizar.
+      O motor é servido por um servidor MCP local que acompanha este bundle: chame as
+      ferramentas `atc_*`. Nenhuma chave de API adicional é necessária para calcular ou
+      renderizar.
+    registration_note: >-
+      Este host não expõe uma variável com a raiz do bundle, então a declaração do servidor não
+      é gerada: registre `ado-team-compass` na configuração de MCP do host com o comando
+      `python3` e o caminho absoluto de `bin/atc-mcp.py` dentro do bundle instalado. O arquivo
+      `mcp-server.json` do bundle traz a entrada pronta para copiar.
     mcp_note: >-
       Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do Codex,
       apontando para o servidor remoto oficial da organização.
@@ -43,11 +69,16 @@ hosts:
     manifest_path: .cursor-plugin/plugin.json
     skills_dir: skills
     skill_file: SKILL.md
+    manifest_declares_mcp: false
     engine_note: >-
-      O motor é o pacote Python `ado-team-compass` instalado no ambiente do usuário.
-      Use o executável disponível no PATH; o Cursor executa o motor local sem alterar o board.
+      O motor é servido por um servidor MCP local que acompanha este bundle: chame as
+      ferramentas `atc_*`. O motor roda na máquina do usuário e não altera o board.
+    registration_note: >-
+      Este host não expõe uma variável com a raiz do bundle, então a declaração do servidor não
+      é gerada: acrescente `ado-team-compass` em `.cursor/mcp.json` com o comando `python3` e o
+      caminho absoluto de `bin/atc-mcp.py` dentro do bundle instalado. O arquivo
+      `mcp-server.json` do bundle traz a entrada pronta para copiar.
     mcp_note: >-
       Configure o servidor MCP oficial do Azure DevOps no Cursor (em `.cursor/mcp.json`
       ou nas configurações de MCP), apontando para o servidor remoto oficial da organização.
-      Opcionalmente use `ado-team-compass setup --from-mcp-config .cursor/mcp.json`.
-
+      Opcionalmente informe `from_mcp_config` com esse caminho ao chamar `atc_setup`.

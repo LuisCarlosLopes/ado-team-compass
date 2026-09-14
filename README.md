@@ -22,13 +22,13 @@ Foi desenhado para Scrum Masters, tech leads e gestores de entrega que precisam 
 - **Números rastreáveis:** cada total aponta para a evidência local; dá para reabrir o mesmo recorte e conferir de onde veio o valor.
 - **Modo demonstração:** experimente o relatório completo sem organização, senha ou rede.
 - **Somente leitura:** nada é alterado no Azure DevOps. Sem PAT, token ou senha guardados no Compass.
-- **Uso no assistente que você já tem:** bundles para Claude Code, Google Antigravity e OpenAI Codex, para perguntar “como está a sprint?” em linguagem natural.
+- **Uso no assistente que você já tem:** bundles para Claude Code, Google Antigravity, OpenAI Codex e Cursor, com o motor embutido, para perguntar “como está a sprint?” em linguagem natural sem instalar nada antes.
 
 ## 📥 Instalação
 
 Requisito: **Python 3.12 ou superior**, em macOS, Linux ou Windows.
 
-### Pacote pronto (recomendado)
+### Pacote pronto (para uso no terminal)
 
 1. Abra a [página de Releases](https://github.com/LuisCarlosLopes/ado-team-compass/releases/latest).
 2. Baixe o arquivo `.whl` da versão mais recente.
@@ -46,9 +46,13 @@ ado-team-compass demo --format html --output relatorio-demo.html
 
 Abra `relatorio-demo.html` no navegador.
 
-### Assistentes de IA (opcional)
+### Assistentes de IA
 
-Na mesma Release, baixe o bundle do host que você usa (**Google Antigravity**, **Claude Code**, **Codex** ou **Cursor**), instale o pacote acima e aponte o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+Na mesma Release, baixe o bundle do host que você usa (**Claude Code**, **Google Antigravity**, **Codex** ou **Cursor**) e instale-o. **Não é preciso instalar a CLI antes:** o bundle traz o motor e o prepara sozinho na primeira execução, em um ambiente isolado sob `~/.ado-team-compass/runtime`. Se você já instalou o pacote acima, é essa instalação que o bundle usa.
+
+O motor é servido ao assistente como um servidor MCP local: as skills chamam ferramentas (`atc_status`, `atc_demo`, `atc_doctor`…), não comandos de shell. Falta apenas apontar o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização — é por ele que toda leitura acontece. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+
+Requisito do bundle: Python 3.12 ou superior no sistema. Para fixar um interpretador, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele.
 
 📖 Consulte o [**Guia de Introdução do Plugin e Catálogo de Skills**](docs/get-started-plugin.md) para o passo a passo completo de instalação nos assistentes e exemplos práticos para cada uma das 8 skills disponíveis.
 

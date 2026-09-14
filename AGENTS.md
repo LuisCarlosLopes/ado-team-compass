@@ -95,6 +95,7 @@ ado-team-compass/
 │   ├── contracts/              # Modelos Pydantic (config, fatos, métricas, execuções, manifestos)
 │   ├── schemas/                # Schemas canônicos JSON versionados
 │   ├── mcp/                    # Cliente MCP oficial, gerenciamento de sessão e transportes stdio/sse
+│   ├── server/                 # Servidor MCP do motor: expõe as entradas da CLI como ferramentas atc_* ao host de IA
 │   ├── adapters/               # Adaptadores MCP específicos (allowlist por ferramenta/ação, catálogo)
 │   ├── collect/                # Coletores de dados (projetos, equipes, capacidades, itens, histórico)
 │   ├── metrics/                # Motor puro de cálculo: sprint, alocação, histórico, planejamento e forecast
@@ -108,6 +109,7 @@ ado-team-compass/
 ├── integrations/               # Integrações com assistentes de IA e serviços externos
 │   ├── shared/                 # FONTE ÚNICA de instruções e skills para assistentes locais
 │   │   ├── hosts.yaml          # Metadados de empacotamento para Claude, Antigravity, Codex e Cursor
+│   │   ├── launcher/           # Launcher stdlib que sobe o servidor MCP do motor no bundle instalado
 │   │   └── skills/             # 8 skills compartilhadas (atc-status, atc-allocation, atc-evidence, etc.)
 │   └── chatgpt/                # Integração remota GPT Actions (OpenAPI 3.1, instruções do Custom GPT)
 ├── plugin/                     # BUNDLES GERADOS para cada assistente (NÃO EDITAR DIRETAMENTE)
@@ -271,16 +273,27 @@ Os plugins de assistente de IA funcionam como atalhos para invocar o motor Pytho
 7. **`atc-doctor`:** Diagnóstico de saúde do ambiente, ferramentas MCP disponíveis e sessão ativa.
 8. **`atc-demo`:** Demonstração completa offline para validação de layout e recursos sem credenciais.
 
+### Como o Host Alcança o Motor
+As skills não executam comando de shell: elas chamam as ferramentas `atc_*` de um **servidor MCP local** que acompanha o bundle. Isso elimina o pré-requisito de instalar a CLI antes do plugin.
+
+- O servidor vive em `src/ado_team_compass/server/` e cada ferramenta é um envelope fino sobre uma entrada da CLI (mesmo handler, mesmas fórmulas, mesmos códigos de saída). Nenhuma métrica é calculada lá.
+- O processo é subido por `bin/atc-mcp.py`, launcher só com biblioteca padrão presente em todo bundle. Ordem de resolução: `ADO_TEAM_COMPASS_ENGINE_PYTHON` → motor já instalado → ambiente gerenciado em `~/.ado-team-compass/runtime` → wheel embutido em `engine/` do pacote de release.
+- O launcher nunca escreve em stdout: esse descritor é o canal do protocolo MCP.
+- O produto continua **cliente** do MCP oficial da Microsoft (`src/ado_team_compass/mcp/`), que segue sendo o único canal ao Azure DevOps. São dois papéis distintos, e os testes de contrato impedem que se misturem.
+
 ### Hosts Suportados e Peculiaridades de Manifesto
+- **Claude Code:** Manifesto `.claude-plugin/plugin.json` (com `mcpServers` gerado, usando `${CLAUDE_PLUGIN_ROOT}`), catálogo em `.claude-plugin/marketplace.json` e hooks de sessão em `plugin/claude/hooks/`. Único host em que o servidor sobe sem registro manual.
 - **Google Antigravity:** Manifesto raiz `plugin.json` estrito e CLI-safe (DECISÃO-002), omitindo propriedades extras desconhecidas para garantir compatibilidade simultânea no IDE e no Antigravity CLI.
-- **Claude Code:** Manifesto `.claude-plugin/plugin.json`, catálogo em `.claude-plugin/marketplace.json` e hooks de sessão em `plugin/claude/hooks/`.
 - **OpenAI Codex:** Manifesto `.codex-plugin/plugin.json` apontando para a pasta `./skills/`.
-- **Cursor:** Manifesto `.cursor-plugin/plugin.json` no formato Cursor Plugin, com suporte nativo a reaproveitar a sessão configurada em `.cursor/mcp.json` via `--from-mcp-config`.
+- **Cursor:** Manifesto `.cursor-plugin/plugin.json` no formato Cursor Plugin, com suporte nativo a reaproveitar a sessão configurada em `.cursor/mcp.json` via `from_mcp_config`.
 - **ChatGPT (GPT Actions):** Integração remota via OpenAPI 3.1 em `integrations/chatgpt/openapi.json` conectada ao Gateway FastAPI (`src/ado_team_compass/gateway/`).
+
+> [!NOTE]
+> Antigravity, Codex e Cursor não expõem uma variável com a raiz do bundle, então a declaração do servidor não é gerada para eles: cada bundle traz um `mcp-server.json` com a entrada pronta, faltando só o caminho absoluto da instalação.
 
 > [!IMPORTANT]
 > **NUNCA EDITE ARQUIVOS EM `plugin/` DIRETAMENTE.**
-> Todas as alterações em instruções ou metadados de skills devem ser feitas em `integrations/shared/skills/` ou `integrations/shared/hosts.yaml`. Em seguida, execute `uv run python packaging/build_bundles.py` para regenerar os bundles de forma consistente.
+> Todas as alterações em instruções, metadados de skills ou no launcher devem ser feitas em `integrations/shared/skills/`, `integrations/shared/hosts.yaml` ou `integrations/shared/launcher/`. Em seguida, execute `uv run python packaging/build_bundles.py` para regenerar os bundles de forma consistente.
 
 ---
 
