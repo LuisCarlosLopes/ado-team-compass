@@ -4,7 +4,7 @@ Bundle gerado a partir de `integrations/shared/`. Não edite os arquivos deste d
 instruções compartilhadas vivem na fonte comum e os bundles são regenerados por
 `python packaging/build_bundles.py`.
 
-Versão do motor: 0.2.0
+Versão do motor: 0.3.0
 
 ## Instalação
 

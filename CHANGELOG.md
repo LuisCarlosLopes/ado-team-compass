@@ -5,6 +5,8 @@ Versionamento semântico do motor; os contratos têm versão de schema própria 
 
 ## [Não lançado]
 
+## [0.3.0] — 2026-09-14
+
 ### Alterado
 
 - O motor passa a ser servido ao assistente como **servidor MCP local** (`ado-team-compass-mcp`):
@@ -32,6 +34,12 @@ Versionamento semântico do motor; os contratos têm versão de schema própria 
 - Requisito mínimo de Python baixou de 3.12 para **3.11**. Nenhuma dependência exigia 3.12
   (o piso real era 3.10, de `mcp` e `anyio`) e o código não usa sintaxe nem API exclusivas
   de 3.12. A suíte completa roda em 3.11, que entrou na matriz do CI.
+
+### Corrigido
+
+- A matriz do CI passa a usar de fato `matrix.python-version` no setup do uv e confirma o
+  interpretador em uso. O teste de permissão do material de autorização deixa de assumir
+  modo POSIX, para o job Windows não falhar.
 
 ## [Não lançado] — v0.1 em construção
 
