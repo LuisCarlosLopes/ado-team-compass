@@ -26,7 +26,7 @@ flowchart TD
 
 ### Pilares de Segurança e Confiabilidade
 1. **Exclusividade MCP Oficial (`MCP_ONLY`):** O Compass nunca faz requisições REST/OData diretas para `dev.azure.com`, não usa SDKs e não faz web scraping. Toda a comunicação ocorre estritamente pelo servidor oficial da Microsoft ([microsoft/azure-devops-mcp](https://github.com/microsoft/azure-devops-mcp)).
-2. **Zero Credenciais (`ZERO_SECRETS`):** O produto não armazena, não solicita e não manipula tokens pessoais (PATs), senhas ou JWTs. A autenticação pertence exclusivamente à sessão MCP gerenciada pelo seu host/ambiente.
+2. **Zero Credenciais (`ZERO_SECRETS`):** O produto nunca pede senha nem PAT, e nenhum valor de credencial entra na configuração do Compass, nos artefatos de execução ou em log. No transporte stdio, a credencial pertence ao ambiente da configuração de MCP do host, lido na conexão por referência. No transporte remoto, a autorização é concedida pelo provedor de identidade da organização, no navegador, e o material resultante fica isolado em `~/.ado-team-compass/auth` com permissão restrita ao dono.
 3. **Estritamente Leitura (`READ_ONLY`):** O Compass nunca altera o estado de work items, nunca move cards, nunca apaga dados e nunca comenta no Azure DevOps.
 4. **Cálculo Determinístico e Puro:** Todas as fórmulas e totais vêm do motor Python puro, sem intervenção criativa de LLMs. Se faltarem estimativas ou dados no board, o Compass aponta a lacuna como `partial` ou `unavailable` — nunca inventa zeros ou números hipotéticos.
 5. **Foco Coletivo e Não Punitivo:** A ferramenta não calcula rankings individuais, não julga produtividade e não deduz ociosidade de colaboradores.
@@ -140,6 +140,48 @@ Após o setup, abra `.ado-team-compass/config.yaml` para ajustar o perfil de cad
 - `sprint_with_capacity`: Times Scrum que usam estimativas de horas restantes e capacidade de membros.
 - `sprint_without_hours`: Times que operam por contagem de itens ou pontos, sem horas individuais.
 - `continuous_flow`: Times Kanban ou de sustentação com fluxo contínuo.
+
+---
+
+## 4.1. Como o Compass alcança o Azure DevOps
+
+> [!IMPORTANT]
+> **O Compass não herda a sessão de MCP do seu assistente.** Ter o servidor oficial
+> configurado no host não basta: o motor é um cliente MCP independente e abre a própria
+> conexão, a partir de `.ado-team-compass/config.yaml`. É por isso que `atc_setup` existe.
+
+Há dois transportes, e o que você precisa ter instalado muda entre eles.
+
+### Transporte stdio — reaproveita o que o host já tem (recomendado)
+
+O Compass **sobe o processo do servidor oficial da Microsoft ele mesmo**, então o pacote
+`@azure-devops/mcp` precisa estar disponível na máquina — na prática, Node e `npx`.
+
+Chame `atc_setup` com `from_mcp_config` apontando para a configuração de MCP do host (e
+`mcp_server`, se o servidor não se chamar `ado`). O que é copiado: comando, argumentos e uma
+**referência** ao arquivo de onde o ambiente será lido na conexão. A credencial em si nunca
+entra na configuração do Compass.
+
+```bash
+ado-team-compass setup --from-mcp-config .cursor/mcp.json --mcp-server ado
+```
+
+### Transporte remoto — nada a instalar, autorização explícita
+
+`atc_setup` com `organization` aponta para o servidor remoto oficial
+(`https://mcp.azuredevops.com/{organização}/mcp`). Não há nada para instalar, mas o acesso
+precisa ser autorizado uma vez:
+
+- Chame **`atc_login`**. O Compass abre o navegador, você autentica no provedor de identidade
+  da sua organização e a autorização volta para um endereço em `127.0.0.1`. Nenhuma senha,
+  PAT ou token é digitado no Compass ou visto por ele.
+- O material fica em `~/.ado-team-compass/auth`, com permissão restrita ao dono, e é renovado
+  sozinho enquanto valer. Nenhuma coleta abre navegador: se a autorização faltar, a resposta
+  é `exit_code` 3 dizendo para chamar `atc_login`.
+- **`atc_logout`** apaga o material local. A revogação da concessão acontece no provedor de
+  identidade da organização, não aqui.
+
+`atc_doctor` informa o estado da autorização no bloco `authorization`, sem expor nenhum valor.
 
 ---
 

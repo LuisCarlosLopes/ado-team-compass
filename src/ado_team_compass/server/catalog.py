@@ -186,6 +186,32 @@ TOOLS: tuple[ToolSpec, ...] = (
         reaches_ado=True,
     ),
     ToolSpec(
+        name="atc_login",
+        command="login",
+        title="Autorizar leitura no servidor remoto oficial",
+        description=(
+            "Conduz a autorização de leitura do servidor MCP remoto oficial no navegador do "
+            "usuário e confirma o acesso com um handshake. Use quando outra ferramenta "
+            "responder saída 3 com autorização ausente. Nenhuma senha, PAT ou token é pedido "
+            "ou visto pelo Compass: quem autentica é o provedor de identidade da organização. "
+            "Não se aplica a conexões stdio, onde a credencial pertence ao ambiente do host."
+        ),
+        parameters=("organization", "team", "config", "format"),
+        read_only=False,
+        reaches_ado=True,
+    ),
+    ToolSpec(
+        name="atc_logout",
+        command="logout",
+        title="Apagar a autorização local",
+        description=(
+            "Apaga o material de autorização guardado nesta máquina. Não revoga a concessão no "
+            "provedor de identidade da organização — isso é feito lá, não aqui."
+        ),
+        parameters=("organization", "team", "config", "format"),
+        read_only=False,
+    ),
+    ToolSpec(
         name="atc_setup",
         command="setup",
         title="Descoberta e configuração",

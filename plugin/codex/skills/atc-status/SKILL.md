@@ -45,4 +45,4 @@ do HTML autocontido gravado localmente.
 ## Ambiente (Codex)
 
 - O motor é servido por um servidor MCP local que acompanha este bundle: chame as ferramentas `atc_*`. Nenhuma chave de API adicional é necessária para calcular ou renderizar.
-- Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do Codex, apontando para o servidor remoto oficial da organização.
+- O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial na configuração de MCP do Codex, reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para esse arquivo — é o caminho recomendado.

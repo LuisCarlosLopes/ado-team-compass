@@ -51,7 +51,11 @@ Pré-requisitos em qualquer IDE local:
 
 1. Python 3.11+ no sistema. O motor acompanha o bundle e é preparado na primeira execução por
    `bin/atc-mcp.py`; uma instalação existente de `ado-team-compass` é reaproveitada.
-2. Servidor MCP oficial autenticado **no host** (não dentro do Compass).
+2. Acesso ao servidor MCP oficial. **O Compass não herda a sessão do host:** ele abre a
+   própria conexão a partir de `.ado-team-compass/config.yaml`. No transporte stdio, a
+   credencial vem do ambiente declarado na configuração de MCP do host, lido na conexão pela
+   referência `env_ref`. No transporte remoto, a autorização é concedida uma vez pela entrada
+   `login` (ferramenta `atc_login`), no navegador do usuário.
 3. Config local `.ado-team-compass/config.yaml`, gerada por `atc_setup` (pode reutilizar MCP
    do host com `from_mcp_config`).
 

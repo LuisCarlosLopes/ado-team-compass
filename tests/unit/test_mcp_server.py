@@ -17,6 +17,8 @@ from ado_team_compass.server.runner import UNEXPECTED_FAILURE, CommandResult
 
 CLI_COMMANDS = {
     "version",
+    "login",
+    "logout",
     "doctor",
     "setup",
     "status",
@@ -99,7 +101,14 @@ def test_input_schema_refuses_extra_properties():
 
 def test_tools_that_reach_ado_are_marked_as_open_world():
     reaching = {tool.name for tool in TOOLS if tool.reaches_ado}
-    assert reaching == {"atc_doctor", "atc_setup", "atc_status", "atc_history", "atc_planning"}
+    assert reaching == {
+        "atc_doctor",
+        "atc_login",
+        "atc_setup",
+        "atc_status",
+        "atc_history",
+        "atc_planning",
+    }
     for tool in TOOLS:
         descriptor = describe(tool)
         assert descriptor.annotations is not None

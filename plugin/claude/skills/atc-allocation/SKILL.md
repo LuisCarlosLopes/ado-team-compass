@@ -39,4 +39,4 @@ classe e quantos itens estão sem valor.
 ## Ambiente (Claude Code)
 
 - O motor é servido pelo servidor MCP declarado no manifesto deste plugin: chame as ferramentas `atc_*`. Não há comando de shell a executar e nada precisa ser instalado antes do plugin.
-- Configure o servidor MCP oficial do Azure DevOps no próprio Claude Code (`claude mcp add`), apontando para o servidor remoto oficial da organização.
+- O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial configurado no Claude Code (`claude mcp add`), reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para o arquivo de configuração do host — é o caminho recomendado.

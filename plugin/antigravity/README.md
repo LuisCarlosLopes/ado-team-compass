@@ -10,7 +10,7 @@ Versão do motor: 0.2.0
 
 1. Instale este bundle conforme o procedimento do Google Antigravity.
 2. O manifesto deste host é mínimo por decisão de compatibilidade: registre o servidor na configuração de MCP do Antigravity, com o comando `python3` e o caminho absoluto de `bin/atc-mcp.py` dentro do bundle instalado. O arquivo `mcp-server.json` do bundle traz a entrada pronta para copiar.
-3. Configure o servidor MCP oficial do Azure DevOps na configuração de MCP do Antigravity, apontando para o servidor remoto oficial da organização.
+3. O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial na configuração de MCP do Antigravity, reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para esse arquivo — é o caminho recomendado.
 4. Valide chamando a ferramenta `atc_doctor` e, sem credencial, `atc_demo`.
 
 Não é preciso instalar a CLI antes. O motor acompanha o pacote de release em `engine/` e

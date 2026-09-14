@@ -10,7 +10,7 @@ Versão do motor: 0.2.0
 
 1. Instale este bundle conforme o procedimento do Cursor.
 2. Este host não expõe uma variável com a raiz do bundle, então a declaração do servidor não é gerada: acrescente `ado-team-compass` em `.cursor/mcp.json` com o comando `python3` e o caminho absoluto de `bin/atc-mcp.py` dentro do bundle instalado. O arquivo `mcp-server.json` do bundle traz a entrada pronta para copiar.
-3. Configure o servidor MCP oficial do Azure DevOps no Cursor (em `.cursor/mcp.json` ou nas configurações de MCP), apontando para o servidor remoto oficial da organização. Opcionalmente informe `from_mcp_config` com esse caminho ao chamar `atc_setup`.
+3. O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial em `.cursor/mcp.json`, reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para esse arquivo — é o caminho recomendado.
 4. Valide chamando a ferramenta `atc_doctor` e, sem credencial, `atc_demo`.
 
 Não é preciso instalar a CLI antes. O motor acompanha o pacote de release em `engine/` e

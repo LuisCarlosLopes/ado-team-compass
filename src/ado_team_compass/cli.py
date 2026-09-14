@@ -761,6 +761,109 @@ def _bootstrap_connection(organization: str) -> ConnectionConfig:
     )
 
 
+def _connection_for_auth(args: argparse.Namespace) -> ConnectionConfig:
+    """Conexão alvo da autorização: a configurada, ou uma mínima a partir da organização."""
+    resolved = _load_optional_config(args)
+    alias: str | None = getattr(args, "team", None)
+    if resolved is not None and resolved.config.connections:
+        connections = list(resolved.config.connections)
+        if alias is not None:
+            chosen = [item for item in connections if item.alias == alias]
+            if not chosen:
+                raise ConfigError(
+                    "E_CONEXAO_INEXISTENTE",
+                    f"Não há conexão configurada com o alias {alias!r}.",
+                    detail={"available": [item.alias for item in connections]},
+                    remediation="Informe --team com um dos aliases disponíveis.",
+                )
+            return chosen[0]
+        if len(connections) > 1:
+            raise ConfigError(
+                "E_CONEXAO_AMBIGUA",
+                "Há mais de uma conexão configurada e nenhuma foi indicada.",
+                detail={"available": [item.alias for item in connections]},
+                remediation="Informe --team com o alias da conexão a autorizar.",
+            )
+        return connections[0]
+    organization = getattr(args, "organization", None)
+    if not organization:
+        raise ConfigError(
+            "E_SETUP_ORGANIZACAO_AUSENTE",
+            "Sem configuração local, a organização precisa ser informada.",
+            remediation="Informe --organization, ou execute 'setup' antes.",
+        )
+    return _bootstrap_connection(organization)
+
+
+def _require_remote_transport(connection: ConnectionConfig) -> str:
+    """Autorização só existe no servidor remoto: no stdio a credencial vem do host."""
+    if connection.server.transport is not McpTransport.HTTP:
+        raise ConfigError(
+            "E_AUTORIZACAO_NAO_SE_APLICA",
+            "Esta conexão usa o transporte stdio, cuja credencial pertence ao ambiente do host.",
+            detail={"alias": connection.alias, "transport": connection.server.transport.value},
+            remediation=(
+                "Nada a autorizar aqui: mantenha a sessão do host autenticada, ou reconfigure "
+                "com 'setup --organization' para usar o servidor remoto oficial."
+            ),
+        )
+    return connection.server.resolved_url(connection.organization)
+
+
+def _handle_login(args: argparse.Namespace) -> ExitCode:
+    """Autoriza o acesso de leitura ao servidor remoto oficial, no navegador do usuário.
+
+    É um ato humano explícito: nenhuma outra entrada abre navegador nem espera por pessoa.
+    """
+    from ado_team_compass.adapters.ado_mcp import AdoMcpClient
+    from ado_team_compass.mcp.session.auth import authorization_state, interactive_auth
+    from ado_team_compass.mcp.session.official import official_transport
+
+    connection = _connection_for_auth(args)
+    url = _require_remote_transport(connection)
+    factory = getattr(args, "_transport_factory", None)
+    with interactive_auth(url) as provider:
+        opener = factory or official_transport
+        with opener(connection, auth=provider) as transport:
+            # O handshake é o que exercita a autorização de ponta a ponta: sem catálogo
+            # negociado, não há prova de que o acesso de leitura existe.
+            client = AdoMcpClient(transport=transport)
+            catalog = client.handshake()
+    _emit(
+        {
+            "alias": connection.alias,
+            "organization": connection.organization,
+            "server_url": url,
+            "authorization": authorization_state(url),
+            "catalog_hash": catalog.catalog_hash,
+        },
+        args,
+    )
+    return ExitCode.OK
+
+
+def _handle_logout(args: argparse.Namespace) -> ExitCode:
+    """Apaga o material local de autorização. Não revoga nada no provedor de identidade."""
+    from ado_team_compass.mcp.session.auth import forget_authorization
+
+    connection = _connection_for_auth(args)
+    url = _require_remote_transport(connection)
+    removed = forget_authorization(url)
+    _emit(
+        {
+            "alias": connection.alias,
+            "server_url": url,
+            "removed": removed,
+            "note": (
+                "O material local foi apagado. A revogação da concessão acontece no provedor "
+                "de identidade da organização, não aqui."
+            ),
+        },
+        args,
+    )
+    return ExitCode.OK
+
+
 def _handle_doctor(args: argparse.Namespace) -> ExitCode:
     factory: TransportFactory | None = getattr(args, "_transport_factory", None)
     resolved = _load_optional_config(args)
@@ -788,6 +891,18 @@ def _emit(payload: dict[str, Any], args: argparse.Namespace) -> None:
 
 COMMANDS: tuple[_Command, ...] = (
     _Command("version", "Informa a versão do motor", "v0.1", _handle_version),
+    _Command(
+        "login",
+        "Autoriza a leitura no servidor remoto oficial",
+        "v0.2",
+        _handle_login,
+    ),
+    _Command(
+        "logout",
+        "Apaga a autorização local do servidor remoto oficial",
+        "v0.2",
+        _handle_logout,
+    ),
     _Command("setup", "Resolve organização, projetos, equipes e perfis", "v0.1", _handle_setup),
     _Command(
         "doctor",

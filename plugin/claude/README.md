@@ -10,7 +10,7 @@ Versão do motor: 0.2.0
 
 1. Instale este bundle conforme o procedimento do Claude Code.
 2. O manifesto deste bundle já declara o servidor `ado-team-compass`; o Claude Code o sobe junto com o plugin.
-3. Configure o servidor MCP oficial do Azure DevOps no próprio Claude Code (`claude mcp add`), apontando para o servidor remoto oficial da organização.
+3. O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial configurado no Claude Code (`claude mcp add`), reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para o arquivo de configuração do host — é o caminho recomendado.
 4. Valide chamando a ferramenta `atc_doctor` e, sem credencial, `atc_demo`.
 
 Não é preciso instalar a CLI antes. O motor acompanha o pacote de release em `engine/` e

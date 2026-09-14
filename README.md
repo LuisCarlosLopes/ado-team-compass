@@ -50,7 +50,14 @@ Abra `relatorio-demo.html` no navegador.
 
 Na mesma Release, baixe o bundle do host que você usa (**Claude Code**, **Google Antigravity**, **Codex** ou **Cursor**) e instale-o. **Não é preciso instalar a CLI antes:** o bundle traz o motor e o prepara sozinho na primeira execução, em um ambiente isolado sob `~/.ado-team-compass/runtime`. Se você já instalou o pacote acima, é essa instalação que o bundle usa.
 
-O motor é servido ao assistente como um servidor MCP local: as skills chamam ferramentas (`atc_status`, `atc_demo`, `atc_doctor`…), não comandos de shell. Falta apenas apontar o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização — é por ele que toda leitura acontece. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
+O motor é servido ao assistente como um servidor MCP local: as skills chamam ferramentas (`atc_status`, `atc_demo`, `atc_doctor`…), não comandos de shell.
+
+Falta então conectar ao [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) — é por ele que toda leitura acontece. **O Compass não herda a sessão do seu assistente:** ele abre a própria conexão, e por isso o `atc_setup` existe. Dois caminhos:
+
+- **Reaproveitar o que o host já tem** (recomendado): `atc_setup` com `from_mcp_config` apontando para a configuração de MCP do assistente. O Compass copia comando e argumentos e guarda só uma referência ao arquivo de onde o ambiente é lido na conexão — nenhuma credencial entra na configuração dele. Exige o pacote oficial disponível na máquina (Node/`npx`).
+- **Servidor remoto oficial**: `atc_setup` com `organization` e, uma única vez, `atc_login` — você autoriza no navegador, no provedor de identidade da sua organização. Nada para instalar e nenhuma senha, PAT ou token digitado no Compass.
+
+Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
 
 Requisito do bundle: Python 3.11 ou superior no sistema. Para fixar um interpretador, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele.
 

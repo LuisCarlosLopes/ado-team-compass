@@ -45,4 +45,4 @@ do HTML autocontido gravado localmente.
 ## Ambiente (Cursor)
 
 - O motor é servido por um servidor MCP local que acompanha este bundle: chame as ferramentas `atc_*`. O motor roda na máquina do usuário e não altera o board.
-- Configure o servidor MCP oficial do Azure DevOps no Cursor (em `.cursor/mcp.json` ou nas configurações de MCP), apontando para o servidor remoto oficial da organização. Opcionalmente informe `from_mcp_config` com esse caminho ao chamar `atc_setup`.
+- O Compass não herda a sessão de MCP do host: ele abre a própria conexão com o servidor oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Se você já tem o servidor oficial em `.cursor/mcp.json`, reaproveite essa definição chamando `atc_setup` com `from_mcp_config` apontando para esse arquivo — é o caminho recomendado.
