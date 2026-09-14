@@ -21,8 +21,15 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          # Sem isto a matriz de versões é decorativa: todos os jobs rodariam o mesmo
+          # interpretador que o uv escolhesse por conta própria.
+          python-version: ${{ matrix.python-version }}
       - name: Sincronizar ambiente travado
         run: uv sync --group dev --extra api --frozen
+      - name: Confirmar que o interpretador é o da matriz
+        env:
+          ESPERADO: ${{ matrix.python-version }}
+        run: uv run python -c "import os, sys; esperado = os.environ['ESPERADO']; assert sys.version.startswith(esperado), sys.version; print(sys.version)"
       - name: Estilo
         run: uv run ruff check .
       - name: Formatação
