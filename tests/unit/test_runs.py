@@ -216,7 +216,7 @@ def _key(**overrides) -> CacheKey:
         "team_id": "t1",
         "scope": "Demo\\Core|descendants=True",
         "period": "Demo\\Sprint 42",
-        "engine_version": "0.2.0",
+        "engine_version": "0.3.0",
     }
     base.update(overrides)
     return CacheKey(**base)  # type: ignore[arg-type]
@@ -242,7 +242,7 @@ def test_cache_expires_after_ttl(tmp_path):
         {"team_id": "t2"},
         {"scope": "Demo\\Outra"},
         {"period": "Demo\\Sprint 43"},
-        {"engine_version": "0.3.0"},
+        {"engine_version": "0.4.0"},
     ],
 )
 def test_cache_is_isolated_by_every_key_dimension(tmp_path, override):

@@ -230,7 +230,7 @@ O ADO Team Compass disponibiliza **8 skills especializadas**. Cada uma atende a 
   Chama `atc_doctor`.
 - **Interpretação da Resposta:**
   ```text
-  Versão do motor: 0.2.0
+  Versão do motor: 0.3.0
   Configuração: Válida (.ado-team-compass/config.yaml)
   Sessão MCP: Conectada (microsoft/azure-devops-mcp)
   Operações resolvidas: 7 disponíveis

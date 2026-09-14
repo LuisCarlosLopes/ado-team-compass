@@ -85,7 +85,7 @@ Seguindo as convenções do projeto e as regras globais do usuário:
 ```
 ado-team-compass/
 ├── src/ado_team_compass/       # Pacote principal da aplicação
-│   ├── __init__.py             # Versão do pacote (v0.2.0)
+│   ├── __init__.py             # Versão do pacote (v0.3.0)
 │   ├── cli.py                  # Ponto de entrada CLI e parser de subcomandos
 │   ├── pipeline.py             # Orquestrador de fluxo completo (coleta -> métricas -> persistência -> relatório)
 │   ├── diagnostics.py          # Verificador de ambiente, MCP e conectividade (doctor)
