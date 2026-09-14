@@ -17,6 +17,9 @@ Versionamento semântico do motor; os contratos têm versão de schema própria 
   Codex e Cursor não expõem a raiz do bundle, então recebem um `mcp-server.json` pronto para
   registrar à mão.
 - O campo `requirements` saiu dos manifestos: o motor não é mais pré-requisito externo.
+- Requisito mínimo de Python baixou de 3.12 para **3.11**. Nenhuma dependência exigia 3.12
+  (o piso real era 3.10, de `mcp` e `anyio`) e o código não usa sintaxe nem API exclusivas
+  de 3.12. A suíte completa roda em 3.11, que entrou na matriz do CI.
 
 ## [Não lançado] — v0.1 em construção
 

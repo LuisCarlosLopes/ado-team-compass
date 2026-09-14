@@ -49,7 +49,7 @@ shell na instrução.
 
 Pré-requisitos em qualquer IDE local:
 
-1. Python 3.12+ no sistema. O motor acompanha o bundle e é preparado na primeira execução por
+1. Python 3.11+ no sistema. O motor acompanha o bundle e é preparado na primeira execução por
    `bin/atc-mcp.py`; uma instalação existente de `ado-team-compass` é reaproveitada.
 2. Servidor MCP oficial autenticado **no host** (não dentro do Compass).
 3. Config local `.ado-team-compass/config.yaml`, gerada por `atc_setup` (pode reutilizar MCP
@@ -172,9 +172,9 @@ substitui a instalação do pacote Python.
 
 - **Nada foi testado no host real.** Status permitido na matriz de validação: planejado,
   testado, falhou ou não suportado. Hoje tudo permanece “implementado / não verificado”.
-- O bundle carrega o motor e o prepara sozinho, mas **depende de Python 3.12+ no sistema**:
+- O bundle carrega o motor e o prepara sozinho, mas **depende de Python 3.11+ no sistema**:
   uma dependência do motor tem código compilado. Onde o `python3` do sistema é anterior a
-  3.12, o launcher procura um interpretador compatível no PATH e falha com mensagem acionável
+  3.11, o launcher procura um interpretador compatível no PATH e falha com mensagem acionável
   se não houver nenhum.
 - A preparação automática **exige rede na primeira execução** para resolver as dependências do
   wheel. Em ambiente fechado, instale o motor antes e use `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.

@@ -47,7 +47,7 @@ Status permitidos:
 Para cada host a ser certificado, o operador deve seguir este fluxo e anexar os resultados:
 
 ### Passo 1 — Instalação do Motor Python
-1. Confirmar Python 3.12 ou superior no sistema:
+1. Confirmar Python 3.11 ou superior no sistema:
    ```bash
    python3 --version
    ```

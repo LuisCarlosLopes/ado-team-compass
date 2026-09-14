@@ -73,7 +73,7 @@ Seguindo as convenções do projeto e as regras globais do usuário:
 
 ### Padrões Técnicos
 - **Ambiente & OS:** macOS (comandos e scripts compatíveis com ambiente Unix/macOS).
-- **Python:** 3.12 ou superior (`requires-python = ">=3.12"`).
+- **Python:** 3.11 ou superior (`requires-python = ">=3.11"`).
 - **Tipagem Estrita:** Código 100% tipado, validado por `mypy` no modo estrito (`strict = true`, plugin `pydantic.mypy`). Não utilize `Any` sem justificativa prévia e nunca ignore erros de tipagem com `# type: ignore` generalizado.
 - **Modelos de Dados:** Pydantic v2 para contratos, validações e schemas JSON.
 - **Estilo e Formatação:** Ruff configurado com comprimento de linha de 100 caracteres (`line-length = 100`) e conjunto estrito de regras (`E`, `F`, `I`, `UP`, `B`, `SIM`, `RUF`, `ANN`, `PTH`).

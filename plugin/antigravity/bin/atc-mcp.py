@@ -27,7 +27,7 @@ BUNDLE = Path(__file__).resolve().parent.parent
 #: Onde o wheel do motor é procurado, na ordem, dentro do bundle.
 WHEEL_DIRECTORIES = ("engine", "bin")
 
-MINIMUM_PYTHON = (3, 12)
+MINIMUM_PYTHON = (3, 11)
 
 
 def log(message: str) -> None:
@@ -190,7 +190,7 @@ def compatible_interpreter() -> str | None:
     O `python3` do sistema costuma ser antigo — no macOS ainda é 3.9. Procurar por nome com
     versão evita que o host precise saber qual interpretador apontar.
     """
-    for name in ("python3.14", "python3.13", "python3.12", "python3"):
+    for name in ("python3.14", "python3.13", "python3.12", "python3.11", "python3"):
         found = shutil.which(name)
         if found and interpreter_version(found) >= MINIMUM_PYTHON:
             return found

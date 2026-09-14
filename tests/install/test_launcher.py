@@ -160,7 +160,7 @@ def test_the_interpreter_swap_never_loops(monkeypatch):
     module = load()
     monkeypatch.setattr(module.sys, "version_info", (3, 9, 6))
     monkeypatch.setenv("ADO_TEAM_COMPASS_LAUNCHER_REEXEC", "1")
-    with pytest.raises(SystemExit, match=r"3\.12 ou superior"):
+    with pytest.raises(SystemExit, match=r"3\.11 ou superior"):
         module.main()
 
 

@@ -174,6 +174,6 @@ def test_bundle_readme_documents_installation_and_limits():
     for host_key in HOSTS:
         readme = (_bundle(host_key) / "README.md").read_text(encoding="utf-8")
         assert "Não é preciso instalar a CLI antes" in readme
-        assert "Python 3.12" in readme
+        assert "Python 3.11" in readme
         assert "Somente leitura" in readme
         assert "precisa ser verificada em instalação real" in readme

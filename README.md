@@ -26,7 +26,7 @@ Foi desenhado para Scrum Masters, tech leads e gestores de entrega que precisam 
 
 ## 📥 Instalação
 
-Requisito: **Python 3.12 ou superior**, em macOS, Linux ou Windows.
+Requisito: **Python 3.11 ou superior**, em macOS, Linux ou Windows.
 
 ### Pacote pronto (para uso no terminal)
 
@@ -52,7 +52,7 @@ Na mesma Release, baixe o bundle do host que você usa (**Claude Code**, **Googl
 
 O motor é servido ao assistente como um servidor MCP local: as skills chamam ferramentas (`atc_status`, `atc_demo`, `atc_doctor`…), não comandos de shell. Falta apenas apontar o assistente para o [servidor MCP oficial do Azure DevOps](https://github.com/microsoft/azure-devops-mcp) da sua organização — é por ele que toda leitura acontece. Depois disso, perguntas como “o que precisa de atenção na daily?” passam a usar o mesmo relatório.
 
-Requisito do bundle: Python 3.12 ou superior no sistema. Para fixar um interpretador, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele.
+Requisito do bundle: Python 3.11 ou superior no sistema. Para fixar um interpretador, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele.
 
 📖 Consulte o [**Guia de Introdução do Plugin e Catálogo de Skills**](docs/get-started-plugin.md) para o passo a passo completo de instalação nos assistentes e exemplos práticos para cada uma das 8 skills disponíveis.
 
@@ -137,7 +137,7 @@ ado-team-compass evidence --run 20260915T120000-demo --reference 108
 Não. A ferramenta não aceita e não armazena credencial do Azure DevOps. A sessão fica no servidor MCP oficial da Microsoft. Se o acesso expirar, renove essa sessão e rode `ado-team-compass doctor` de novo.
 
 **O que preciso ter instalado?**
-Python 3.12 ou superior. Para dados reais, a sessão autenticada do MCP oficial da sua organização. Sem essa sessão, funcionam apenas `demo` e a leitura de relatórios já gerados (`report`, `render`, `evidence`, `replay`).
+Python 3.11 ou superior. Para dados reais, a sessão autenticada do MCP oficial da sua organização. Sem essa sessão, funcionam apenas `demo` e a leitura de relatórios já gerados (`report`, `render`, `evidence`, `replay`).
 
 **O relatório veio “parcial”. É um erro?**
 Em geral, não. Significa que faltou algum dado no board — item sem horas, estado não mapeado, folga da equipe ausente. O Compass prefere marcar a lacuna a preencher com zero. Corrija o dado na origem ou o mapeamento de estados e rode `status` de novo.

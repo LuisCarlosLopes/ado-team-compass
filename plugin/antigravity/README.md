@@ -18,7 +18,7 @@ Não é preciso instalar a CLI antes. O motor acompanha o pacote de release em `
 `~/.ado-team-compass/runtime`. Quando o pacote `ado-team-compass` já estiver instalado na
 máquina, é essa instalação que o launcher usa.
 
-Requisito: Python 3.12 ou superior acessível como `python3`. Se o interpretador tiver outro
+Requisito: Python 3.11 ou superior acessível como `python3`. Se o interpretador tiver outro
 nome ou você quiser fixar um ambiente específico, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para
 o interpretador desejado. Para proibir a preparação automática, defina
 `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.

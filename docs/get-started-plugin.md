@@ -35,14 +35,13 @@ flowchart TD
 
 ## 2. Pré-requisitos de Instalação
 
-1. **Python 3.12 ou superior** no sistema (macOS, Linux ou Windows):
+1. **Python 3.11 ou superior** no sistema (macOS, Linux ou Windows):
    ```bash
    python3 --version
    ```
    O motor é Python e uma de suas dependências tem código compilado, então não há como
-   dispensar o interpretador. Se o `python3` do seu sistema for anterior a 3.12 — no macOS
-   ainda é 3.9 — o launcher procura sozinho um `python3.12`, `python3.13` ou `python3.14` no
-   PATH. Para fixar um interpretador específico, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON`
+   dispensar o interpretador. Se o `python3` do seu sistema for anterior a 3.11 — no macOS
+   ainda é 3.9 — o launcher procura sozinho um `python3.11` a `python3.14` no PATH. Para fixar um interpretador específico, aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON`
    para ele.
 
 2. **Servidor MCP Oficial do Azure DevOps ativo no host de IA:** siga as orientações do

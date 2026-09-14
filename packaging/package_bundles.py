@@ -45,7 +45,7 @@ PATH e reaproveitá-lo em outros hosts:
    python -m pip install engine/{wheel_name}
    ```
 
-Requisito: Python 3.12 ou superior acessível como `python3`. Para fixar outro interpretador,
+Requisito: Python 3.11 ou superior acessível como `python3`. Para fixar outro interpretador,
 aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele; para proibir a preparação automática,
 defina `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.
 
