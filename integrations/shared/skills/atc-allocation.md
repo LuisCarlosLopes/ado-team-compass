@@ -5,9 +5,8 @@ description: Mostra carga conhecida por pessoa e capacidade restante de uma exec
 
 # Carga conhecida por pessoa
 
-```
-ado-team-compass allocation --team <alias>
-```
+Chame a ferramenta `atc_allocation` com `team`. Ela lê a execução persistida mais
+recente: se não houver nenhuma, rode `atc_status` antes.
 
 Apresente a tabela como ela vem: carga conhecida, capacidade restante reservada, utilização,
 classe e quantos itens estão sem valor.

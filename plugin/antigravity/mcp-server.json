@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "ado-team-compass": {
+      "args": [
+        "/caminho/absoluto/do/bundle/bin/atc-mcp.py"
+      ],
+      "command": "python3"
+    }
+  }
+}

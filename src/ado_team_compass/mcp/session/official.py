@@ -22,7 +22,7 @@ from ado_team_compass.contracts.config import ConnectionConfig, McpTransport
 from ado_team_compass.errors import AccessError, CollectError, ConfigError
 from ado_team_compass.mcp.session.transport import ToolCallResult, ToolDescriptor, schema_hash
 
-__all__ = ["OfficialMcpTransport", "official_transport"]
+__all__ = ["OfficialMcpTransport", "default_auth", "official_transport"]
 
 _AUTH_HINTS = ("401", "unauthorized", "invalid_token", "consent", "login", "authenticate")
 _PERMISSION_HINTS = ("403", "forbidden", "not authorized", "access denied")
@@ -41,10 +41,14 @@ class OfficialMcpTransport:
         *,
         timeout_seconds: float = 30.0,
         errlog: TextIO | None = None,
+        auth: Any | None = None,
     ) -> None:
         self._connection = connection
         self._timeout = timeout_seconds
         self._errlog: TextIO = errlog or sys.stderr
+        # Autorização só se aplica ao servidor remoto: no stdio a credencial vem do ambiente
+        # que o host já mantém, e o produto nunca a vê.
+        self._auth = auth
         self._portal: Any = None
         self._portal_cm: Any = None
         self._session: Any = None
@@ -141,7 +145,9 @@ class OfficialMcpTransport:
 
             @asynccontextmanager
             async def http_streams() -> Any:
-                async with streamablehttp_client(url, timeout=self._timeout) as streams:
+                async with streamablehttp_client(
+                    url, timeout=self._timeout, auth=self._auth
+                ) as streams:
                     yield streams
 
             return http_streams()
@@ -364,12 +370,26 @@ def _error_text(result: Any) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
 
+def default_auth(connection: ConnectionConfig) -> Any | None:
+    """Autorização usada pela coleta: reaproveita e renova, mas nunca abre navegador.
+
+    O transporte stdio não recebe autorização nenhuma daqui — a credencial pertence ao
+    ambiente do host, lido na conexão.
+    """
+    if connection.server.transport is not McpTransport.HTTP:
+        return None
+    from ado_team_compass.mcp.session.auth import silent_auth
+
+    return silent_auth(connection.server.resolved_url(connection.organization))
+
+
 @contextmanager
 def official_transport(
     connection: ConnectionConfig,
     *,
     timeout_seconds: float = 30.0,
     errlog_path: Path | None = None,
+    auth: Any | None = None,
 ) -> Iterator[OfficialMcpTransport]:
     """Abre e fecha a sessão com o servidor MCP oficial."""
     handle: TextIO | None = None
@@ -377,7 +397,12 @@ def official_transport(
         errlog_path.parent.mkdir(parents=True, exist_ok=True)
         handle = errlog_path.open("a", encoding="utf-8")
     try:
-        transport = OfficialMcpTransport(connection, timeout_seconds=timeout_seconds, errlog=handle)
+        transport = OfficialMcpTransport(
+            connection,
+            timeout_seconds=timeout_seconds,
+            errlog=handle,
+            auth=auth if auth is not None else default_auth(connection),
+        )
         with transport:
             yield transport
     finally:

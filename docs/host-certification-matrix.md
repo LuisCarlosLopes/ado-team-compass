@@ -47,15 +47,14 @@ Status permitidos:
 Para cada host a ser certificado, o operador deve seguir este fluxo e anexar os resultados:
 
 ### Passo 1 — Instalação do Motor Python
-1. Em ambiente virtual isolado (Python ≥ 3.12):
+1. Confirmar Python 3.11 ou superior no sistema:
    ```bash
-   pip install ado-team-compass
-   # ou via wheel da release:
-   pip install engine/ado_team_compass-<versao>-py3-none-any.whl
+   python3 --version
    ```
-2. Validar que o executável está no PATH:
+2. Nada a instalar: o bundle traz o motor em `engine/` e o prepara na primeira chamada. Para
+   certificar o caminho com instalação prévia, instale o wheel e repita a bateria:
    ```bash
-   ado-team-compass version
+   pip install engine/ado_team_compass-<versao>-py3-none-any.whl
    ```
 
 ### Passo 2 — Configuração do MCP Oficial no Host
@@ -79,18 +78,10 @@ Configurar o servidor oficial `azure-devops-mcp` diretamente no cliente do host:
    - `atc-evidence`
    - `atc-history`
    - `atc-planning`
-2. Executar o comando de diagnóstico no terminal do host:
-   ```bash
-   ado-team-compass doctor
-   ```
-3. Executar o fluxo offline sem credenciais:
-   ```bash
-   ado-team-compass demo --format markdown
-   ```
-4. Se o MCP oficial estiver autenticado no host, executar uma consulta real:
-   ```bash
-   ado-team-compass status --team <alias> --format markdown
-   ```
+2. Confirmar que o host anunciou as 12 ferramentas do servidor `ado-team-compass`.
+3. Chamar `atc_doctor` pelo assistente e registrar o `exit_code`.
+4. Chamar `atc_demo` com `format: markdown` — deve funcionar sem credencial e sem rede.
+5. Se o MCP oficial estiver autenticado no host, chamar `atc_status` com `team` e `format`.
 
 ### Passo 5 — Registro de Evidência e Atualização do Status
 1. Salvar os logs e saída do assistente em `docs/evidence/<host>-<data>/`.

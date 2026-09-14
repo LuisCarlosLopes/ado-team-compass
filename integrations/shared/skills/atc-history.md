@@ -5,9 +5,7 @@ description: Mostra compromisso, mudança de escopo, say/do, carry-over e métri
 
 # Histórico e compromisso
 
-```
-ado-team-compass history --team <alias> --format markdown
-```
+Chame a ferramenta `atc_history` com `team` e `format`.
 
 Antes de interpretar, confira o bloco histórico:
 
@@ -22,5 +20,5 @@ Antes de interpretar, confira o bloco histórico:
 - Variação entre janelas é descrição, não prova de melhora ou piora. Não compare pontos entre
   equipes e não trate histórico de trabalho registrado como timesheet.
 
-Se a saída for 5 com histórico indisponível, informe o motivo do relatório: a ferramenta de
+Se `exit_code` for 5 com histórico indisponível, informe o motivo do relatório: a ferramenta de
 revisões pode não existir no catálogo conectado ou a cobertura pode ser insuficiente.

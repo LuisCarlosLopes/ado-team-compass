@@ -18,6 +18,7 @@ from ado_team_compass.adapters.ado_mcp import AdoMcpClient, Operation
 from ado_team_compass.adapters.ado_mcp.catalog import CatalogInfo
 from ado_team_compass.config.loader import ResolvedConfig
 from ado_team_compass.contracts.config import ConnectionConfig
+from ado_team_compass.contracts.config import McpTransport as TransportKind
 from ado_team_compass.errors import CompassError, ExitCode
 from ado_team_compass.mcp.session.official import official_transport
 from ado_team_compass.mcp.session.transport import McpTransport
@@ -108,6 +109,7 @@ def _connection_report(
         if connection.server.transport.value == "http"
         else " ".join(connection.server.command),
     }
+    entry["authorization"] = _authorization_report(connection)
     try:
         with factory(connection) as transport:
             client = AdoMcpClient(transport=transport)
@@ -125,6 +127,26 @@ def _connection_report(
     )
     entry["missing_required_operations"] = missing
     return entry, ExitCode.PARTIAL_CAPABILITY if missing else ExitCode.OK
+
+
+def _authorization_report(connection: ConnectionConfig) -> Mapping[str, Any]:
+    """Estado da autorização, sem nenhum valor de token.
+
+    No transporte stdio não há o que relatar: a credencial pertence ao ambiente do host, que o
+    produto lê na conexão e nunca copia.
+    """
+    if connection.server.transport is not TransportKind.HTTP:
+        return {
+            "required": False,
+            "note": "A credencial pertence ao ambiente do host, lido na conexão.",
+        }
+    from ado_team_compass.mcp.session.auth import authorization_state
+
+    state = dict(authorization_state(connection.server.resolved_url(connection.organization)))
+    state["required"] = True
+    if not state.get("stored"):
+        state["note"] = "Sem autorização local: execute 'login' antes de coletar."
+    return state
 
 
 def _catalog_report(catalog: CatalogInfo) -> Mapping[str, Any]:

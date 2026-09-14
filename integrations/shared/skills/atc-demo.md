@@ -5,9 +5,7 @@ description: Gera um relatório completo do ADO Team Compass com dados sintétic
 
 # Demonstração sem credencial
 
-```
-ado-team-compass demo --format markdown
-```
+Chame a ferramenta `atc_demo` com `format: markdown`.
 
 A demonstração usa o conjunto sintético incluído no pacote e produz os mesmos artefatos de uma
 execução real: métricas, evidência, Markdown e HTML. Os números são fictícios e servem para

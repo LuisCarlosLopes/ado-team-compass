@@ -10,11 +10,6 @@
     "capacidade"
   ],
   "name": "ado-team-compass",
-  "requirements": {
-    "engine": "ado-team-compass",
-    "engine_version": "0.2.0",
-    "mcp_server": "azure-devops (oficial Microsoft)"
-  },
   "skills": [
     "./skills/atc-allocation",
     "./skills/atc-demo",

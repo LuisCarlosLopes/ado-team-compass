@@ -1,5 +1,6 @@
 {
   "name": "ado-team-compass",
+  "description": "Relatórios de sprint auditáveis do Azure DevOps, calculados por um motor local e lidos exclusivamente pelo servidor MCP oficial da Microsoft.",
   "owner": {
     "name": "ADO Team Compass"
   },
@@ -9,7 +10,13 @@
       "source": "./plugin/claude",
       "description": "Visibilidade de entrega no Azure DevOps com cálculos auditáveis, exclusivamente pelo MCP oficial da Microsoft.",
       "category": "productivity",
-      "keywords": ["azure-devops", "mcp", "sprint", "capacidade", "relatorio"]
+      "keywords": [
+        "azure-devops",
+        "mcp",
+        "sprint",
+        "capacidade",
+        "relatorio"
+      ]
     }
   ]
 }

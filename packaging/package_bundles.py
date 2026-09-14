@@ -31,20 +31,29 @@ def _install_notes(host: Mapping[str, Any], wheel_name: str, version: str) -> st
 
 Versão do motor: {version}
 
-1. Instale o motor a partir do wheel incluído, em ambiente isolado:
+1. Copie o conteúdo deste pacote para o diretório de plugins do host.
+2. {str(host["registration_note"]).strip()}
+3. {str(host["mcp_note"]).strip()}
+4. Valide chamando a ferramenta `atc_doctor` e, sem credencial, `atc_demo`.
+
+O motor acompanha o pacote em `engine/{wheel_name}` e o launcher `bin/atc-mcp.py` o prepara
+sozinho na primeira execução, em um ambiente isolado sob `~/.ado-team-compass/runtime`. Não é
+preciso instalar nada antes. Para preparar o ambiente você mesmo, ou para instalar o motor no
+PATH e reaproveitá-lo em outros hosts:
 
    ```
    python -m pip install engine/{wheel_name}
    ```
 
-2. {str(host["mcp_note"]).strip()}
-3. Copie o conteúdo deste pacote para o diretório de plugins do host.
-4. Verifique com `ado-team-compass doctor`; sem credencial, use `ado-team-compass demo`.
+Requisito: Python 3.11 ou superior acessível como `python3`. Para fixar outro interpretador,
+aponte `ADO_TEAM_COMPASS_ENGINE_PYTHON` para ele; para proibir a preparação automática,
+defina `ADO_TEAM_COMPASS_NO_BOOTSTRAP=1`.
 
 ## Atualização e remoção
 
-Atualize instalando a nova versão do wheel e substituindo os arquivos do bundle. Execuções
-anteriores ficam fora do diretório do plugin (em `.ado-team-compass/`) e são preservadas na
+Atualize substituindo os arquivos do bundle: o launcher passa a usar o ambiente da nova versão
+do motor, e o anterior fica em `~/.ado-team-compass/runtime` até ser removido à mão. Execuções
+já gravadas ficam fora do diretório do plugin (em `.ado-team-compass/`) e são preservadas na
 atualização e na remoção. Para voltar à versão anterior, reinstale o pacote antigo: os
 artefatos já gravados continuam legíveis enquanto a major do schema for a mesma.
 

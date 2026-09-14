@@ -5,19 +5,25 @@ description: Configura o ADO Team Compass para uma organização do Azure DevOps
 
 # Configurar o ADO Team Compass
 
-Peça a organização do Azure DevOps se ela não foi informada. Em seguida execute:
+O Compass **não herda a sessão de MCP do host**: ele abre a própria conexão com o servidor
+oficial da Microsoft, a partir de `.ado-team-compass/config.yaml`. Ter o servidor oficial
+configurado no host não basta — o setup precisa acontecer.
 
-```
-ado-team-compass setup --organization <organizacao>
-```
+Prefira reaproveitar a definição que o host já tem: chame `atc_setup` com `from_mcp_config`
+apontando para o arquivo de configuração de MCP do host (e `mcp_server`, se o servidor não se
+chamar `ado`). Isso copia comando e argumentos e deixa apenas uma referência ao arquivo de
+onde o ambiente é lido na conexão — nenhuma credencial entra na configuração do Compass.
 
-A descoberta grava `.ado-team-compass/config.yaml` sem nenhuma credencial: a sessão do Azure
-DevOps pertence ao servidor MCP oficial. Depois do setup:
+Sem essa configuração no host, peça a organização e chame `atc_setup` com `organization`. Esse
+caminho usa o servidor remoto oficial e exige uma autorização explícita: se `atc_doctor`
+responder `exit_code` 3, chame `atc_login` antes de coletar.
+
+Depois do setup:
 
 1. Revise o perfil de cada equipe (`sprint_with_capacity`, `sprint_without_hours` ou
    `continuous_flow`). O processo técnico descoberto não define a prática de gestão.
 2. Preencha o que o MCP não expôs — áreas, inclusão de descendentes, mapeamento de estados —
    em vez de assumir valores.
-3. Rode `ado-team-compass doctor` e mostre as operações indisponíveis com o motivo.
+3. Chame `atc_doctor` e mostre as operações indisponíveis com o motivo.
 
-Se o setup terminar com saída 5, a configuração foi gravada mas há limitações: liste-as.
+Se o setup terminar com `exit_code` 5, a configuração foi gravada mas há limitações: liste-as.

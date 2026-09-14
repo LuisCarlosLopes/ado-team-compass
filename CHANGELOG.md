@@ -3,6 +3,36 @@
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento semântico do motor; os contratos têm versão de schema própria (`schema_version`).
 
+## [Não lançado]
+
+### Alterado
+
+- O motor passa a ser servido ao assistente como **servidor MCP local** (`ado-team-compass-mcp`):
+  as skills chamam ferramentas `atc_*` em vez de comandos de shell. Cada ferramenta é um
+  envelope sobre a mesma entrada da CLI, com os mesmos cálculos e os mesmos códigos de saída.
+- Instalar o plugin deixou de exigir instalar a CLI antes. Todo bundle traz `bin/atc-mcp.py`,
+  um launcher só com biblioteca padrão que reaproveita um motor já instalado ou prepara o
+  wheel embutido em um ambiente isolado sob `~/.ado-team-compass/runtime`, uma única vez.
+- O manifesto do Claude Code declara o servidor e o sobe junto com o plugin. Antigravity,
+  Codex e Cursor não expõem a raiz do bundle, então recebem um `mcp-server.json` pronto para
+  registrar à mão.
+- O campo `requirements` saiu dos manifestos: o motor não é mais pré-requisito externo.
+- O transporte remoto oficial passa a **autorizar de verdade**. Antes, a conexão HTTP era
+  aberta sem credencial nenhuma e só podia falhar com 401. Agora há o fluxo OAuth do SDK MCP
+  (descoberta, registro dinâmico, PKCE e renovação), exposto pelas entradas `login` e `logout`
+  e pelas ferramentas `atc_login` e `atc_logout`. Nenhuma senha, PAT ou token é pedido pelo
+  produto: quem autentica é o provedor de identidade da organização, no navegador.
+- Coleta nunca abre navegador nem espera por pessoa: sem autorização válida, a resposta é
+  saída 3 com a orientação de chamar `login`. O material de autorização vive isolado em
+  `~/.ado-team-compass/auth`, com permissão restrita ao dono, e nunca entra na configuração,
+  nos artefatos de execução ou em log. `doctor` passa a relatar o estado, sem expor valores.
+- Documentação corrigida: o Compass **não herda a sessão de MCP do host**. Ele abre a própria
+  conexão a partir de `.ado-team-compass/config.yaml`, e `--from-mcp-config` copia apenas a
+  definição do servidor mais uma referência ao arquivo de onde o ambiente é lido.
+- Requisito mínimo de Python baixou de 3.12 para **3.11**. Nenhuma dependência exigia 3.12
+  (o piso real era 3.10, de `mcp` e `anyio`) e o código não usa sintaxe nem API exclusivas
+  de 3.12. A suíte completa roda em 3.11, que entrou na matriz do CI.
+
 ## [Não lançado] — v0.1 em construção
 
 ### Adicionado

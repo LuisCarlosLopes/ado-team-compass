@@ -5,9 +5,7 @@ description: Lista achados das regras de planejamento habilitadas para a equipe 
 
 # Achados de planejamento
 
-```
-ado-team-compass planning --team <alias>
-```
+Chame a ferramenta `atc_planning` com `team`.
 
 A saída traz apenas as regras habilitadas para o perfil da equipe. Regras desabilitadas não
 produzem achado, e isso é intencional: story sem task, estimativa ausente e divergência de
