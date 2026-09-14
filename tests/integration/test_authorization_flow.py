@@ -275,6 +275,7 @@ def test_collection_never_opens_a_browser_and_says_what_to_do(identity, tmp_path
 
 
 def test_the_storage_file_is_readable_only_by_its_owner(identity, tmp_path, monkeypatch):
+    import os
     import stat
 
     _browser_simulator(monkeypatch)
@@ -287,6 +288,11 @@ def test_the_storage_file_is_readable_only_by_its_owner(identity, tmp_path, monk
 
     anyio.run(scenario)
     path = FileTokenStorage(identity.resource_url, home=home).path
+    assert path.is_file()
+    # A escrita é atômica: nenhum resto parcial fica legível no diretório.
+    assert not list(home.glob("*.partial"))
+    if os.name == "nt":
+        # O Windows não expressa permissão POSIX; lá o isolamento é o do perfil do usuário.
+        pytest.skip("modo POSIX não se aplica a este sistema de arquivos")
     assert stat.S_IMODE(path.stat().st_mode) == 0o600
     assert stat.S_IMODE(home.stat().st_mode) == 0o700
-    assert not list(home.glob("*.partial"))
